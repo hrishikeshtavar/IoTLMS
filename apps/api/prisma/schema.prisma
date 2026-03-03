@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String    @id @default(uuid())
+  slug         String    @unique
+  name         String
+  brand_config Json?
+  plan_id      String?
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+
+  users        User[]
+  courses      Course[]
+  brand_kit    BrandKit?
+}
+
+model User {
+  id            String    @id @default(uuid())
+  tenant_id     String
+  email         String?
+  phone         String?
+  name          String
+  role          String    @default("student")
+  language_pref String    @default("en")
+  is_active     Boolean   @default(true)
+  last_login    DateTime?
+  created_at    DateTime  @default(now())
+
+  tenant        Tenant    @relation(fields: [tenant_id], references: [id])
+}
+
+model BrandKit {
+  id           String   @id @default(uuid())
+  tenant_id    String   @unique
+  logo_url     String?
+  colors_json  Json?
+  fonts_json   Json?
+  domain       String?
+  favicon_url  String?
+  created_at   DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id])
+}
+
+model Course {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  title_en   String
+  title_hi   String?
+  title_mr   String?
+  slug       String
+  category   String?
+  status     String   @default("draft")
+  created_by String?
+  created_at DateTime @default(now())
+
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+  lessons    Lesson[]
+}
+
+model Lesson {
+  id          String   @id @default(uuid())
+  course_id   String
+  title       String
+  type        String   @default("video")
+  order_index Int      @default(0)
+  content_url String?
+  created_at  DateTime @default(now())
+
+  course      Course   @relation(fields: [course_id], references: [id])
+}
