@@ -16,8 +16,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install web dependencies
-        run: cd apps/web && npm install
+      - name: Install dependencies
+        run: npm install --omit=optional
 
       - name: Lint
         run: cd apps/web && npm run lint
