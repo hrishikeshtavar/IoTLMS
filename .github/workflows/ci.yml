@@ -16,6 +16,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate npm via Corepack
+        run: corepack prepare npm@10.8.2 --activate
+
       - name: Install dependencies
         run: npm ci
 
