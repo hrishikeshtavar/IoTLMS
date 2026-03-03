@@ -1,0 +1,126 @@
+@layer base {
+  :root {
+    /* Color Tokens */
+    --color-primary: #1A73E8;
+    --color-primary-dark: #0D47A1;
+    --color-accent: #FF6F00;
+    --color-success: #1DB954;
+    --color-warning: #FFC107;
+    --color-error: #E53935;
+    --color-background: #F4F7FF;
+    --color-surface: #FFFFFF;
+    --color-surface-alt: #EEF2FB;
+    --color-text-primary: #0F1626;
+    --color-text-secondary: #5C6880;
+    --color-text-disabled: #B0BAC9;
+    --color-border: #DDE3EF;
+    --color-border-focus: #1A73E8;
+    
+    /* Topic Colors */
+    --color-topic-arduino: #4CAF50;
+    --color-topic-arm: #9C27B0;
+    --color-topic-riscv: #E91E63;
+    --color-topic-8051: #FF5722;
+    --color-topic-rpi: #C2185B;
+    --color-topic-iot: #1A73E8;
+    --color-topic-ai: #00BCD4;
+    
+    /* Spacing Scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-20: 80px;
+    --space-24: 96px;
+    
+    /* Border Radius */
+    --radius-sm: 99px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --radius-full: 50%;
+    
+    /* Shadows */
+    --shadow-1: 0 1px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(26,115,232,0.06);
+    --shadow-2: 0 4px 16px rgba(26,115,232,0.12);
+    --shadow-3: 0 8px 24px rgba(0,0,0,0.12);
+    --shadow-4: 0 16px 48px rgba(0,0,0,0.18);
+  }
+  
+  * {
+    @apply border-[var(--color-border)];
+  }
+  
+  body {
+    @apply bg-[var(--color-background)] text-[var(--color-text-primary)] antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1 {
+    @apply text-[40px] leading-[48px] font-bold tracking-[-0.5px];
+  }
+  
+  h2 {
+    @apply text-[28px] leading-[36px] font-semibold;
+  }
+  
+  h3 {
+    @apply text-[20px] leading-[28px] font-semibold;
+  }
+}
+
+@layer utilities {
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-devanagari {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+  
+  .font-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .text-body-lg {
+    font-size: 18px;
+    line-height: 28px;
+  }
+  
+  .text-body {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  
+  .text-caption {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  
+  .text-code {
+    font-size: 14px;
+    line-height: 22px;
+  }
+  
+  .shadow-1 {
+    box-shadow: var(--shadow-1);
+  }
+  
+  .shadow-2 {
+    box-shadow: var(--shadow-2);
+  }
+  
+  .shadow-3 {
+    box-shadow: var(--shadow-3);
+  }
+  
+  .shadow-4 {
+    box-shadow: var(--shadow-4);
+  }
+}

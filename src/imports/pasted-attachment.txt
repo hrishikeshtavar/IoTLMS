@@ -1,0 +1,58 @@
+Design the IoTLearn Student Dashboard. Create Mobile (375px) and Desktop (1280px) frames.
+Use design system: Primary #1A73E8, Accent #FF6F00, Background #F4F7FF, Inter font.
+
+DESKTOP LAYOUT:
+
+Left Sidebar (240px, white, full-height, 1px right border):
+- Top: IoTLearn logo (with school name below it in smaller text: "DY Patil Institute")
+- Nav items (48px each, 8px horizontal padding, 8px radius):
+  🏠 Home (ACTIVE — primary tinted bg #EEF5FF, left 3px accent bar, primary text)
+  📚 My Courses
+  🧪 Labs  
+  📝 Assessments
+  🏆 Certificates
+  ⚙️ Settings
+- Bottom of sidebar: 
+  - Language switcher (EN | हिं | मरा compact pills)
+  - User row: avatar (40px) + "Riya Sharma" bold + "Student" caption + 3-dot menu
+
+Top Header Bar (64px, white, 1px bottom border):
+- Left: Breadcrumb — Home
+- Right: Search icon button + Notification bell (with red dot badge "3") + 
+  Offline indicator chip (green dot + "Online")
+
+Main Content Area (padding 32px):
+
+WELCOME BANNER (full width, 140px height):
+- Gradient background: primary to secondary diagonal
+- Left: "Good morning, Riya 👋" (H2 white) + "You have 2 lessons pending today" (white 80%)
+  + "🔥 7 Day Streak" amber chip
+- Right: subtle IoT illustration — microcontroller chip with circuit traces, line art style, white
+
+QUICK STATS ROW (4 cards, equal width, 16px gap):
+- Card 1: 📚 icon (primary) | "6" big bold | "Courses Enrolled" caption
+- Card 2: ✅ icon (success) | "34" big bold | "Lessons Completed" caption  
+- Card 3: 🧪 icon (accent) | "12" big bold | "Lab Sessions" caption
+- Card 4: 🏅 icon (warning) | "5" big bold | "Badges Earned" caption
+Each card: white bg, 12px radius, Level 1 shadow, 20px padding
+
+CONTINUE LEARNING (section heading with "See all →" right link):
+3 Course Cards in a row (each ~340px wide):
+  Card 1: "Arduino Fundamentals" — thumbnail showing Arduino board photo style bg, 
+    Arduino green badge, 65% progress ring, "Last: Digital I/O Pins" label, "Continue" button
+  Card 2: "ARM Cortex-M4 Deep Dive" — purple badge, 30% progress ring
+  Card 3: "IoT Security Basics" — red badge, 10% progress ring
+
+EXPLORE COURSES (section heading):
+Filter chip row (horizontal scroll): All | Arduino | Raspberry Pi | ARM | RISC-V | 8051 | Protocols | Edge AI
+4-column course card grid below (use Course Card component from design system)
+Show 8 course cards in a 4x2 grid
+
+MOBILE LAYOUT (375px):
+- No sidebar. Bottom Tab Bar: 🏠 Courses 🧪 Progress 👤
+- Top bar: hamburger left, school logo center, bell + avatar right
+- Welcome banner: shorter 100px height, stacked text
+- Stats: 2x2 grid
+- Continue Learning: horizontal scroll row (cards 300px wide)
+- Filter chips: horizontal scroll
+- Courses: 2-column grid
