@@ -9,51 +9,26 @@ export default function Home() {
           White-labeled IoT & Processor Education Platform
         </p>
 
-        {/* Language Switcher */}
         <div className="flex gap-3 justify-center mt-6">
-          <Link
-            href={{ pathname: '/', query: { lang: 'en' } }}
-            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200"
-          >
-            English
-          </Link>
-          <Link
-            href={{ pathname: '/', query: { lang: 'hi' } }}
-            className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm hover:bg-orange-200"
-            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}
-          >
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">English</span>
+          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm"
+            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
             हिन्दी
-          </Link>
-          <Link
-            href={{ pathname: '/', query: { lang: 'mr' } }}
-            className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200"
-            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}
-          >
+          </span>
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
             मराठी
+          </span>
+        </div>
+
+        <div className="flex gap-4 justify-center mt-8">
+          <Link href="/courses"
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors">
+            Browse Courses →
           </Link>
         </div>
 
-        {/* Course List Preview */}
-        <div className="mt-8 p-6 bg-white rounded-xl shadow-sm border">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Available Courses
-          </h2>
-          <div className="text-left space-y-2">
-            <div className="p-3 bg-blue-50 rounded-lg text-blue-800 text-sm">
-              🔌 Introduction to Arduino
-            </div>
-            <div className="p-3 bg-purple-50 rounded-lg text-purple-800 text-sm">
-              🖥️ ARM Cortex-M Architecture
-            </div>
-            <div className="p-3 bg-green-50 rounded-lg text-green-800 text-sm">
-              🌐 IoT Protocols: MQTT & CoAP
-            </div>
-          </div>
-        </div>
-
-        <p className="text-xs text-gray-400 mt-8">
-          Sprint 1 — Course API + i18n ✅
-        </p>
+        <p className="text-xs text-gray-400 mt-8">Sprint 2 — Student Experience 🚀</p>
       </div>
     </main>
   );
