@@ -2,21 +2,54 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+type QuestionOption = {
+  value: string;
+  label: string;
+};
+
+type Question = {
+  id: string;
+  question_text: string;
+  options_json: QuestionOption[];
+};
+
+type Assessment = {
+  questions: Question[];
+  pass_score: number;
+};
+
+type QuestionResult = {
+  is_correct: boolean;
+  correct_answer: string;
+  points_earned: number;
+};
+
+type QuizResult = {
+  passed: boolean;
+  score: number;
+  max_score: number;
+  percentage: number;
+  pass_score: number;
+  results: QuestionResult[];
+};
+
 export default function QuizPage() {
   const { assessmentId } = useParams();
+  const assessmentIdParam = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
   const router = useRouter();
-  const [assessment, setAssessment] = useState<any>(null);
+  const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<QuizResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentQ, setCurrentQ] = useState(0);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/assessments/${assessmentId}`)
+    if (!assessmentIdParam) return;
+    fetch(`http://localhost:3001/api/assessments/${assessmentIdParam}`)
       .then(r => r.json())
-      .then(data => { setAssessment(data); setLoading(false); });
-  }, [assessmentId]);
+      .then((data: Assessment) => { setAssessment(data); setLoading(false); });
+  }, [assessmentIdParam]);
 
   const selectAnswer = (questionId: string, value: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -29,7 +62,7 @@ export default function QuizPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: 'student-1',
-        assessment_id: assessmentId,
+        assessment_id: assessmentIdParam,
         answers: Object.entries(answers).map(([question_id, answer]) => ({
           question_id,
           answer,
@@ -46,7 +79,7 @@ export default function QuizPage() {
 
   const questions = assessment.questions ?? [];
   const question = questions[currentQ];
-  const allAnswered = questions.every((q: any) => answers[q.id]);
+  const allAnswered = questions.every((q) => Boolean(answers[q.id]));
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -80,7 +113,7 @@ export default function QuizPage() {
 
             {/* Question Results */}
             <div className="text-left space-y-3 mb-8">
-              {result.results.map((r: any, i: number) => (
+              {result.results.map((r, i) => (
                 <div key={i} className={`p-3 rounded-lg flex items-center gap-3 ${
                   r.is_correct ? 'bg-green-50' : 'bg-red-50'
                 }`}>
@@ -126,7 +159,7 @@ export default function QuizPage() {
                   {question.question_text}
                 </h2>
                 <div className="space-y-3">
-                  {(question.options_json as any[]).map((opt: any) => (
+                  {(question.options_json ?? []).map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => selectAnswer(question.id, opt.value)}
