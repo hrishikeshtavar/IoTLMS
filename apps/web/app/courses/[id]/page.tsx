@@ -3,23 +3,35 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
+type Lesson = {
+  id: string;
+  title: string;
+  type: 'lab' | 'quiz' | 'lesson' | string;
+};
+
 export default function CoursePage() {
-  const { id } = useParams();
-  const [lessons, setLessons] = useState<any[]>([]);
-  const [activeLesson, setActiveLesson] = useState<any>(null);
+  const { id } = useParams<{ id: string | string[] }>();
+  const courseId = Array.isArray(id) ? id[0] : id;
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/lessons/course/${id}`)
+    if (!courseId) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(`http://localhost:3001/api/lessons/course/${courseId}`)
       .then(r => r.json())
-      .then(data => {
+      .then((data: Lesson[]) => {
         setLessons(data);
         if (data.length > 0) setActiveLesson(data[0]);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [id]);
+  }, [courseId]);
 
   const completeLesson = (lessonId: string) => {
     setCompleted(prev => new Set([...prev, lessonId]));
@@ -109,29 +121,29 @@ export default function CoursePage() {
                 </h2>
 
                 {/* Lesson Content Area */}
-<div className="bg-white rounded-xl border p-8 mb-6 min-h-64">
-  <div className="text-gray-500 text-center py-8">
-    <p className="text-4xl mb-4">
-      {activeLesson.type === 'lab' ? '🔬' : activeLesson.type === 'quiz' ? '📝' : '📖'}
-    </p>
-    <p className="text-lg font-medium text-gray-700 mb-2">
-      {activeLesson.title}
-    </p>
-    <p className="text-sm mb-6">
-      {activeLesson.type === 'lab'
-        ? 'Open the lab simulator to complete this lesson.'
-        : 'Lesson content will be added via the CMS in Sprint 3.'}
-    </p>
-    {activeLesson.type === 'lab' && (
-      
-        href={`/lab/${activeLesson.id}`}
-        className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors inline-block"
-      >
-        🔬 Open Lab Simulator →
-      </a>
-    )}
-  </div>
-</div>
+                <div className="bg-white rounded-xl border p-8 mb-6 min-h-64">
+                  <div className="text-gray-500 text-center py-8">
+                    <p className="text-4xl mb-4">
+                      {activeLesson.type === 'lab' ? '🔬' : activeLesson.type === 'quiz' ? '📝' : '📖'}
+                    </p>
+                    <p className="text-lg font-medium text-gray-700 mb-2">
+                      {activeLesson.title}
+                    </p>
+                    <p className="text-sm mb-6">
+                      {activeLesson.type === 'lab'
+                        ? 'Open the lab simulator to complete this lesson.'
+                        : 'Lesson content will be added via the CMS in Sprint 3.'}
+                    </p>
+                    {activeLesson.type === 'lab' && (
+                      <Link
+                        href={`/lab/${activeLesson.id}`}
+                        className="inline-block px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+                      >
+                        🔬 Open Lab Simulator →
+                      </Link>
+                    )}
+                  </div>
+                </div>
 
                 {/* Complete Button */}
                 {!completed.has(activeLesson.id) ? (
@@ -158,9 +170,12 @@ export default function CoursePage() {
                       </button>
                     )}
                     {progress === 100 && (
-                      <span className="px-6 py-3 bg-purple-100 text-purple-700 rounded-xl font-medium">
-                        🎉 Course Complete!
-                      </span>
+                      <Link
+                        href={`/certificate/${courseId}`}
+                        className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors"
+                      >
+                        🏆 Get Certificate →
+                      </Link>
                     )}
                   </div>
                 )}
