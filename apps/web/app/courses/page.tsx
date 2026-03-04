@@ -1,8 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+type Course = {
+  id: string;
+  title?: string;
+  category?: string;
+  status?: string;
+  lessons?: unknown[];
+};
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [enrolled, setEnrolled] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +57,7 @@ export default function CoursesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course: any) => (
+            {courses.map((course) => (
               <div key={course.id} className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
@@ -62,7 +71,7 @@ export default function CoursesPage() {
                     {course.status}
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{course.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{course.title ?? 'Untitled Course'}</h3>
                 <p className="text-gray-500 text-sm mb-4">{course.lessons?.length ?? 0} lessons</p>
                 <div className="flex gap-2">
   <button
@@ -75,10 +84,10 @@ export default function CoursesPage() {
   >
     {enrolled.has(course.id) ? '✅ Enrolled!' : 'Enroll Now'}
   </button>
-  <a href={`/courses/${course.id}`}
+  <Link href={`/courses/${course.id}`}
     className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
     View →
-  </a>
+  </Link>
 </div>
               </div>
             ))}

@@ -49,7 +49,7 @@ export default function Home() {
           <div className="bg-white rounded-2xl border p-6 hover:shadow-md transition-shadow">
             <div className="text-3xl mb-3">🏫</div>
             <h3 className="font-bold text-gray-800 mb-2">White-Labeled</h3>
-            <p className="text-sm text-gray-500">Your school's logo, colors, and domain. Students see your brand.</p>
+            <p className="text-sm text-gray-500">Your school&apos;s logo, colors, and domain. Students see your brand.</p>
           </div>
           <div className="bg-white rounded-2xl border p-6 hover:shadow-md transition-shadow">
             <div className="text-3xl mb-3">📝</div>

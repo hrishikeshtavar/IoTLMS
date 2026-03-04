@@ -6,6 +6,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
+type CoursePerformance = {
+  id: string;
+  title_en?: string;
+  category?: string;
+  lessons?: unknown[];
+  status?: string;
+};
+
 const enrollmentData = [
   { month: 'Oct', enrollments: 4 },
   { month: 'Nov', enrollments: 8 },
@@ -43,12 +51,12 @@ const deviceData = [
 ];
 
 export default function AnalyticsPage() {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CoursePerformance[]>([]);
 
   useEffect(() => {
     fetch('http://localhost:3001/api/courses')
       .then(r => r.json())
-      .then(setCourses)
+      .then((data: CoursePerformance[]) => setCourses(data))
       .catch(() => {});
   }, []);
 
@@ -122,7 +130,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="lesson" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v) => `${v}%`} />
+                <Tooltip formatter={(v: number | string) => `${v}%`} />
                 <Bar dataKey="avgScore" name="Avg Score" radius={[4,4,0,0]}>
                   {quizData.map((entry, i) => (
                     <Cell
@@ -148,7 +156,7 @@ export default function AnalyticsPage() {
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => `${v}%`} />
+                  <Tooltip formatter={(v: number | string) => `${v}%`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-3">
@@ -204,9 +212,9 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {courses.map((c: any) => (
+              {courses.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm font-medium text-gray-800">{c.title_en}</td>
+                  <td className="px-6 py-3 text-sm font-medium text-gray-800">{c.title_en ?? 'Untitled Course'}</td>
                   <td className="px-6 py-3">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{c.category}</span>
                   </td>

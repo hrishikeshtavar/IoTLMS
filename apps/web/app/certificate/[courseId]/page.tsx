@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRef } from 'react';
 
@@ -29,10 +30,10 @@ export default function CertificatePage() {
         >
           🖨️ Print / Save PDF
         </button>
-        <a href="/courses"
+        <Link href="/courses"
           className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300">
           ← Back to Courses
-        </a>
+        </Link>
       </div>
 
       {/* Certificate */}

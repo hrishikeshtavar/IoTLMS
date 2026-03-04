@@ -62,7 +62,7 @@ void loop() {
         <div className="w-1/2 flex flex-col">
           <div className="bg-gray-800 px-4 py-2 flex items-center justify-between border-b border-gray-700">
             <span className="text-gray-400 text-xs">Circuit Simulator</span>
-            <a href="https://wokwi.com/projects/new/arduino-uno" target="_blank"
+            <a href="https://wokwi.com/projects/new/arduino-uno" target="_blank" rel="noreferrer"
               className="text-blue-400 text-xs hover:underline">
               Open in Wokwi ↗
             </a>

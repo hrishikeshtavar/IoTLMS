@@ -2,9 +2,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+type PreviewRow = Record<string, string>;
+
 export default function ImportStudents() {
   const [csv, setCsv] = useState('');
-  const [preview, setPreview] = useState<any[]>([]);
+  const [preview, setPreview] = useState<PreviewRow[]>([]);
   const [imported, setImported] = useState(false);
 
   const handleCSVChange = (text: string) => {
@@ -14,7 +16,7 @@ export default function ImportStudents() {
     const headers = lines[0].split(',').map(h => h.trim());
     const rows = lines.slice(1).map(line => {
       const vals = line.split(',').map(v => v.trim());
-      const obj: any = {};
+      const obj: PreviewRow = {};
       headers.forEach((h, i) => obj[h] = vals[i] ?? '');
       return obj;
     });
@@ -73,7 +75,7 @@ Sneha Joshi,sneha@school.in,teacher,en`);
               <tbody className="divide-y divide-gray-100">
                 {preview.map((row, i) => (
                   <tr key={i} className="hover:bg-gray-50">
-                    {Object.values(row).map((val: any, j) => (
+                    {Object.values(row).map((val, j) => (
                       <td key={j} className="px-6 py-3 text-sm text-gray-700">{val}</td>
                     ))}
                     <td className="px-6 py-3">
