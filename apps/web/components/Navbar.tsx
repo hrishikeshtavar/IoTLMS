@@ -9,6 +9,7 @@ export default function Navbar() {
     { href: '/', label: 'Home' },
     { href: '/courses', label: '📚 Courses' },
     { href: '/admin', label: '⚙️ Admin' },
+    { href: '/admin/analytics', label: '📊 Analytics' },
   ];
 
   return (
