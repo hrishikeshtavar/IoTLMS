@@ -11,17 +11,26 @@ export default function Home() {
 
         {/* Language Switcher */}
         <div className="flex gap-3 justify-center mt-6">
-          <a href="/?lang=en" className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200">
+          <Link
+            href={{ pathname: '/', query: { lang: 'en' } }}
+            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200"
+          >
             English
-          </a>
-          <a href="/?lang=hi" className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm hover:bg-orange-200"
-            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
+          </Link>
+          <Link
+            href={{ pathname: '/', query: { lang: 'hi' } }}
+            className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm hover:bg-orange-200"
+            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}
+          >
             हिन्दी
-          </a>
-          <a href="/?lang=mr" className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200"
-            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
+          </Link>
+          <Link
+            href={{ pathname: '/', query: { lang: 'mr' } }}
+            className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm hover:bg-green-200"
+            style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}
+          >
             मराठी
-          </a>
+          </Link>
         </div>
 
         {/* Course List Preview */}
