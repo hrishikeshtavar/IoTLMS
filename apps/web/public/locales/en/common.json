@@ -1,0 +1,20 @@
+{
+  "app_name": "IoTLearn",
+  "tagline": "White-labeled IoT & Processor Education Platform",
+  "nav": {
+    "courses": "Courses",
+    "dashboard": "Dashboard",
+    "profile": "Profile"
+  },
+  "course": {
+    "all_courses": "All Courses",
+    "enroll": "Enroll Now",
+    "continue": "Continue Learning",
+    "completed": "Completed"
+  },
+  "language": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "mr": "मराठी"
+  }
+}

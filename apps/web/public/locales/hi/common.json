@@ -1,0 +1,20 @@
+{
+  "app_name": "IoTLearn",
+  "tagline": "IoT और प्रोसेसर शिक्षा मंच",
+  "nav": {
+    "courses": "पाठ्यक्रम",
+    "dashboard": "डैशबोर्ड",
+    "profile": "प्रोफ़ाइल"
+  },
+  "course": {
+    "all_courses": "सभी पाठ्यक्रम",
+    "enroll": "अभी नामांकन करें",
+    "continue": "सीखना जारी रखें",
+    "completed": "पूर्ण"
+  },
+  "language": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "mr": "मराठी"
+  }
+}
