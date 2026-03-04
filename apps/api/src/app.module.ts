@@ -7,9 +7,10 @@ import { TenantMiddleware } from './tenant/tenant.middleware';
 import { CoursesModule } from './courses/courses.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { LessonsModule } from './lessons/lessons.module';
+import { AssessmentsModule } from './assessments/assessments.module';
 
 @Module({
-  imports: [TenantModule, CoursesModule, EnrollmentsModule, LessonsModule],
+  imports: [TenantModule, CoursesModule, EnrollmentsModule, LessonsModule, AssessmentsModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

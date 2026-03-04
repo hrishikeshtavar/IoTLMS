@@ -50,32 +50,33 @@ model BrandKit {
 }
 
 model Course {
-  id         String   @id @default(uuid())
-  tenant_id  String
-  title_en   String
-  title_hi   String?
-  title_mr   String?
-  slug       String
-  category   String?
-  status     String   @default("draft")
-  created_by String?
-  created_at DateTime @default(now())
+  id          String       @id @default(uuid())
+  tenant_id   String
+  title_en    String
+  title_hi    String?
+  title_mr    String?
+  slug        String
+  category    String?
+  status      String       @default("draft")
+  created_by  String?
+  created_at  DateTime     @default(now())
 
-  tenant     Tenant   @relation(fields: [tenant_id], references: [id])
-  lessons    Lesson[]
-  enrollments  Enrollment[]
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  lessons     Lesson[]
+  enrollments Enrollment[]
 }
 
 model Lesson {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   course_id   String
   title       String
-  type        String   @default("video")
-  order_index Int      @default(0)
+  type        String       @default("video")
+  order_index Int          @default(0)
   content_url String?
-  created_at  DateTime @default(now())
+  created_at  DateTime     @default(now())
 
-  course      Course   @relation(fields: [course_id], references: [id])
+  course      Course       @relation(fields: [course_id], references: [id])
+  assessments Assessment[]
 }
 
 model Enrollment {
@@ -87,4 +88,42 @@ model Enrollment {
   completed_at DateTime?
 
   course       Course    @relation(fields: [course_id], references: [id])
+}
+
+model Assessment {
+  id          String       @id @default(uuid())
+  lesson_id   String
+  type        String       @default("quiz")
+  max_score   Int          @default(100)
+  pass_score  Int          @default(60)
+  created_at  DateTime     @default(now())
+
+  lesson      Lesson       @relation(fields: [lesson_id], references: [id])
+  questions   Question[]
+  submissions Submission[]
+}
+
+model Question {
+  id             String     @id @default(uuid())
+  assessment_id  String
+  type           String     @default("mcq")
+  question_text  String
+  options_json   Json?
+  correct_answer String
+  points         Int        @default(10)
+  created_at     DateTime   @default(now())
+
+  assessment     Assessment @relation(fields: [assessment_id], references: [id])
+}
+
+model Submission {
+  id            String     @id @default(uuid())
+  user_id       String
+  assessment_id String
+  answers_json  Json
+  score         Int        @default(0)
+  passed        Boolean    @default(false)
+  graded_at     DateTime   @default(now())
+
+  assessment    Assessment @relation(fields: [assessment_id], references: [id])
 }
