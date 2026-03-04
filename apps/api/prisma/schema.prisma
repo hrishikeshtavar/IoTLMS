@@ -63,6 +63,7 @@ model Course {
 
   tenant     Tenant   @relation(fields: [tenant_id], references: [id])
   lessons    Lesson[]
+  enrollments  Enrollment[]
 }
 
 model Lesson {
@@ -75,4 +76,15 @@ model Lesson {
   created_at  DateTime @default(now())
 
   course      Course   @relation(fields: [course_id], references: [id])
+}
+
+model Enrollment {
+  id           String    @id @default(uuid())
+  user_id      String
+  course_id    String
+  enrolled_at  DateTime  @default(now())
+  progress_pct Float     @default(0)
+  completed_at DateTime?
+
+  course       Course    @relation(fields: [course_id], references: [id])
 }
