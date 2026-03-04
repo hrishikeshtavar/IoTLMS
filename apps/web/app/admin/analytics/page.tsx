@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="lesson" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v: number | string) => `${v}%`} />
+                <Tooltip formatter={(v) => `${v ?? 0}%`} />
                 <Bar dataKey="avgScore" name="Avg Score" radius={[4,4,0,0]}>
                   {quizData.map((entry, i) => (
                     <Cell
@@ -156,7 +156,7 @@ export default function AnalyticsPage() {
                       <Cell key={i} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v: number | string) => `${v}%`} />
+                  <Tooltip formatter={(v) => `${v ?? 0}%`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-3">

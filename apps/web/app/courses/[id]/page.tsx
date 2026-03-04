@@ -27,7 +27,7 @@ export default function CoursePage() {
       .then(r => r.json())
       .then((data: Lesson[]) => {
         setLessons(data);
-        if (data.length > 0) setActiveLesson(data[0]);
+        if (data.length > 0) setActiveLesson(data[0] ?? null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -37,7 +37,8 @@ export default function CoursePage() {
     setCompleted(prev => new Set([...prev, lessonId]));
     const currentIndex = lessons.findIndex(l => l.id === lessonId);
     if (currentIndex < lessons.length - 1) {
-      setActiveLesson(lessons[currentIndex + 1]);
+      const nextLesson = lessons[currentIndex + 1];
+      if (nextLesson) setActiveLesson(nextLesson);
     }
   };
 
@@ -162,7 +163,7 @@ export default function CoursePage() {
                       <button
                         onClick={() => {
                           const next = lessons[lessons.findIndex(l => l.id === activeLesson.id) + 1];
-                          setActiveLesson(next);
+                          if (next) setActiveLesson(next);
                         }}
                         className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
                       >

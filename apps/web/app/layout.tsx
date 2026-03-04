@@ -1,13 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
 import Navbar from '../components/Navbar';
-
-const inter = Inter({ subsets: ['latin'] });
-const notoSansDevanagari = Noto_Sans_Devanagari({
-  subsets: ['devanagari'],
-  variable: '--font-devanagari',
-});
 
 export const metadata: Metadata = {
   title: 'IoTLearn LMS',
@@ -39,7 +32,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="IoTLearn" />
       </head>
-      <body className={`${inter.className} ${notoSansDevanagari.variable}`}>
+      <body style={{ fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans Devanagari, sans-serif' }}>
         <Navbar />
         {children}
       </body>

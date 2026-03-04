@@ -13,13 +13,14 @@ export default function PaymentsPage() {
 
   const handleAdd = () => {
     if (!form.student) return;
+    const today = new Date().toISOString().slice(0, 10);
     setPayments(prev => [{
       id: `RCP00${prev.length + 1}`,
       student: form.student,
       amount: parseInt(form.amount),
       method: form.method,
       status: 'paid',
-      date: new Date().toISOString().split('T')[0],
+      date: today,
     }, ...prev]);
     setForm({ student: '', amount: '2999', method: 'UPI' });
     setAdded(true);

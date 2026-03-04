@@ -12,9 +12,10 @@ export default function ImportStudents() {
   const handleCSVChange = (text: string) => {
     setCsv(text);
     const lines = text.trim().split('\n').filter(l => l.trim());
-    if (lines.length < 2) { setPreview([]); return; }
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = lines.slice(1).map(line => {
+    const [headerLine, ...dataLines] = lines;
+    if (!headerLine || dataLines.length === 0) { setPreview([]); return; }
+    const headers = headerLine.split(',').map(h => h.trim());
+    const rows = dataLines.map(line => {
       const vals = line.split(',').map(v => v.trim());
       const obj: PreviewRow = {};
       headers.forEach((h, i) => obj[h] = vals[i] ?? '');
@@ -66,7 +67,7 @@ Sneha Joshi,sneha@school.in,teacher,en`);
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  {Object.keys(preview[0]).map(h => (
+                  {Object.keys(preview[0] ?? {}).map(h => (
                     <th key={h} className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{h}</th>
                   ))}
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
