@@ -64,16 +64,22 @@ export default function CoursesPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">{course.title}</h3>
                 <p className="text-gray-500 text-sm mb-4">{course.lessons?.length ?? 0} lessons</p>
-                <button
-                  onClick={() => handleEnroll(course.id)}
-                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                    enrolled.has(course.id)
-                      ? 'bg-green-100 text-green-700 cursor-default'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {enrolled.has(course.id) ? '✅ Enrolled!' : 'Enroll Now'}
-                </button>
+                <div className="flex gap-2">
+  <button
+    onClick={() => handleEnroll(course.id)}
+    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+      enrolled.has(course.id)
+        ? 'bg-green-100 text-green-700 cursor-default'
+        : 'bg-blue-600 text-white hover:bg-blue-700'
+    }`}
+  >
+    {enrolled.has(course.id) ? '✅ Enrolled!' : 'Enroll Now'}
+  </button>
+  <a href={`/courses/${course.id}`}
+    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+    View →
+  </a>
+</div>
               </div>
             ))}
           </div>
