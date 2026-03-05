@@ -29,34 +29,34 @@ export class LessonsService {
   }
 
   async saveContent(lessonId: string, locale: string, contentJson: any, userId: string) {
-    const existing = await this.prisma.lessonContent.findFirst({
-      where: { lesson_id: lessonId, locale },
-      orderBy: { version: 'desc' },
-    });
-    const nextVersion = existing ? existing.version + 1 : 1;
-
-    await this.prisma.contentVersion.create({
-      data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion, created_by: userId },
-    });
-
-    if (existing) {
-      return this.prisma.lessonContent.update({
-        where: { id: existing.id },
-        data: { content_json: contentJson, version: nextVersion },
-      });
-    }
-    return this.prisma.lessonContent.create({
-      data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion },
-    });
-  }
-
-  async getContent(lessonId: string, locale: string) {
-    const content = await this.prisma.lessonContent.findFirst({
-      where: { lesson_id: lessonId, locale },
-    });
-    if (content) return content;
-    return this.prisma.lessonContent.findFirst({
-      where: { lesson_id: lessonId, locale: 'en' },
-    });
+//     const existing = await this.prisma.lessonContent.findFirst({
+//       where: { lesson_id: lessonId, locale },
+//       orderBy: { version: 'desc' },
+//     });
+//     const nextVersion = existing ? existing.version + 1 : 1;
+// 
+//     await this.prisma.contentVersion.create({
+//       data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion, created_by: userId },
+//     });
+// 
+//     if (existing) {
+//       return this.prisma.lessonContent.update({
+//         where: { id: existing.id },
+//         data: { content_json: contentJson, version: nextVersion },
+//       });
+//     }
+//     return this.prisma.lessonContent.create({
+//       data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion },
+//     });
+//   }
+// 
+//   async getContent(lessonId: string, locale: string) {
+//     const content = await this.prisma.lessonContent.findFirst({
+//       where: { lesson_id: lessonId, locale },
+//     });
+//     if (content) return content;
+//     return this.prisma.lessonContent.findFirst({
+//       where: { lesson_id: lessonId, locale: 'en' },
+//     });
   }
 }

@@ -1,3 +1,4 @@
+import { UploadModule } from './upload/upload.module';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,17 +9,16 @@ import { CoursesModule } from './courses/courses.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { AssessmentsModule } from './assessments/assessments.module';
-import { UploadModule } from './upload/upload.module';
 import { BrandingModule } from './branding/branding.module';
 
 @Module({
-  imports: [
+  imports: [UploadModule,  
     TenantModule,
     CoursesModule,
     EnrollmentsModule,
     LessonsModule,
     AssessmentsModule,
-    UploadModule,
+    
     BrandingModule,
   ],
   controllers: [AppController],
