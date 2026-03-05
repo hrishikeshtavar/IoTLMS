@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateLessonDto } from './dto/create-lesson.dto';
 
 @Injectable()
 export class LessonsService {
@@ -14,20 +13,50 @@ export class LessonsService {
   }
 
   async findOne(id: string) {
-    return this.prisma.lesson.findUnique({
-      where: { id },
+    return this.prisma.lesson.findUnique({ where: { id } });
+  }
+
+  async create(data: any) {
+    return this.prisma.lesson.create({ data });
+  }
+
+  async update(id: string, data: any) {
+    return this.prisma.lesson.update({ where: { id }, data });
+  }
+
+  async remove(id: string) {
+    return this.prisma.lesson.delete({ where: { id } });
+  }
+
+  async saveContent(lessonId: string, locale: string, contentJson: any, userId: string) {
+    const existing = await this.prisma.lessonContent.findFirst({
+      where: { lesson_id: lessonId, locale },
+      orderBy: { version: 'desc' },
+    });
+    const nextVersion = existing ? existing.version + 1 : 1;
+
+    await this.prisma.contentVersion.create({
+      data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion, created_by: userId },
+    });
+
+    if (existing) {
+      return this.prisma.lessonContent.update({
+        where: { id: existing.id },
+        data: { content_json: contentJson, version: nextVersion },
+      });
+    }
+    return this.prisma.lessonContent.create({
+      data: { lesson_id: lessonId, locale, content_json: contentJson, version: nextVersion },
     });
   }
 
-  async create(dto: CreateLessonDto) {
-    return this.prisma.lesson.create({
-      data: {
-        course_id: dto.course_id,
-        title: dto.title,
-        type: dto.type ?? 'text',
-        order_index: dto.order_index ?? 0,
-        content_url: dto.content_url,
-      },
+  async getContent(lessonId: string, locale: string) {
+    const content = await this.prisma.lessonContent.findFirst({
+      where: { lesson_id: lessonId, locale },
+    });
+    if (content) return content;
+    return this.prisma.lessonContent.findFirst({
+      where: { lesson_id: lessonId, locale: 'en' },
     });
   }
 }

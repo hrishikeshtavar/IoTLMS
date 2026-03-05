@@ -1,0 +1,14 @@
+*.iotlearn.in {
+  reverse_proxy localhost:3000
+  tls {
+    dns cloudflare {env.CF_API_TOKEN}
+  }
+}
+
+api.iotlearn.in {
+  reverse_proxy localhost:3001
+}
+
+localhost:80 {
+  reverse_proxy localhost:3000
+}

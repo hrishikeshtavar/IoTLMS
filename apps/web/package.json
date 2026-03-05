@@ -13,6 +13,10 @@
   },
   "dependencies": {
     "@repo/ui": "*",
+    "@tiptap/extension-image": "^3.20.0",
+    "@tiptap/extension-link": "^3.20.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
     "i18next": "^25.8.13",
     "next": "16.1.5",
     "next-i18next": "^15.4.3",

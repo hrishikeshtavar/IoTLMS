@@ -1,38 +1,45 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Req } from '@nestjs/common';
 import { CoursesService } from './courses.service';
-import { CreateCourseDto } from './dto/create-course.dto';
+import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private coursesService: CoursesService) {}
+  constructor(private readonly coursesService: CoursesService) {}
 
   @Get()
-  findAll(@Req() req, @Query('locale') locale: string = 'en') {
-    const tenantId = req['tenantId'];
-    return this.coursesService.findAll(tenantId, locale);
+  @Public()
+  findAll(@Req() req: any) {
+    return this.coursesService.findAll(req.tenantId);
   }
 
   @Get(':id')
-  findOne(@Req() req, @Param('id') id: string) {
-    const tenantId = req['tenantId'];
-    return this.coursesService.findOne(id, tenantId);
+  @Public()
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.coursesService.findOne(id, req.tenantId);
   }
 
   @Post()
-  create(@Req() req, @Body() dto: CreateCourseDto) {
-    const tenantId = req['tenantId'];
-    return this.coursesService.create(tenantId, dto);
+  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  create(@Body() body: any, @Req() req: any) {
+    return this.coursesService.create(body, req.tenantId);
   }
 
-  @Put(':id')
-  update(@Req() req, @Param('id') id: string, @Body() dto: Partial<CreateCourseDto>) {
-    const tenantId = req['tenantId'];
-    return this.coursesService.update(id, tenantId, dto);
+  @Patch(':id')
+  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    return this.coursesService.update(id, body, req.tenantId);
+  }
+
+  @Patch(':id/status')
+  @Roles('school_admin', 'super_admin')
+  updateStatus(@Param('id') id: string, @Body('status') status: string, @Req() req: any) {
+    return this.coursesService.updateStatus(id, status, req.tenantId);
   }
 
   @Delete(':id')
-  remove(@Req() req, @Param('id') id: string) {
-    const tenantId = req['tenantId'];
-    return this.coursesService.remove(id, tenantId);
+  @Roles('school_admin', 'super_admin')
+  remove(@Param('id') id: string, @Req() req: any) {
+    return this.coursesService.remove(id, req.tenantId);
   }
 }
