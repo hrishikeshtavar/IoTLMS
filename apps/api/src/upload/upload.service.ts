@@ -22,7 +22,7 @@ const MIME_TO_BUCKET: Record<string, string> = {
 export class UploadService {
   constructor(private readonly minio: MinioService) {}
 
-  async handleUpload(file: Express.Multer.File, tenantId: string) {
+  async uploadFile(file: Express.Multer.File, tenantId: string) {
     const bucket = MIME_TO_BUCKET[file.mimetype];
     if (!bucket) throw new BadRequestException(`Unsupported file type: ${file.mimetype}`);
 
