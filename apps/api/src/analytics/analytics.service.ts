@@ -31,7 +31,6 @@ export class AnalyticsService {
       ? Math.round((submissions.filter(s => s.passed).length / submissions.length) * 100)
       : 0;
 
-    // Enrollment trend by month
     const monthMap: Record<string, number> = {};
     enrollments.forEach(e => {
       const month = new Date(e.enrolled_at).toLocaleString('en', { month: 'short' });
@@ -39,7 +38,6 @@ export class AnalyticsService {
     });
     const enrollmentTrend = Object.entries(monthMap).map(([month, enrollments]) => ({ month, enrollments }));
 
-    // Course performance
     const courseMap: Record<string, { title: string; enrolled: number; completed: number }> = {};
     enrollments.forEach(e => {
       const title = e.course.title_en?.slice(0, 12) ?? 'Unknown';
@@ -49,7 +47,6 @@ export class AnalyticsService {
     });
     const coursePerformance = Object.values(courseMap);
 
-    // Payment method breakdown
     const methodMap: Record<string, number> = {};
     payments.forEach(p => { methodMap[p.method] = (methodMap[p.method] ?? 0) + 1; });
     const paymentMethods = Object.entries(methodMap).map(([name, value]) => ({ name, value }));
@@ -66,7 +63,6 @@ export class AnalyticsService {
       paymentMethods,
     };
   }
-}
 
   async getCertificateData(courseId: string, userId: string, tenantId: string) {
     const [enrollment, course, user, brandKit, submissions] = await Promise.all([
@@ -111,3 +107,4 @@ export class AnalyticsService {
       logoUrl: brandKit?.logo_url ?? null,
     };
   }
+}

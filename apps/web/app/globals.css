@@ -1,50 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #FF6B35;
+  --primary-dark: #e5561f;
+  --secondary: #1A73E8;
+  --accent: #00C896;
+  --accent2: #FFD93D;
+  --accent3: #A855F7;
+  --bg: #FFF8F0;
+  --card: #FFFFFF;
+  --text: #1A1A2E;
+  --text2: #4A5568;
+  --text3: #718096;
+  --border: #E8E0D8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html,
-body {
+html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  font-family: 'Baloo 2', sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
+a { color: inherit; text-decoration: none; }
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: linear-gradient(135deg, var(--primary), #ff8c5a);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(255,107,53,0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(255,107,53,0.45);
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+  transform: translateY(-2px);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* ===== CARD HOVER ===== */
+.card-hover {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
 }
 
-.imgDark {
-  display: none;
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-18px) rotate(5deg); }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.7); }
+  70%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes celebrate {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.3) rotate(-5deg); }
+  60%  { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+@keyframes orbitSpin {
+  from { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.animate-fadeUp  { animation: fadeUp 0.6s ease both; }
+.animate-popIn   { animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-float   { animation: float 4s ease-in-out infinite; }
+.animate-floatSlow { animation: floatSlow 6s ease-in-out infinite; }
+.animate-spin    { animation: spin 1s linear infinite; }
 
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
-  }
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* ===== DEVANAGARI ===== */
+.lang-hi, .lang-mr {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  line-height: 1.9;
+  font-size: 1.05em;
+}
+
+/* ===== PROGRESS RING ===== */
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1);
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* ===== CONFETTI ===== */
+.confetti-particle {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confettiFall 3s ease-in forwards;
+  pointer-events: none;
+  z-index: 9999;
 }

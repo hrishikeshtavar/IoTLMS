@@ -32,7 +32,6 @@ export class EnrollmentsService {
       orderBy: { enrolled_at: 'desc' },
     });
   }
-}
 
   async updateProgress(userId: string, courseId: string, progressPct: number) {
     return this.prisma.enrollment.updateMany({
@@ -43,3 +42,4 @@ export class EnrollmentsService {
       },
     });
   }
+}
