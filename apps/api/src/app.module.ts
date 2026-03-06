@@ -10,9 +10,18 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { AssessmentsModule } from './assessments/assessments.module';
 import { BrandingModule } from './branding/branding.module';
+import { LessonContentModule } from './lesson-content/lesson-content.module';
+import { LabSessionsModule } from './lab-sessions/lab-sessions.module';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { SubtitlesModule } from './subtitles/subtitles.module';
+import { PaymentsModule } from './payments/payments.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [UploadModule,  
+  imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    UploadModule,  
     TenantModule,
     CoursesModule,
     EnrollmentsModule,
@@ -20,9 +29,15 @@ import { BrandingModule } from './branding/branding.module';
     AssessmentsModule,
     
     BrandingModule,
+    LessonContentModule,
+    LabSessionsModule,
+    AnalyticsModule,
+    SubtitlesModule,
+    PaymentsModule,
+    UsersModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService, PrismaService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

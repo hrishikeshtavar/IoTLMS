@@ -127,3 +127,34 @@ model Submission {
 
   assessment    Assessment @relation(fields: [assessment_id], references: [id])
 }
+
+model LessonContent {
+  id          String         @id @default(uuid())
+  lesson_id   String
+  locale      String         @default("en")
+  content_json Json
+  status      String         @default("draft")
+  approved_by String?
+  version     Int            @default(1)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+
+  lesson      Lesson         @relation(fields: [lesson_id], references: [id])
+  versions    ContentVersion[]
+
+  @@unique([lesson_id, locale])
+}
+
+model ContentVersion {
+  id          String        @id @default(uuid())
+  content_id  String
+  locale      String
+  version_no  Int
+  content_json Json
+diff_json   Json?
+  created_by  String?
+  note        String?
+  created_at  DateTime      @default(now())
+
+  content     LessonContent @relation(fields: [content_id], references: [id])
+}

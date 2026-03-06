@@ -18,7 +18,7 @@ export default function AdminPage() {
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Admin Panel</h1>
           <p style={{ color: '#6b7280', marginTop: 4 }}>Manage courses, lessons and students</p>
         </div>
-        <button onClick={() => router.push('/admin/courses/new')}
+        <div style={{ display: 'flex', gap: 8 }}><button onClick={() => router.push('/admin/courses/new')}
           style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
           + New Course
         </button>

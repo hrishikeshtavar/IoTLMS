@@ -7,7 +7,8 @@ type PreviewRow = Record<string, string>;
 export default function ImportStudents() {
   const [csv, setCsv] = useState('');
   const [preview, setPreview] = useState<PreviewRow[]>([]);
-  const [imported, setImported] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{ imported: number; failed: number; total: number } | null>(null);
 
   const handleCSVChange = (text: string) => {
     setCsv(text);
@@ -18,7 +19,7 @@ export default function ImportStudents() {
     const rows = dataLines.map(line => {
       const vals = line.split(',').map(v => v.trim());
       const obj: PreviewRow = {};
-      headers.forEach((h, i) => obj[h] = vals[i] ?? '');
+      headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
       return obj;
     });
     setPreview(rows);
@@ -29,72 +30,95 @@ export default function ImportStudents() {
 Rahul Sharma,rahul@school.in,student,hi
 Priya Patil,priya@school.in,student,mr
 Amit Kumar,amit@school.in,student,en
-Sneha Joshi,sneha@school.in,teacher,en`);
+Ms. Desai,desai@school.in,teacher,en`);
+  };
+
+  const handleImport = async () => {
+    if (preview.length === 0) return;
+    setImporting(true);
+    const res = await fetch('http://localhost:3001/api/users/bulk-import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows: preview }),
+    });
+    const data = await res.json();
+    setResult(data);
+    setImporting(false);
   };
 
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <Link href="/admin" className="text-blue-600 text-sm hover:underline">← Admin</Link>
-        <h1 className="text-lg font-bold text-blue-600">Import Students</h1>
-        <span className="text-sm text-gray-500">CSV Upload</span>
+        <Link href="/admin" className="text-blue-600 text-sm hover:underline">← Admin Panel</Link>
+        <h1 className="text-lg font-bold text-blue-600">Bulk Import Students</h1>
+        <span className="text-xs text-gray-400">CSV Upload</span>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl border p-6 mb-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Paste CSV Data</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Required columns: <code className="bg-gray-100 px-1 rounded">name, email, role, language</code>
-          </p>
-          <button onClick={loadSample}
-            className="mb-3 px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200">
-            Load Sample Data
-          </button>
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        {/* Instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
+          <strong>CSV Format:</strong> name, email, role (student/teacher), language (en/hi/mr)
+        </div>
+
+        {/* CSV Input */}
+        <div className="bg-white rounded-xl border p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-800">Paste CSV Data</h2>
+            <button onClick={loadSample}
+              className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">
+              Load Sample
+            </button>
+          </div>
           <textarea
             value={csv}
             onChange={e => handleCSVChange(e.target.value)}
-            placeholder="name,email,role,language"
-            className="w-full h-40 border rounded-lg p-3 font-mono text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="name,email,role,language&#10;Rahul Sharma,rahul@school.in,student,hi"
+            className="w-full h-36 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
         </div>
 
+        {/* Preview */}
         {preview.length > 0 && (
-          <div className="bg-white rounded-xl border mb-6">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Preview</h3>
-              <span className="text-sm text-gray-500">{preview.length} students</span>
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <div className="px-6 py-3 border-b flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">Preview ({preview.length} rows)</h2>
+              <button onClick={handleImport} disabled={importing}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                {importing ? 'Importing...' : `Import ${preview.length} Users`}
+              </button>
             </div>
-            <table className="w-full">
-              <thead className="bg-gray-50">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
                 <tr>
                   {Object.keys(preview[0] ?? {}).map(h => (
-                    <th key={h} className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">{h}</th>
+                    <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                   ))}
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {preview.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
+                  <tr key={i} className="border-b hover:bg-gray-50">
                     {Object.values(row).map((val, j) => (
-                      <td key={j} className="px-6 py-3 text-sm text-gray-700">{val}</td>
+                      <td key={j} className="px-4 py-2 text-gray-700">{val}</td>
                     ))}
-                    <td className="px-6 py-3">
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Ready</span>
-                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="px-6 py-4 border-t">
-              <button
-                onClick={() => setImported(true)}
-                className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  imported ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}>
-                {imported ? '✅ Imported Successfully!' : `Import ${preview.length} Students`}
-              </button>
-            </div>
+          </div>
+        )}
+
+        {/* Result */}
+        {result && (
+          <div className={`rounded-xl border p-6 text-center ${
+            result.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+          }`}>
+            <div className="text-4xl mb-3">{result.failed === 0 ? '✅' : '⚠️'}</div>
+            <h2 className="text-lg font-bold text-gray-800 mb-1">Import Complete</h2>
+            <p className="text-gray-600 text-sm">
+              {result.imported} imported successfully
+              {result.failed > 0 && `, ${result.failed} failed`}
+            </p>
           </div>
         )}
       </div>

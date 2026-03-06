@@ -33,3 +33,13 @@ export class EnrollmentsService {
     });
   }
 }
+
+  async updateProgress(userId: string, courseId: string, progressPct: number) {
+    return this.prisma.enrollment.updateMany({
+      where: { user_id: userId, course_id: courseId },
+      data: {
+        progress_pct: progressPct,
+        completed_at: progressPct >= 100 ? new Date() : null,
+      },
+    });
+  }
