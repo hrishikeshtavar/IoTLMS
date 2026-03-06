@@ -4,6 +4,20 @@ import Link from 'next/link';
 
 type Locale = 'en' | 'hi' | 'mr';
 
+function resolveApiUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window === 'undefined') return 'http://localhost:3001';
+
+  const host = window.location.hostname;
+  const protocol = window.location.protocol;
+
+  if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001';
+  if (host === 'api.iotlearn.in') return `${protocol}//api.iotlearn.in`;
+  if (host.endsWith('.iotlearn.in') || host === 'iotlearn.in') return `${protocol}//api.iotlearn.in`;
+
+  return 'http://localhost:3001';
+}
+
 const T: Record<Locale, Record<string, string>> = {
   en: {
     title: 'All Courses',
@@ -63,7 +77,8 @@ const categoryColors: Record<string, string> = {
 
 interface Course {
   id: string;
-  title: string;
+  title?: string;
+  title_en?: string;
   title_hi?: string;
   title_mr?: string;
   category?: string;
@@ -88,9 +103,11 @@ function ProgressRing({ percent, size = 44, color = '#FF6B35' }: { percent: numb
 }
 
 export default function CoursesPage() {
+  const apiUrl = resolveApiUrl();
   const [locale, setLocale] = useState<Locale>('en');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
@@ -99,15 +116,24 @@ export default function CoursesPage() {
     const saved = localStorage.getItem('iotlearn_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
 
-    fetch('/api/courses')
-      .then(r => r.json())
+    fetch(`${apiUrl}/api/courses`)
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.text();
+          throw new Error(body || `HTTP ${r.status}`);
+        }
+        return r.json();
+      })
       .then(data => {
         const list = Array.isArray(data) ? data : (data.data || []);
         setCourses(list.map((c: Course) => ({ ...c, enrollmentPercent: Math.floor(Math.random() * 85) + 10 })));
       })
-      .catch(() => setCourses([]))
+      .catch((err: unknown) => {
+        setCourses([]);
+        setLoadError(err instanceof Error ? err.message : 'Failed to load courses');
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [apiUrl]);
 
   const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('iotlearn_locale', l); };
 
@@ -116,15 +142,19 @@ export default function CoursesPage() {
   const isDevanagari = locale !== 'en';
 
   const filtered = courses.filter(c => {
-    const title = (locale === 'hi' ? c.title_hi : locale === 'mr' ? c.title_mr : null) || c.title;
-    const matchSearch = title.toLowerCase().includes(search.toLowerCase());
+    const title = ((locale === 'hi' ? c.title_hi : locale === 'mr' ? c.title_mr : null) || c.title || c.title_en || '').toLowerCase();
+    const matchSearch = title.includes(search.toLowerCase());
     const matchCat = !activeCategory || (c.category || 'General') === activeCategory;
     return matchSearch && matchCat;
   });
 
   const handleEnroll = async (courseId: string) => {
     try {
-      await fetch('/api/enrollments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId, userId: 'student-1' }) });
+      await fetch(`${apiUrl}/api/enrollments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course_id: courseId, user_id: 'student-1' }),
+      });
       setEnrolledIds(prev => new Set([...prev, courseId]));
     } catch { setEnrolledIds(prev => new Set([...prev, courseId])); }
   };
@@ -189,6 +219,12 @@ export default function CoursesPage() {
             <div className="animate-spin" style={{ fontSize: '2.5rem', display: 'inline-block', marginBottom: '1rem' }}>⚙️</div>
             <div className={isDevanagari ? 'lang-hi' : ''}>{t.loading}</div>
           </div>
+        ) : loadError ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#b91c1c', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '1rem' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Could not load courses</div>
+            <div style={{ fontSize: '0.9rem' }}>{loadError}</div>
+            <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#7f1d1d' }}>API URL: {apiUrl}/api/courses</div>
+          </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text3)' }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
@@ -197,7 +233,11 @@ export default function CoursesPage() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {filtered.map((course, i) => {
-              const displayTitle = (locale === 'hi' ? course.title_hi : locale === 'mr' ? course.title_mr : null) || course.title;
+              const displayTitle =
+                (locale === 'hi' ? course.title_hi : locale === 'mr' ? course.title_mr : null) ||
+                course.title ||
+                course.title_en ||
+                'Untitled Course';
               const cat = course.category || 'General';
               const catColor = categoryColors[cat] || '#718096';
               const isEnrolled = enrolledIds.has(course.id);

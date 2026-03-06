@@ -19,6 +19,7 @@ model Tenant {
   users     User[]
   courses   Course[]
   brand_kit BrandKit?
+  payments  Payment[]
 }
 
 model User {
@@ -78,6 +79,7 @@ model Lesson {
   course      Course          @relation(fields: [course_id], references: [id])
   assessments Assessment[]
   contents    LessonContent[]
+  labSessions LabSession[]
 }
 
 model Enrollment {
@@ -158,4 +160,28 @@ model ContentVersion {
   created_at   DateTime @default(now())
 
   content LessonContent @relation(fields: [content_id], references: [id])
+}
+
+model LabSession {
+  id         String    @id @default(uuid())
+  user_id    String
+  lesson_id  String
+  status     String    @default("active")
+  started_at DateTime  @default(now())
+  ended_at   DateTime?
+
+  lesson Lesson @relation(fields: [lesson_id], references: [id])
+}
+
+model Payment {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  student    String
+  amount     Int
+  method     String   @default("UPI")
+  status     String   @default("paid")
+  receipt_no String?
+  created_at DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
 }

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
+const Razorpay = require('razorpay');
 
 @Injectable()
 export class RazorpayService {
-  private razorpay: Razorpay;
+  private razorpay: any;
 
   constructor() {
     this.razorpay = new Razorpay({

@@ -2,17 +2,6 @@ import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException, R
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors } from '@nestjs/common';
-
-import {
-  Controller,
-  Post,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadService } from './upload.service';
 
 @Controller('upload')
 export class UploadController {
