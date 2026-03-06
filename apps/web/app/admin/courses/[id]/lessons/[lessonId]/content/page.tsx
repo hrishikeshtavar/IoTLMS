@@ -6,17 +6,24 @@ import dynamic from 'next/dynamic';
 const RichTextEditor = dynamic(() => import('@/components/cms/RichTextEditor'), { ssr: false });
 
 const LOCALES = [
-  { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳' },
-  { code: 'mr', label: 'मराठी', flag: '🇮🇳' },
+  { code: 'en', label: 'English',  flag: '🇬🇧' },
+  { code: 'hi', label: 'हिन्दी',   flag: '🇮🇳' },
+  { code: 'mr', label: 'मराठी',    flag: '🇮🇳' },
 ] as const;
 
-const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-yellow-100 text-yellow-700',
-  in_review: 'bg-blue-100 text-blue-700',
-  approved: 'bg-purple-100 text-purple-700',
-  published: 'bg-green-100 text-green-700',
+const STATUS_META: Record<string, { color: string; bg: string; emoji: string }> = {
+  draft:     { color: '#b45309', bg: 'rgba(255,211,61,0.15)',  emoji: '📝' },
+  in_review: { color: '#1A73E8', bg: 'rgba(26,115,232,0.12)', emoji: '🔍' },
+  approved:  { color: '#A855F7', bg: 'rgba(168,85,247,0.12)', emoji: '✅' },
+  published: { color: '#00C896', bg: 'rgba(0,200,150,0.12)',  emoji: '🌐' },
 };
+
+const WORKFLOW_BUTTONS = [
+  { label: '🔍 Submit for Review', status: 'in_review', color: '#1A73E8' },
+  { label: '✅ Approve',           status: 'approved',  color: '#A855F7' },
+  { label: '🌐 Publish',           status: 'published', color: '#00C896' },
+  { label: '↩ Back to Draft',      status: 'draft',     color: '#718096' },
+];
 
 export default function LessonContentPage() {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -64,37 +71,67 @@ export default function LessonContentPage() {
     setContents(prev => ({ ...prev, [activeLocale]: { ...prev[activeLocale], status: newStatus } }));
   };
 
+  const curStatus = contents[activeLocale]?.status ?? 'draft';
+  const statusMeta = STATUS_META[curStatus] ?? STATUS_META.draft;
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <button onClick={() => router.back()} className="text-blue-600 text-sm hover:underline">← Back to Lessons</button>
-        <h1 className="text-lg font-bold text-blue-600">Content Editor</h1>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
+
+      {/* NAVBAR */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Baloo 2'" }}>
+            ← Back to Lessons
+          </button>
+        </div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>✏️ Content Editor</div>
         <button onClick={handleSave} disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-          {saving ? 'Saving…' : saved ? '✅ Saved' : 'Save Draft'}
+          className="btn-primary"
+          style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Saving…' : saved ? '✅ Saved!' : '💾 Save Draft'}
         </button>
+      </nav>
+
+      {/* HEADER */}
+      <div style={{ background: 'linear-gradient(135deg, var(--text) 0%, #2d2d4e 100%)', padding: '2rem 2rem', position: 'relative', overflow: 'hidden' }}>
+        {['✏️','📝','🌐','🔍','✅'].map((em, i) => (
+          <div key={i} className="animate-float" style={{ position: 'absolute', fontSize: '1.6rem', opacity: 0.07, left: `${i * 22 + 4}%`, top: `${(i * 19) % 60 + 10}%`, animationDelay: `${i * 0.5}s` }}>{em}</div>
+        ))}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 className="animate-fadeUp" style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: '#fff', marginBottom: '0.25rem' }}>
+            Lesson Content Editor
+          </h1>
+          <p className="animate-fadeUp delay-100" style={{ color: '#aaa', fontSize: '0.9rem' }}>
+            Write and publish content in English, Hindi, and Marathi
+          </p>
+        </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        <div className="flex gap-3 mb-6">
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1.75rem 1.5rem' }}>
+
+        {/* LOCALE TABS */}
+        <div className="animate-fadeUp" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           {LOCALES.map(loc => {
-            const status = contents[loc.code]?.status ?? 'draft';
+            const s = contents[loc.code]?.status ?? 'draft';
+            const sm = STATUS_META[s] ?? STATUS_META.draft;
+            const isActive = activeLocale === loc.code;
             return (
               <button key={loc.code} onClick={() => setActiveLocale(loc.code as 'en' | 'hi' | 'mr')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  activeLocale === loc.code ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                }`}>
-                <span>{loc.flag}</span> {loc.label}
-                <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${STATUS_COLORS[status] ?? STATUS_COLORS.draft}`}>
-                  {status}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.1rem', borderRadius: '999px', border: '1.5px solid', borderColor: isActive ? 'var(--primary)' : 'var(--border)', background: isActive ? 'var(--primary)' : 'var(--card)', color: isActive ? '#fff' : 'var(--text2)', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.2s', fontStyle: loc.code !== 'en' ? 'normal' : undefined }}>
+                <span>{loc.flag}</span>
+                <span style={{ fontFamily: loc.code !== 'en' ? 'Noto Sans Devanagari' : undefined }}>{loc.label}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.65rem', fontWeight: 700, background: isActive ? 'rgba(255,255,255,0.2)' : sm.bg, color: isActive ? '#fff' : sm.color }}>
+                  {sm.emoji} {s}
                 </span>
               </button>
             );
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '1.5rem', alignItems: 'start' }}>
+
+          {/* EDITOR */}
+          <div className="animate-fadeUp delay-100">
             <RichTextEditor
               locale={activeLocale}
               content={contents[activeLocale]?.content_json}
@@ -102,27 +139,46 @@ export default function LessonContentPage() {
             />
           </div>
 
-          <div className="bg-white border rounded-xl p-5 space-y-4 h-fit">
-            <h3 className="font-semibold text-gray-800">Approval Workflow</h3>
-            <div className={`px-3 py-2 rounded-lg text-sm font-medium text-center ${STATUS_COLORS[contents[activeLocale]?.status ?? 'draft']}`}>
-              {contents[activeLocale]?.status ?? 'draft'}
+          {/* SIDEBAR */}
+          <div className="animate-fadeUp delay-200" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+            {/* Status badge */}
+            <div style={{ background: 'var(--card)', borderRadius: '1rem', border: '1.5px solid var(--border)', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Current Status</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.875rem', borderRadius: '0.75rem', background: statusMeta.bg, color: statusMeta.color, fontWeight: 700, fontSize: '0.9rem' }}>
+                <span style={{ fontSize: '1.1rem' }}>{statusMeta.emoji}</span>
+                <span style={{ textTransform: 'capitalize' }}>{curStatus.replace('_', ' ')}</span>
+              </div>
             </div>
-            <div className="space-y-2">
-              {[
-                { label: 'Submit for Review', status: 'in_review', color: 'bg-blue-600' },
-                { label: 'Approve', status: 'approved', color: 'bg-purple-600' },
-                { label: 'Publish', status: 'published', color: 'bg-green-600' },
-                { label: 'Back to Draft', status: 'draft', color: 'bg-gray-500' },
-              ].map(btn => (
-                <button key={btn.status} onClick={() => handleStatusChange(btn.status)}
-                  className={`w-full py-2 rounded-lg text-white text-sm font-medium ${btn.color} hover:opacity-90`}>
-                  {btn.label}
-                </button>
-              ))}
+
+            {/* Workflow actions */}
+            <div style={{ background: 'var(--card)', borderRadius: '1rem', border: '1.5px solid var(--border)', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Approval Workflow</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {WORKFLOW_BUTTONS.map(btn => (
+                  <button key={btn.status} onClick={() => handleStatusChange(btn.status)}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '0.75rem', border: '1.5px solid', borderColor: btn.color + '44', background: curStatus === btn.status ? btn.color : btn.color + '11', color: curStatus === btn.status ? '#fff' : btn.color, fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = btn.color; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { if (curStatus !== btn.status) { e.currentTarget.style.background = btn.color + '11'; e.currentTarget.style.color = btn.color; } }}>
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tips */}
+            <div style={{ background: 'rgba(26,115,232,0.06)', borderRadius: '1rem', border: '1.5px solid rgba(26,115,232,0.15)', padding: '1rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--secondary)', marginBottom: '0.5rem' }}>💡 Tips</div>
+              <ul style={{ fontSize: '0.75rem', color: 'var(--text3)', lineHeight: 1.6, paddingLeft: '1rem' }}>
+                <li>Write EN first, then translate to HI & MR</li>
+                <li>Use H2 for section headings</li>
+                <li>Use code blocks for Arduino sketches</li>
+                <li>Publish only after all 3 locales are approved</li>
+              </ul>
             </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
