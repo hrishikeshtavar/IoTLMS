@@ -20,6 +20,12 @@ export default function AdminPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            onClick={() => router.push('/admin/schools/new')}
+            style={{ padding: '10px 20px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+          >
+            + New School
+          </button>
+          <button
             onClick={() => router.push('/admin/courses/new')}
             style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
           >

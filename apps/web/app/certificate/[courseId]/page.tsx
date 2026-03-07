@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { apiFetch, getUser, isLoggedIn } from '../../lib/auth';
 
 type CertData = {
   studentName: string;
@@ -12,133 +13,123 @@ type CertData = {
   school: string;
   primaryColor: string;
   logoUrl: string | null;
+  certCode?: string;
 };
 
 export default function CertificatePage() {
   const { courseId } = useParams();
+  const router = useRouter();
   const courseIdParam = Array.isArray(courseId) ? courseId[0] : courseId;
   const [cert, setCert] = useState<CertData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!courseIdParam) return;
-    fetch(`http://localhost:3001/api/analytics/certificate/${courseIdParam}/student-1`)
-      .then(r => r.json())
-      .then(data => { setCert(data); setLoading(false); })
-      .catch(() => {
-        // Fallback to defaults if API fails
+    if (!isLoggedIn()) { router.push('/login'); return; }
+
+    async function load() {
+      try {
+        const issueRes = await apiFetch(`/api/certificates/issue/${courseIdParam}`, { method: 'POST' });
+        if (!issueRes.ok) {
+          const err = await issueRes.json();
+          setError(err.message || 'Could not issue certificate');
+          setLoading(false);
+          return;
+        }
+        const issued = await issueRes.json();
+        const user = getUser();
+        const analyticsRes = await apiFetch(`/api/analytics/certificate/${courseIdParam}/${user?.id ?? 'me'}`);
+        const analytics = analyticsRes.ok ? await analyticsRes.json() : {};
         setCert({
-          studentName: 'Student',
-          courseName: 'IoT Course',
-          completedDate: new Date().toLocaleDateString('en-IN', {
-            day: 'numeric', month: 'long', year: 'numeric',
-          }),
-          score: '100%',
-          certId: `IOTL-${courseIdParam?.slice(0, 8).toUpperCase()}`,
-          school: 'IoTLearn',
-          primaryColor: '#2563eb',
-          logoUrl: null,
+          studentName: analytics.studentName ?? user?.name ?? 'Student',
+          courseName: analytics.courseName ?? 'IoT Course',
+          completedDate: new Date(issued.issued_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+          score: `${issued.score_pct}%`,
+          certId: issued.cert_code,
+          certCode: issued.cert_code,
+          school: analytics.school ?? 'IoTLearn',
+          primaryColor: analytics.primaryColor ?? '#FF6B35',
+          logoUrl: analytics.logoUrl ?? null,
         });
+      } catch {
+        setError('Failed to load certificate');
+      } finally {
         setLoading(false);
-      });
-  }, [courseIdParam]);
+      }
+    }
+    load();
+  }, [courseIdParam, router]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center text-gray-400">
-      Generating certificate...
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏆</div>
+        <p style={{ color: 'var(--text3)' }}>Generating your certificate…</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div style={{ textAlign: 'center', padding: '2rem' }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️</div>
+        <p style={{ color: '#DC2626', marginBottom: '1rem' }}>{error}</p>
+        <Link href="/courses" className="btn-primary">Back to Courses</Link>
+      </div>
     </div>
   );
 
   if (!cert) return null;
 
   return (
-    <main className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-8">
-      {/* Actions */}
-      <div className="mb-6 flex gap-4 print:hidden">
-        <button onClick={() => window.print()}
-          className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700">
-          🖨️ Print / Save PDF
-        </button>
-        <Link href="/courses"
-          className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300">
-          ← Back to Courses
-        </Link>
+    <main style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+        <button onClick={() => window.print()} className="btn-primary">🖨️ Print / Save PDF</button>
+        <Link href="/courses" className="btn-secondary">← Back to Courses</Link>
+        {cert.certCode && <Link href={`/verify/${cert.certCode}`} className="btn-secondary">🔍 Verify</Link>}
       </div>
-
-      {/* Certificate */}
-      <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden print:shadow-none">
-        {/* Top Border */}
-        <div className="h-3" style={{ background: `linear-gradient(to right, ${cert.primaryColor}, #9333ea, #f97316)` }} />
-
-        <div className="p-12 text-center">
-          {/* Header */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            {cert.logoUrl ? (
-              <img src={cert.logoUrl} alt="School logo" className="h-12 w-auto object-contain" />
-            ) : (
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl font-bold"
-                style={{ background: cert.primaryColor }}>
-                ⚡
-              </div>
-            )}
-            <div className="text-left">
-              <div className="text-xl font-bold" style={{ color: cert.primaryColor }}>IoTLearn LMS</div>
-              <div className="text-xs text-gray-500">{cert.school}</div>
+      <div style={{ background: '#fff', width: '100%', maxWidth: '760px', borderRadius: '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
+        <div style={{ height: '6px', background: `linear-gradient(to right, ${cert.primaryColor}, #9333ea, #f97316)` }} />
+        <div style={{ padding: '3rem', textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+            {cert.logoUrl
+              ? <img src={cert.logoUrl} alt="School" style={{ height: '48px', objectFit: 'contain' }} />
+              : <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: cert.primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: '#fff' }}>⚡</div>
+            }
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: cert.primaryColor }}>IoTLearn LMS</div>
+              <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{cert.school}</div>
             </div>
           </div>
-
-          {/* Title */}
-          <div className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
-            Certificate of Completion
-          </div>
-          <div className="text-sm text-gray-500 mb-8">This is to certify that</div>
-
-          {/* Student Name */}
-          <div className="text-5xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-            {cert.studentName}
-          </div>
-          <div className="w-48 h-0.5 mx-auto mb-8" style={{ background: cert.primaryColor }} />
-
-          {/* Course */}
-          <div className="text-sm text-gray-500 mb-3">has successfully completed the course</div>
-          <div className="text-2xl font-bold mb-2" style={{ color: cert.primaryColor }}>
-            {cert.courseName}
-          </div>
-          <div className="text-sm text-gray-500 mb-8">
-            with a score of <span className="font-bold text-green-600">{cert.score}</span>
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-between items-end mt-12 pt-8 border-t border-gray-100">
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-700" style={{ fontFamily: 'Georgia, serif' }}>
-                IoTLearn
-              </div>
-              <div className="w-32 h-0.5 bg-gray-300 mx-auto mt-1 mb-1" />
-              <div className="text-xs text-gray-500">Platform Director</div>
+          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94A3B8', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Certificate of Completion</div>
+          <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '2rem' }}>This is to certify that</div>
+          <div style={{ fontSize: '3rem', fontWeight: 800, color: '#1E293B', fontFamily: 'Georgia, serif', marginBottom: '0.5rem' }}>{cert.studentName}</div>
+          <div style={{ width: '160px', height: '2px', background: cert.primaryColor, margin: '0 auto 2rem' }} />
+          <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '0.75rem' }}>has successfully completed</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: cert.primaryColor, marginBottom: '0.5rem' }}>{cert.courseName}</div>
+          <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '2.5rem' }}>with a score of <strong style={{ color: '#16A34A' }}>{cert.score}</strong></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '2rem' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#334155' }}>IoTLearn</div>
+              <div style={{ width: '120px', height: '1px', background: '#CBD5E1', margin: '6px auto' }} />
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>Platform Director</div>
             </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-400 mb-1">Certificate ID</div>
-              <div className="font-mono text-sm font-bold text-gray-600">{cert.certId}</div>
-              <div className="text-xs text-gray-400 mt-2">{cert.completedDate}</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginBottom: '4px' }}>Certificate ID</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>{cert.certId}</div>
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '6px' }}>{cert.completedDate}</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-700" style={{ fontFamily: 'Georgia, serif' }}>
-                {cert.school}
-              </div>
-              <div className="w-32 h-0.5 bg-gray-300 mx-auto mt-1 mb-1" />
-              <div className="text-xs text-gray-500">School Principal</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#334155' }}>{cert.school}</div>
+              <div style={{ width: '120px', height: '1px', background: '#CBD5E1', margin: '6px auto' }} />
+              <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>School Principal</div>
             </div>
           </div>
         </div>
-
-        {/* Bottom Border */}
-        <div className="h-3" style={{ background: `linear-gradient(to right, #f97316, #9333ea, ${cert.primaryColor})` }} />
+        <div style={{ height: '6px', background: `linear-gradient(to right, #f97316, #9333ea, ${cert.primaryColor})` }} />
       </div>
-
-      <p className="mt-6 text-xs text-gray-400 print:hidden">
-        प्रमाणपत्र — IoTLearn द्वारा जारी किया गया ✅
-      </p>
+      <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#94A3B8' }}>प्रमाणपत्र — IoTLearn द्वारा जारी किया गया ✅</p>
     </main>
   );
 }

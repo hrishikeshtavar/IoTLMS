@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { apiFetch, getUser, isLoggedIn } from '../lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Locale = 'en' | 'hi' | 'mr';
@@ -131,17 +132,25 @@ export default function DashboardPage() {
   const [locale, setLocale] = useState<Locale>('en');
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [streak] = useState(7); // mock streak
-  const userId = 'student-1';
+  const [streak, setStreak] = useState(0);
+  const [realStats, setRealStats] = useState<any>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('iotlearn_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
 
-    fetch(`http://localhost:3001/api/enrollments/user/${userId}`)
+    const user = getUser();
+    if (!user) return;
+
+    apiFetch(`/api/enrollments/user/${user.id}`)
       .then(r => r.json())
       .then(data => { setEnrollments(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
+
+    apiFetch('/api/gamification/stats')
+      .then(r => r.json())
+      .then(data => { setRealStats(data); setStreak(data.streak ?? 0); })
+      .catch(() => {});
   }, []);
 
   const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('iotlearn_locale', l); };
@@ -149,10 +158,10 @@ export default function DashboardPage() {
   const t = T[locale];
   const isDevanagari = locale !== 'en';
 
-  const completedCourses = enrollments.filter(e => e.completed_at).length;
-  const totalLessons = enrollments.length * 3; // estimate
-  const passedQuizzes = Math.floor(enrollments.length * 1.5);
-  const labsDone = enrollments.filter(e => e.progress_pct > 50).length;
+  const completedCourses = realStats?.certs ?? enrollments.filter(e => e.completed_at).length;
+  const totalLessons = realStats?.lessons ?? enrollments.length * 3;
+  const passedQuizzes = realStats?.quizzes ?? Math.floor(enrollments.length * 1.5);
+  const labsDone = realStats?.labs ?? enrollments.filter(e => e.progress_pct > 50).length;
 
   const statsData = [
     { label: t.lessons_done,    value: totalLessons,    emoji: '📖', color: '#1A73E8' },
@@ -168,6 +177,7 @@ export default function DashboardPage() {
     certs: completedCourses,
     courses: enrollments.length,
   };
+  const earnedBadgeCodes = new Set((realStats?.badges ?? []).map((b: any) => b.badge?.code ?? b.code));
 
   const weeklyData = getWeeklyData(enrollments);
   const totalWeeklyMinutes = weeklyData.reduce((s, d) => s + d.minutes, 0);
@@ -204,7 +214,7 @@ export default function DashboardPage() {
             <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '0.25rem' }}>{t[greetingKey]},</p>
             <h1 className={`animate-fadeUp ${isDevanagari ? 'lang-hi' : ''}`}
               style={{ fontSize: 'clamp(1.6rem,4vw,2.5rem)', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>
-              Student 👋
+              {getUser()?.name ?? 'Student'} 👋
             </h1>
             <p className={`animate-fadeUp delay-100 ${isDevanagari ? 'lang-hi' : ''}`} style={{ color: '#aaa', fontSize: '0.95rem' }}>
               {t.subtitle}
@@ -339,7 +349,7 @@ export default function DashboardPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.75rem' }}>
             {ACHIEVEMENTS.map(a => {
               const current = achievementProgress[a.type as keyof typeof achievementProgress] ?? 0;
-              const unlocked = current >= a.threshold;
+              const unlocked = earnedBadgeCodes.has(a.id) || current >= a.threshold;
               return (
                 <div key={a.id} className={unlocked ? 'card-hover' : ''}
                   style={{ borderRadius: '1rem', padding: '1rem', textAlign: 'center', border: '1.5px solid', borderColor: unlocked ? 'rgba(255,211,61,0.3)' : 'var(--border)', background: unlocked ? 'rgba(255,211,61,0.06)' : 'var(--bg)', transition: 'all 0.2s', opacity: unlocked ? 1 : 0.45 }}>

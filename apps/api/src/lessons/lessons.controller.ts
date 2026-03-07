@@ -48,4 +48,9 @@ export class LessonsController {
   getContent(@Param('id') id: string, @Query('locale') locale = 'en') {
     return this.lessonsService.getContent(id, locale);
   }
+
+  @Post(':id/complete')
+  async complete(@Param('id') id: string, @Req() req: any) {
+    return this.lessonsService.markComplete(id, req.user.id, req.tenantId);
+  }
 }

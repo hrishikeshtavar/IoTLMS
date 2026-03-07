@@ -23,18 +23,22 @@ model Tenant {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  tenant_id     String
-  email         String?
-  phone         String?
-  name          String
-  role          String    @default("student")
-  language_pref String    @default("en")
-  is_active     Boolean   @default(true)
-  last_login    DateTime?
-  created_at    DateTime  @default(now())
+  id                 String    @id @default(uuid())
+  tenant_id          String
+  email              String?
+  phone              String?
+  name               String
+  role               String    @default("student")
+  language_pref      String    @default("en")
+  is_active          Boolean   @default(true)
+  last_login         DateTime?
+  password_hash      String?
+  refresh_token_hash String?
+  last_active        DateTime?
+  created_at         DateTime  @default(now())
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id])
+  refresh_tokens RefreshToken[]
 }
 
 model BrandKit {
@@ -184,4 +188,60 @@ model Payment {
   created_at DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  user_id    String
+  token_hash String
+  expires_at DateTime
+  revoked    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model Certificate {
+  id         String   @id @default(uuid())
+  user_id    String
+  course_id  String
+  tenant_id  String
+  cert_code  String   @unique
+  score_pct  Int      @default(100)
+  issued_at  DateTime @default(now())
+
+  @@unique([user_id, course_id])
+}
+
+model UserActivity {
+  id            String   @id @default(uuid())
+  user_id       String
+  tenant_id     String
+  activity_type String
+  entity_id     String?
+  created_at    DateTime @default(now())
+}
+
+model Badge {
+  id              String      @id @default(uuid())
+  code            String      @unique
+  name_en         String
+  name_hi         String?
+  name_mr         String?
+  icon_emoji      String
+  threshold_type  String
+  threshold_value Int
+
+  user_badges UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  user_id   String
+  badge_id  String
+  earned_at DateTime @default(now())
+
+  badge Badge @relation(fields: [badge_id], references: [id])
+
+  @@unique([user_id, badge_id])
 }
