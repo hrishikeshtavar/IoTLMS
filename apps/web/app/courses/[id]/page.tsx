@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -73,6 +73,11 @@ export default function CoursePage() {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [contentLoading, setContentLoading] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteSaved, setNoteSaved] = useState(false);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!courseId) { setLoading(false); return; }
@@ -90,6 +95,10 @@ export default function CoursePage() {
     if (!activeLesson) return;
     setContentLoading(true);
     setLessonContent(null);
+    // Load saved note for this lesson
+    const saved = localStorage.getItem(`iotlearn_note_${activeLesson.id}`) ?? '';
+    setNoteText(saved);
+    setNoteSaved(false);
     fetch(`http://localhost:3001/api/lesson-content/lesson/${activeLesson.id}`)
       .then(r => r.json())
       .then((data: LessonContent[]) => {
@@ -98,6 +107,19 @@ export default function CoursePage() {
         setContentLoading(false);
       })
       .catch(() => setContentLoading(false));
+  }, [activeLesson]);
+
+  const handleNoteChange = useCallback((val: string) => {
+    setNoteText(val);
+    setNoteSaved(false);
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      if (activeLesson) {
+        localStorage.setItem(`iotlearn_note_${activeLesson.id}`, val);
+        setNoteSaved(true);
+        setTimeout(() => setNoteSaved(false), 2000);
+      }
+    }, 800);
   }, [activeLesson]);
 
   const completeLesson = async (lessonId: string) => {
@@ -130,6 +152,11 @@ export default function CoursePage() {
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: progress === 100 ? 'var(--accent)' : 'var(--text3)' }}>
             {progress === 100 ? '🏆 Complete!' : `${progress}% done`}
           </span>
+          <button onClick={() => { setNotesOpen(o => !o); setTimeout(() => textareaRef.current?.focus(), 150); }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', borderRadius: '999px', border: '1.5px solid', borderColor: notesOpen ? 'var(--primary)' : 'var(--border)', background: notesOpen ? 'rgba(255,107,53,0.08)' : 'transparent', color: notesOpen ? 'var(--primary)' : 'var(--text3)', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            📝 {notesOpen ? 'Close Notes' : 'Notes'}
+            {noteText.trim() && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--primary)', flexShrink: 0 }} />}
+          </button>
         </div>
       </nav>
 
@@ -145,6 +172,96 @@ export default function CoursePage() {
         </div>
       ) : (
         <div style={{ display: 'flex', height: 'calc(100vh - 57px)', overflow: 'hidden' }}>
+
+          {/* NOTES SLIDE-IN PANEL */}
+          <style>{`
+            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+            .notes-panel { animation: slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+          `}</style>
+          {notesOpen && (
+            <div className="notes-panel" style={{ position: 'fixed', top: '57px', right: 0, width: 'min(360px, 90vw)', height: 'calc(100vh - 57px)', background: 'var(--card)', borderLeft: '1.5px solid var(--border)', zIndex: 40, display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.1)' }}>
+
+              {/* Notes header */}
+              <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    📝 My Notes
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: '0.15rem', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeLesson?.title ?? 'No lesson selected'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {noteSaved && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent)', animation: 'fadeUp 0.3s ease' }}>✅ Saved</span>
+                  )}
+                  <button onClick={() => setNotesOpen(false)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--text3)', lineHeight: 1 }}>✕</button>
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem', overflow: 'hidden' }}>
+                <textarea
+                  ref={textareaRef}
+                  value={noteText}
+                  onChange={e => handleNoteChange(e.target.value)}
+                  placeholder={`Jot down notes for "${activeLesson?.title ?? 'this lesson'}"...\n\nTip: Use # for headings, - for bullet points`}
+                  style={{ flex: 1, resize: 'none', border: '1.5px solid var(--border)', borderRadius: '0.875rem', padding: '0.875rem 1rem', fontFamily: "'Baloo 2', sans-serif", fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text2)', background: 'var(--bg)', outline: 'none', transition: 'border-color 0.2s' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                />
+
+                {/* Word count + actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+                    {noteText.trim() ? `${noteText.trim().split(/\s+/).length} words` : 'Start typing…'}
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => {
+                        if (activeLesson) {
+                          localStorage.setItem(`iotlearn_note_${activeLesson.id}`, noteText);
+                          setNoteSaved(true);
+                          setTimeout(() => setNoteSaved(false), 2000);
+                        }
+                      }}
+                      style={{ padding: '0.35rem 0.875rem', borderRadius: '999px', border: '1.5px solid var(--primary)', background: 'var(--primary)', color: '#fff', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                      💾 Save
+                    </button>
+                    {noteText.trim() && (
+                      <button
+                        onClick={() => { handleNoteChange(''); }}
+                        style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text3)', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* All lesson notes index */}
+              {lessons.length > 1 && (
+                <div style={{ borderTop: '1px solid var(--border)', padding: '0.875rem 1.25rem', flexShrink: 0, background: 'var(--bg)' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Notes in this course</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '120px', overflowY: 'auto' }}>
+                    {lessons.map(l => {
+                      const n = localStorage.getItem(`iotlearn_note_${l.id}`) ?? '';
+                      if (!n.trim()) return null;
+                      return (
+                        <button key={l.id} onClick={() => setActiveLesson(l)}
+                          style={{ textAlign: 'left', background: activeLesson?.id === l.id ? 'rgba(255,107,53,0.08)' : 'transparent', border: '1px solid', borderColor: activeLesson?.id === l.id ? 'var(--primary)' : 'var(--border)', borderRadius: '0.5rem', padding: '0.3rem 0.6rem', cursor: 'pointer', transition: 'all 0.15s' }}>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>📝 {l.title}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.slice(0, 50)}…</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* SIDEBAR */}
           <aside style={{ width: '280px', background: 'var(--card)', borderRight: '1px solid var(--border)', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
