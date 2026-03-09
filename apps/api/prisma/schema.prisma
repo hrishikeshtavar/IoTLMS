@@ -34,8 +34,12 @@ model User {
   last_login         DateTime?
   password_hash      String?
   refresh_token_hash String?
-  last_active        DateTime?
-  created_at         DateTime  @default(now())
+  last_active         DateTime?
+  email_verified      Boolean  @default(false)
+  email_verify_token  String?
+  reset_token         String?
+  reset_token_expires DateTime?
+  created_at          DateTime  @default(now())
 
   tenant         Tenant         @relation(fields: [tenant_id], references: [id])
   refresh_tokens RefreshToken[]
@@ -244,4 +248,14 @@ model UserBadge {
   badge Badge @relation(fields: [badge_id], references: [id])
 
   @@unique([user_id, badge_id])
+}
+
+model Plan {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  max_students  Int      @default(30)
+  max_courses   Int      @default(5)
+  monthly_price Int      @default(0)
+  features_json Json?
+  created_at    DateTime @default(now())
 }

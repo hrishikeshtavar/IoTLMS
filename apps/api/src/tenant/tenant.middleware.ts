@@ -10,9 +10,15 @@ export class TenantMiddleware implements NestMiddleware {
     const host = req.hostname;
     const slug = host.split('.')[0];
 
-    if (slug === 'localhost' || slug === '127') {
-      req['tenantId'] = 'dev-tenant';
-      req['tenant'] = { id: 'dev-tenant', slug: 'localhost', name: 'Dev School' };
+    if (slug === 'localhost' || slug === '127' || slug === 'demo' || req.path === '/api/health') {
+      const devTenant = await this.prisma.tenant.findUnique({ where: { slug: 'localhost' } });
+      if (devTenant) {
+        req['tenantId'] = devTenant.id;
+        req['tenant'] = devTenant;
+      } else {
+        req['tenantId'] = null;
+        req['tenant'] = null;
+      }
       return next();
     }
 

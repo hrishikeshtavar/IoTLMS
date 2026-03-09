@@ -1,4 +1,4 @@
-import { Controller, Req, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Req, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';

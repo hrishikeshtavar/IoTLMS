@@ -105,4 +105,29 @@ export class AuthService {
 
     return { accessToken, refreshToken, user: { id: userId, email, role, tenantId, name } };
   }
+
+  async forgotPassword(email: string, tenantId: string) {
+    const user = await this.prisma.user.findFirst({ where: { email, tenant_id: tenantId } });
+    if (!user) return { message: 'If that email exists, a reset link has been sent' };
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    await this.prisma.user.update({ where: { id: user.id }, data: { reset_token: token, reset_token_expires: expires } });
+    await this.emailService.sendPasswordReset(email, token);
+    return { message: 'If that email exists, a reset link has been sent' };
+  }
+
+  async resetPassword(token: string, password: string) {
+    const user = await this.prisma.user.findFirst({ where: { reset_token: token, reset_token_expires: { gt: new Date() } } });
+    if (!user) throw new UnauthorizedException('Invalid or expired reset token');
+    const password_hash = await bcrypt.hash(password, 12);
+    await this.prisma.user.update({ where: { id: user.id }, data: { password_hash, reset_token: null, reset_token_expires: null } });
+    return { message: 'Password reset successful' };
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findFirst({ where: { email_verify_token: token } });
+    if (!user) throw new UnauthorizedException('Invalid verification token');
+    await this.prisma.user.update({ where: { id: user.id }, data: { email_verified: true, email_verify_token: null } });
+    return { message: 'Email verified successfully' };
+  }
 }

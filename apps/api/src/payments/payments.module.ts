@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma.service';
 
 @Module({
   imports: [EnrollmentsModule],
-  providers: [PaymentsService, PrismaService, RazorpayService, PrismaService],
+  providers: [PaymentsService, PrismaService, RazorpayService],
   controllers: [PaymentsController, WebhookController],
 })
 export class PaymentsModule {}

@@ -205,3 +205,13 @@ model RefreshToken {
 
   user User @relation(fields: [user_id], references: [id])
 }
+
+model Plan {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  max_students     Int      @default(30)
+  max_courses      Int      @default(5)
+  monthly_price    Int      @default(0)
+  features_json    Json?
+  created_at       DateTime @default(now())
+}

@@ -23,10 +23,17 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { QuotaGuard } from './tenant/quota.guard';
+
+const throttlerEnabled = process.env.THROTTLER_ENABLED !== 'false';
+const throttlerTtlMs = Number(process.env.THROTTLER_TTL_MS ?? 60000);
+const throttlerLimit = Number(process.env.THROTTLER_LIMIT ?? 1000);
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ...(throttlerEnabled
+      ? [ThrottlerModule.forRoot([{ ttl: throttlerTtlMs, limit: throttlerLimit }])]
+      : []),
     UploadModule,
     TenantModule,
     CoursesModule,
@@ -52,6 +59,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: QuotaGuard },
   ],
 })
 export class AppModule implements NestModule {

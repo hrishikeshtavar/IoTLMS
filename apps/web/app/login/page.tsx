@@ -78,6 +78,9 @@ export default function LoginPage() {
         </form>
 
         <p style={styles.footer}>
+          <a href='/forgot-password' style={styles.link}>Forgot password?</a>
+        </p>
+        <p style={styles.footer}>
           Don&apos;t have an account?{' '}
           <a href="/register" style={styles.link}>Create one</a>
         </p>
