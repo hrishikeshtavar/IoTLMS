@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
+import { Controller, Req, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -53,4 +53,5 @@ export class LessonsController {
   async complete(@Param('id') id: string, @Req() req: any) {
     return this.lessonsService.markComplete(id, req.user.id, req.tenantId);
   }
-}
+
+  }

@@ -92,4 +92,5 @@ export class LessonsService {
     await this.gamification.recordActivity(userId, tenantId, 'lesson_complete', lessonId);
     return { ok: true, progress_pct: newProgress, courseId };
   }
-}
+
+  }

@@ -31,10 +31,18 @@ model User {
   role          String    @default("student")
   language_pref String    @default("en")
   is_active     Boolean   @default(true)
-  last_login    DateTime?
-  created_at    DateTime  @default(now())
+  last_login          DateTime?
+  password_hash       String?
+  refresh_token_hash  String?
+  last_active         DateTime?
+  email_verified      Boolean  @default(false)
+  email_verify_token  String?
+  reset_token         String?
+  reset_token_expires DateTime?
+  created_at          DateTime  @default(now())
 
-  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  tenant         Tenant         @relation(fields: [tenant_id], references: [id])
+  refresh_tokens RefreshToken[]
 }
 
 model BrandKit {
@@ -184,4 +192,16 @@ model Payment {
   created_at DateTime @default(now())
 
   tenant     Tenant   @relation(fields: [tenant_id], references: [id])
+}
+// appended fields handled via migration
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  user_id    String
+  token_hash String
+  expires_at DateTime
+  revoked    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
 }

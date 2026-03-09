@@ -22,7 +22,7 @@ export default function NewLessonPage() {
   const [saved, setSaved] = useState(false);
   const [lessonId, setLessonId] = useState<string | null>(editId);
 
-  const editor = useEditor({ extensions: [StarterKit, Image, Link], content: '<p>Start writing lesson content here...</p>' });
+  const editor = useEditor({ immediatelyRender: false, extensions: [StarterKit, Image, Link], content: '<p>Start writing lesson content here...</p>' });
 
   useEffect(() => {
     if (editId && editor) {

@@ -1,4 +1,5 @@
 'use client';
+import QRCode from 'qrcode';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -23,6 +24,7 @@ export default function CertificatePage() {
   const [cert, setCert] = useState<CertData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   useEffect(() => {
     if (!courseIdParam) return;
@@ -61,6 +63,13 @@ export default function CertificatePage() {
     load();
   }, [courseIdParam, router]);
 
+  useEffect(() => {
+    if (cert?.certCode) {
+      QRCode.toDataURL(window.location.origin + '/verify/' + cert.certCode, { width: 120, margin: 1 })
+        .then(setQrDataUrl).catch(console.error);
+    }
+  }, [cert]);
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
       <div style={{ textAlign: 'center' }}>
@@ -87,6 +96,7 @@ export default function CertificatePage() {
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
         <button onClick={() => window.print()} className="btn-primary">🖨️ Print / Save PDF</button>
         <Link href="/courses" className="btn-secondary">← Back to Courses</Link>
+        {qrDataUrl && <div style={{textAlign:'center',margin:'1rem 0'}}><img src={qrDataUrl} alt='Verify' width={100}/><p style={{fontSize:'0.7rem',color:'#888',marginTop:'0.25rem'}}>Scan to verify</p></div>}
         {cert.certCode && <Link href={`/verify/${cert.certCode}`} className="btn-secondary">🔍 Verify</Link>}
       </div>
       <div style={{ background: '#fff', width: '100%', maxWidth: '760px', borderRadius: '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)', overflow: 'hidden' }}>

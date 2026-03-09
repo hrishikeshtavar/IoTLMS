@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from './email.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async register(dto: RegisterDto, tenantId: string) {
@@ -31,6 +33,12 @@ export class AuthService {
       },
     });
 
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    await this.prisma.user.update({ where: { id: user.id }, data: { email_verify_token: verifyToken } }).catch(() => {});
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (dto.email) {
+      this.emailService.sendVerification(dto.email, dto.name, verifyToken, tenant?.slug || 'demo');
+    }
     return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name);
   }
 

@@ -1,28 +1,34 @@
+// apps/api/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
-  const { ValidationPipe } = await import('@nestjs/common');
+
+  // Security headers
+  app.use(helmet());
+
+  // Input validation
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+
+  // CORS from env
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      const allowed =
-        origin === 'http://localhost:3000' ||
-        origin === 'http://127.0.0.1:3000' ||
-        origin === 'http://localhost' ||
-        origin === 'https://api.iotlearn.in' ||
-        /^https:\/\/([a-z0-9-]+\.)?iotlearn\.in$/i.test(origin);
-
-      if (allowed) return callback(null, true);
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+      const ok = allowedOrigins.some(o =>
+        o.trim() === origin || (o.includes('*') && new RegExp(o.replace('*', '.*')).test(origin))
+      );
+      return ok ? callback(null, true) : callback(new Error(`CORS blocked: ${origin}`), false);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   });
-  await app.listen(3001);
-  console.log('API running on http://localhost:3001');
+
+  await app.listen(process.env.PORT || 3001);
+  console.log(`API running on http://localhost:${process.env.PORT || 3001}`);
 }
 bootstrap();
