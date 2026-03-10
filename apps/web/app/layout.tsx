@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 async function getBrandKit(slug: string) {
   try {
     const res = await fetch('http://localhost:3001/api/branding/' + slug, { next: { revalidate: 3600 } });
-    return res.ok ? res.json() : null;
+    if (!res.ok) return null;
+    const text = await res.text();
+    if (!text) return null;
+    return JSON.parse(text);
   } catch { return null; }
 }
 
