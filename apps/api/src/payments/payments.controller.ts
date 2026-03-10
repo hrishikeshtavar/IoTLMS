@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, HttpCode, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Req, HttpCode, BadRequestException } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { RazorpayService } from './razorpay.service';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
@@ -66,9 +66,25 @@ export class PaymentsController {
     return { ok: true };
   }
 
+  @Post()
+  create(@Body() body: { student: string; amount: number; method: string }, @Req() req: any) {
+    return this.paymentsService.create(req.tenantId ?? "tenant-greenfield-001", body);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() body: { student?: string; amount?: number; method?: string; status?: string }) {
+    return this.paymentsService.update(id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(200)
+  remove(@Param('id') id: string) {
+    return this.paymentsService.remove(id);
+  }
+
   @Roles('school_admin', 'super_admin')
   @Get()
   findAll(@Req() req: any) {
-    return this.paymentsService.findAll(req.tenantId);
+    return this.paymentsService.findAll(req.tenantId ?? undefined);
   }
 }

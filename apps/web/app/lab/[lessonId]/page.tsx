@@ -1,373 +1,418 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { apiFetch, getUser } from '../../lib/auth';
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
+type Locale = 'en' | 'hi' | 'mr';
 
-const AUTOSAVE_INTERVAL = 30;
-const STORAGE_KEY  = (id: string) => `iotlearn_lab_${id}`;
-const HISTORY_KEY  = (id: string) => `iotlearn_lab_history_${id}`;
-
-type SaveEntry = { ts: number; code: string; label: string };
-
-// Map of lesson IDs → known Wokwi project IDs for demo lessons
-// For real courses each lesson would have its own Wokwi project
-const WOKWI_PROJECTS: Record<string, string> = {
-  'lesson-006': '305568977727930434', // Blink LED
-  'lesson-014': '305568977727930434', // Blink & Fade
-  'lesson-024': '347755822648156754', // ESP32 WiFi (fallback to blink)
-  'lesson-033': '305568977727930434', // Pi camera (fallback)
-  'lesson-043': '347755822648156754', // Multi-sensor
-  default:      '305568977727930434', // Default: Arduino Blink
+type Lesson = {
+  id: string;
+  title: string;
+  type: 'lab' | 'quiz' | 'lesson' | 'video' | 'text' | string;
+  content_url?: string;
 };
 
-const DEFAULT_CODE = `// Arduino Lab — IoTLearn
-// Edit the code below, then click ▶ Run Simulation
+type LessonContent = {
+  id: string;
+  locale?: string;
+  content_json: { type: string; content: { type: string; text?: string; content?: { type: string; text: string }[] }[] };
+  status: string;
+};
 
-void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(9600);
-  Serial.println("Lab Started! 🚀");
+const TYPE_META: Record<string, { emoji: string; color: string; label: string }> = {
+  video:  { emoji: '🎬', color: '#1A73E8', label: 'Video' },
+  text:   { emoji: '📖', color: '#00C896', label: 'Reading' },
+  lesson: { emoji: '📖', color: '#00C896', label: 'Lesson' },
+  lab:    { emoji: '🔬', color: '#A855F7', label: 'Lab' },
+  quiz:   { emoji: '📝', color: '#FF6B35', label: 'Quiz' },
+};
+
+function renderContent(content: LessonContent['content_json'] | null) {
+  if (!content || !content.content) return null;
+  return content.content.map((node, i) => {
+    if (node.type === 'paragraph') {
+      return (
+        <p key={i} style={{ marginBottom: '1.1rem', color: 'var(--text2)', lineHeight: 1.75, fontSize: '1rem' }}>
+          {node.content?.map((c, j) => <span key={j}>{c.text}</span>)}
+        </p>
+      );
+    }
+    if (node.type === 'heading') {
+      return (
+        <h2 key={i} style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.75rem', marginTop: '1.75rem', fontFamily: "'Baloo 2'" }}>
+          {node.content?.map(c => c.text).join('')}
+        </h2>
+      );
+    }
+    if (node.type === 'bulletList') {
+      return (
+        <ul key={i} style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>
+          {node.content?.map((item, j) => (
+            <li key={j} style={{ color: 'var(--text2)', marginBottom: '0.35rem', lineHeight: 1.65 }}>
+              {(item as any).content?.map((c: any) => c.content?.map((t: any) => t.text).join('')).join('')}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    if (node.type === 'codeBlock') {
+      return (
+        <pre key={i} style={{ background: '#1A1A2E', color: '#00C896', borderRadius: '0.875rem', padding: '1.25rem', marginBottom: '1.25rem', overflowX: 'auto', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '0.875rem', lineHeight: 1.6 }}>
+          {node.content?.map(c => c.text).join('')}
+        </pre>
+      );
+    }
+    return null;
+  });
 }
 
-void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);   // LED ON
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);    // LED OFF
-  delay(1000);
-  Serial.println("Blink! 💡");
-}`;
+export default function CoursePage() {
+  const { id } = useParams<{ id: string | string[] }>();
+  const courseId = Array.isArray(id) ? id[0] : id;
 
-function formatTime(ts: number) {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
+  const [locale, setLocale]             = useState<Locale>('en');
+  const [lessons, setLessons]           = useState<Lesson[]>([]);
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+  const [lessonContent, setLessonContent] = useState<LessonContent | null>(null);
+  const [completed, setCompleted]       = useState<Set<string>>(new Set());
+  const [loading, setLoading]           = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [notesOpen, setNotesOpen]       = useState(false);
+  const [noteText, setNoteText]         = useState('');
+  const [noteSaved, setNoteSaved]       = useState(false);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-export default function LabPage() {
-  const router = useRouter();
-  const { lessonId } = useParams<{ lessonId: string }>();
-  const lessonIdParam = Array.isArray(lessonId) ? lessonId[0] : lessonId;
-  const sessionStarted = useRef(false);
-
-  const [sessionId,    setSessionId]    = useState<string | null>(null);
-  const [code,         setCode]         = useState(DEFAULT_CODE);
-  const [lastSaved,    setLastSaved]    = useState<number | null>(null);
-  const [saveStatus,   setSaveStatus]   = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [countdown,    setCountdown]    = useState(AUTOSAVE_INTERVAL);
-  const [history,      setHistory]      = useState<SaveEntry[]>([]);
-  const [historyOpen,  setHistoryOpen]  = useState(false);
-  const [completed,    setCompleted]    = useState(false);
-  const [simRunning,   setSimRunning]   = useState(true);
-  const [panelWidth,   setPanelWidth]   = useState(45); // Monaco % width
-
-  const countdownRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const codeRef       = useRef(code);
-  const iframeRef     = useRef<HTMLIFrameElement>(null);
-  const dragging      = useRef(false);
-  const containerRef  = useRef<HTMLDivElement>(null);
-  codeRef.current = code;
-
-  // Wokwi project for this lesson
-  const wokwiProjectId = (lessonIdParam && WOKWI_PROJECTS[lessonIdParam]) || WOKWI_PROJECTS.default;
-  const wokwiUrl = `https://wokwi.com/projects/${wokwiProjectId}?embed=1&editor=0&theme=dark`;
-
-  // ── Load saved code ───────────────────────────────────────────────────────
+  // Load locale preference
   useEffect(() => {
-    if (!lessonIdParam) return;
-    const saved = localStorage.getItem(STORAGE_KEY(lessonIdParam));
-    if (saved) setCode(saved);
-    try {
-      const hist = localStorage.getItem(HISTORY_KEY(lessonIdParam));
-      if (hist) setHistory(JSON.parse(hist));
-    } catch {}
-  }, [lessonIdParam]);
-
-  // ── Start lab session ─────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!lessonIdParam || sessionStarted.current) return;
-    sessionStarted.current = true;
-    const user = getUser();
-    apiFetch('/api/lab-sessions/start', {
-      method: 'POST',
-      body: JSON.stringify({ user_id: user?.id ?? '', lesson_id: lessonIdParam }),
-    }).then(r => r.json()).then(d => setSessionId(d.id)).catch(() => {});
-  }, [lessonIdParam]);
-
-  // ── End session on unmount ────────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      if (sessionId) {
-        navigator.sendBeacon(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/lab-sessions/${sessionId}/end`,
-          JSON.stringify({})
-        );
-      }
-    };
-  }, [sessionId]);
-
-  // ── Autosave countdown ────────────────────────────────────────────────────
-  useEffect(() => {
-    countdownRef.current = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) {
-          autoSave();
-          return AUTOSAVE_INTERVAL;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+    const saved = localStorage.getItem('iotlearn_locale') as Locale;
+    if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
   }, []);
 
-  const autoSave = useCallback(() => {
-    if (!lessonIdParam) return;
-    setSaveStatus('saving');
-    localStorage.setItem(STORAGE_KEY(lessonIdParam), codeRef.current);
-    const entry: SaveEntry = { ts: Date.now(), code: codeRef.current, label: `Auto ${formatTime(Date.now())}` };
-    setHistory(h => {
-      const updated = [entry, ...h].slice(0, 20);
-      localStorage.setItem(HISTORY_KEY(lessonIdParam), JSON.stringify(updated));
-      return updated;
-    });
-    setLastSaved(Date.now());
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
-  }, [lessonIdParam]);
+  // Load lessons
+  useEffect(() => {
+    if (!courseId) { setLoading(false); return; }
+    apiFetch(`/api/lessons/course/${courseId}`)
+      .then(r => r.json())
+      .then((data: Lesson[]) => {
+        setLessons(data);
+        if (data.length > 0) setActiveLesson(data[0] ?? null);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [courseId]);
 
-  const manualSave = () => {
-    if (!lessonIdParam) return;
-    setSaveStatus('saving');
-    localStorage.setItem(STORAGE_KEY(lessonIdParam), code);
-    const entry: SaveEntry = { ts: Date.now(), code, label: `Saved ${formatTime(Date.now())}` };
-    setHistory(h => {
-      const updated = [entry, ...h].slice(0, 20);
-      localStorage.setItem(HISTORY_KEY(lessonIdParam), JSON.stringify(updated));
-      return updated;
-    });
-    setLastSaved(Date.now());
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
-  };
+  // Load lesson content — locale-aware
+  useEffect(() => {
+    if (!activeLesson) return;
+    setContentLoading(true);
+    setLessonContent(null);
+    const saved = localStorage.getItem(`iotlearn_note_${activeLesson.id}`) ?? '';
+    setNoteText(saved);
+    setNoteSaved(false);
 
-  // ── Run simulation (open Wokwi with code) ─────────────────────────────────
-  const runInWokwi = () => {
-    // Reload the Wokwi iframe to restart the simulation
-    if (iframeRef.current) {
-      iframeRef.current.src = wokwiUrl + `&t=${Date.now()}`;
-      setSimRunning(true);
-    }
-  };
+    apiFetch(`/api/lesson-content/lesson/${activeLesson.id}`)
+      .then(r => r.json())
+      .then((data: LessonContent[]) => {
+        // Prefer current locale, then 'en', then first available
+        const localeContent = data.find(c => c.locale === locale)
+          ?? data.find(c => c.locale === 'en')
+          ?? data[0]
+          ?? null;
+        setLessonContent(localeContent);
+        setContentLoading(false);
+      })
+      .catch(() => setContentLoading(false));
+  }, [activeLesson, locale]);
 
-  // ── Mark complete ─────────────────────────────────────────────────────────
-  const markComplete = async () => {
-    manualSave();
-    setCompleted(true);
-    if (sessionId) {
-      await apiFetch(`/api/lab-sessions/${sessionId}/end`, { method: 'PATCH' }).catch(() => {});
-    }
+  const handleNoteChange = useCallback((val: string) => {
+    setNoteText(val);
+    setNoteSaved(false);
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      if (activeLesson) {
+        localStorage.setItem(`iotlearn_note_${activeLesson.id}`, val);
+        setNoteSaved(true);
+        setTimeout(() => setNoteSaved(false), 2000);
+      }
+    }, 800);
+  }, [activeLesson]);
+
+  const completeLesson = async (lessonId: string) => {
     const user = getUser();
+    const newCompleted = new Set([...completed, lessonId]);
+    setCompleted(newCompleted);
+    const progressPct = Math.round((newCompleted.size / lessons.length) * 100);
+
+    await apiFetch(`/api/enrollments/${courseId}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify({ user_id: user?.id, progress_pct: progressPct }),
+    }).catch(() => {});
+
+    // Record activity for gamification
     if (user?.id) {
       await apiFetch('/api/gamification/activity', {
         method: 'POST',
-        body: JSON.stringify({ activity_type: 'lab_complete', entity_id: lessonIdParam }),
+        body: JSON.stringify({ activity_type: 'lesson_complete', entity_id: lessonId }),
       }).catch(() => {});
     }
-    setTimeout(() => router.back(), 1200);
+
+    const currentIndex = lessons.findIndex(l => l.id === lessonId);
+    if (currentIndex < lessons.length - 1) {
+      setActiveLesson(lessons[currentIndex + 1] ?? null);
+    }
   };
 
-  // ── Drag-to-resize divider ────────────────────────────────────────────────
-  const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-    const onMove = (ev: MouseEvent) => {
-      if (!dragging.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const pct = ((ev.clientX - rect.left) / rect.width) * 100;
-      setPanelWidth(Math.min(75, Math.max(25, pct)));
-    };
-    const onUp = () => { dragging.current = false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-  };
-
-  const saveLabel = saveStatus === 'saving' ? '⏳ Saving...' : saveStatus === 'saved' ? '✅ Saved' : lastSaved ? `💾 Saved ${formatTime(lastSaved)}` : '💾 Save';
+  const progress = lessons.length > 0 ? Math.round((completed.size / lessons.length) * 100) : 0;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f0f1a', fontFamily: "'Baloo 2', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
 
-      {/* TOP BAR */}
-      <div style={{ height: '50px', background: '#1a1a2e', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem', flexShrink: 0 }}>
-        <button onClick={() => router.back()}
-          style={{ background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: '6px', padding: '0.3rem 0.75rem', color: '#aaa', cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'inherit' }}>
-          ← Back
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-          <span style={{ fontSize: '1rem' }}>🔬</span>
-          <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>Arduino Lab Simulator</span>
-          <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.55rem', borderRadius: '999px', background: 'rgba(168,85,247,0.2)', color: '#A855F7', fontWeight: 700 }}>
-            Powered by Wokwi
-          </span>
-        </div>
-
-        {/* Countdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.72rem', color: '#666' }}>
-          <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#A855F7', fontWeight: 700 }}>{countdown}</div>
-          <span>auto</span>
-        </div>
-
-        {/* History */}
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setHistoryOpen(o => !o)}
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.3rem 0.7rem', color: '#aaa', cursor: 'pointer', fontSize: '0.78rem', fontFamily: 'inherit' }}>
-            🕓 History ({history.length})
-          </button>
-          {historyOpen && (
-            <div style={{ position: 'absolute', top: '120%', right: 0, width: '240px', background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem', zIndex: 50, boxShadow: '0 8px 30px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
-              <div style={{ padding: '0.6rem 0.875rem', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.72rem', color: '#666', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Code History</div>
-              {history.length === 0 ? (
-                <div style={{ padding: '1rem', textAlign: 'center', color: '#555', fontSize: '0.8rem' }}>No saves yet</div>
-              ) : history.map((h, i) => (
-                <button key={i} onClick={() => { setCode(h.code); setHistoryOpen(false); }}
-                  style={{ width: '100%', textAlign: 'left', padding: '0.6rem 0.875rem', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#ccc', fontSize: '0.78rem', fontFamily: 'inherit' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                  <div style={{ fontWeight: 600 }}>{h.label}</div>
-                  <div style={{ color: '#555', fontSize: '0.7rem', marginTop: '0.1rem' }}>{h.code.slice(0, 50)}...</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Save */}
-        <button onClick={manualSave}
-          style={{ background: saveStatus === 'saved' ? 'rgba(0,200,150,0.15)' : 'rgba(255,255,255,0.05)', border: '1px solid', borderColor: saveStatus === 'saved' ? 'rgba(0,200,150,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: '6px', padding: '0.3rem 0.875rem', color: saveStatus === 'saved' ? '#00C896' : '#aaa', cursor: 'pointer', fontSize: '0.78rem', fontFamily: 'inherit', transition: 'all 0.2s' }}>
-          {saveLabel}
-        </button>
-
-        {/* Run Simulation */}
-        <button onClick={runInWokwi}
-          style={{ background: 'linear-gradient(135deg, #A855F7, #7c3aed)', border: 'none', borderRadius: '6px', padding: '0.35rem 1rem', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'inherit', fontWeight: 700, boxShadow: '0 2px 10px rgba(168,85,247,0.4)' }}>
-          ▶ Run Simulation
-        </button>
-
-        {/* Complete */}
-        <button onClick={markComplete} disabled={completed}
-          style={{ background: completed ? 'rgba(0,200,150,0.2)' : 'rgba(26,115,232,0.15)', border: '1px solid', borderColor: completed ? 'rgba(0,200,150,0.3)' : 'rgba(26,115,232,0.2)', borderRadius: '6px', padding: '0.3rem 0.875rem', color: completed ? '#00C896' : '#1A73E8', cursor: completed ? 'default' : 'pointer', fontSize: '0.78rem', fontFamily: 'inherit', fontWeight: 700, transition: 'all 0.2s' }}>
-          {completed ? '✅ Done!' : '✓ Complete Lab'}
-        </button>
-      </div>
-
-      {/* MAIN SPLIT PANEL */}
-      <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', cursor: dragging.current ? 'col-resize' : 'default' }}>
-
-        {/* MONACO EDITOR */}
-        <div style={{ width: `${panelWidth}%`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Editor header */}
-          <div style={{ height: '36px', background: '#12122a', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', gap: '5px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#FF5F57' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#FFBD2E' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#28CA42' }} />
-            </div>
-            <span style={{ fontSize: '0.72rem', color: '#555', fontFamily: 'monospace' }}>sketch.ino</span>
-            <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#444', fontFamily: 'monospace' }}>Arduino C++</span>
-          </div>
-          <div style={{ flex: 1 }}>
-            <MonacoEditor
-              language="cpp"
-              value={code}
-              onChange={v => v && setCode(v)}
-              theme="vs-dark"
-              options={{
-                fontSize: 14,
-                minimap: { enabled: false },
-                lineNumbers: 'on',
-                scrollBeyondLastLine: false,
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
-                fontLigatures: true,
-                wordWrap: 'on',
-                padding: { top: 16, bottom: 16 },
-                smoothScrolling: true,
-                cursorBlinking: 'smooth',
-                renderLineHighlight: 'gutter',
-                folding: true,
-                autoClosingBrackets: 'always',
-                autoClosingQuotes: 'always',
-                formatOnPaste: true,
-                suggestOnTriggerCharacters: true,
-              }}
-            />
-          </div>
-
-          {/* Tips bar */}
-          <div style={{ height: '30px', background: '#12122a', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '1rem', overflow: 'hidden' }}>
-            {[
-              '💡 Ctrl+S to save',
-              '⚡ Click ▶ Run Simulation to see your code run live',
-              '🔬 Wokwi simulates real Arduino hardware',
-            ].map((tip, i) => (
-              <span key={i} style={{ fontSize: '0.68rem', color: '#444', whiteSpace: 'nowrap' }}>{tip}</span>
+      {/* NAVBAR */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.65rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+        <Link href="/courses" style={{ color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
+          ← Courses
+        </Link>
+        <Link href="/" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>⚡ IoTLearn</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Locale switcher */}
+          <div style={{ display: 'flex', gap: '0.3rem' }}>
+            {(['en','hi','mr'] as Locale[]).map(l => (
+              <button key={l} onClick={() => { setLocale(l); localStorage.setItem('iotlearn_locale', l); }}
+                style={{ padding: '0.2rem 0.55rem', borderRadius: '999px', border: '1.5px solid', borderColor: locale === l ? 'var(--primary)' : 'var(--border)', background: locale === l ? 'var(--primary)' : 'transparent', color: locale === l ? '#fff' : 'var(--text3)', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2' }}>
+                {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
+              </button>
             ))}
           </div>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: progress === 100 ? 'var(--accent)' : 'var(--text3)' }}>
+            {progress === 100 ? '🏆 Complete!' : `${progress}% done`}
+          </span>
+          <button onClick={() => { setNotesOpen(o => !o); setTimeout(() => textareaRef.current?.focus(), 150); }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.9rem', borderRadius: '999px', border: '1.5px solid', borderColor: notesOpen ? 'var(--primary)' : 'var(--border)', background: notesOpen ? 'rgba(255,107,53,0.08)' : 'transparent', color: notesOpen ? 'var(--primary)' : 'var(--text3)', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+            📝 {notesOpen ? 'Close Notes' : 'Notes'}
+            {noteText.trim() && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--primary)', flexShrink: 0 }} />}
+          </button>
         </div>
+      </nav>
 
-        {/* DRAG DIVIDER */}
-        <div
-          onMouseDown={onMouseDown}
-          style={{ width: '4px', background: 'rgba(168,85,247,0.15)', cursor: 'col-resize', flexShrink: 0, transition: 'background 0.2s', position: 'relative', zIndex: 10 }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.5)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(168,85,247,0.15)')}
-        />
-
-        {/* WOKWI SIMULATOR */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Sim header */}
-          <div style={{ height: '36px', background: '#12122a', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.72rem', color: '#A855F7', fontWeight: 700 }}>⚡ Wokwi Simulator</span>
-            <span style={{ fontSize: '0.65rem', color: '#444' }}>Interactive Arduino hardware simulation</span>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: simRunning ? '#00C896' : '#555', animation: simRunning ? 'pulse 2s infinite' : 'none' }} />
-              <span style={{ fontSize: '0.65rem', color: simRunning ? '#00C896' : '#555' }}>{simRunning ? 'Running' : 'Stopped'}</span>
-            </div>
-            <button
-              onClick={() => window.open(`https://wokwi.com/projects/${wokwiProjectId}`, '_blank')}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '5px', padding: '0.2rem 0.6rem', color: '#888', cursor: 'pointer', fontSize: '0.68rem', fontFamily: 'inherit' }}>
-              Open Full ↗
-            </button>
-          </div>
-
-          {/* Wokwi iframe */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            <style>{`
-              @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
-            `}</style>
-            <iframe
-              ref={iframeRef}
-              src={wokwiUrl}
-              style={{ width: '100%', height: '100%', border: 'none', background: '#0f0f1a' }}
-              allow="clipboard-read; clipboard-write"
-              title="Wokwi Arduino Simulator"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
-
-            {/* Overlay hint (shows briefly then fades) */}
-            <div style={{ position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#aaa', fontSize: '0.72rem', padding: '0.4rem 0.875rem', borderRadius: '999px', pointerEvents: 'none', whiteSpace: 'nowrap', backdropFilter: 'blur(4px)' }}>
-              📟 Click ▶ in the simulator to start — or click ▶ Run Simulation above
-            </div>
-          </div>
-
-          {/* Serial monitor strip */}
-          <div style={{ height: '60px', background: '#08080f', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '0.5rem 1rem', overflowY: 'auto' }}>
-            <div style={{ fontSize: '0.65rem', color: '#555', fontFamily: 'monospace', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Serial Monitor</div>
-            <div style={{ fontSize: '0.75rem', color: '#00C896', fontFamily: "'JetBrains Mono', monospace" }}>
-              {simRunning ? '> Lab simulation running in Wokwi above...' : '> Click ▶ Run Simulation to start'}
-            </div>
-          </div>
-        </div>
+      {/* PROGRESS BAR */}
+      <div style={{ height: '4px', background: 'var(--border)', position: 'sticky', top: '53px', zIndex: 40 }}>
+        <div style={{ height: '100%', background: `linear-gradient(90deg, var(--primary), var(--accent))`, width: `${progress}%`, transition: 'width 0.6s cubic-bezier(0.34,1.56,0.64,1)', borderRadius: '0 2px 2px 0' }} />
       </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '5rem', color: 'var(--text3)' }}>
+          <div className="animate-spin" style={{ fontSize: '3rem', display: 'inline-block', marginBottom: '1rem' }}>⚙️</div>
+          <div>Loading lessons...</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', height: 'calc(100vh - 57px)', overflow: 'hidden' }}>
+
+          {/* NOTES SLIDE-IN PANEL */}
+          <style>{`
+            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            .notes-panel { animation: slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+          `}</style>
+          {notesOpen && (
+            <div className="notes-panel" style={{ position: 'fixed', top: '57px', right: 0, width: 'min(360px, 90vw)', height: 'calc(100vh - 57px)', background: 'var(--card)', borderLeft: '1.5px solid var(--border)', zIndex: 40, display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.1)' }}>
+              <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg)', flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📝 My Notes</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: '0.15rem', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeLesson?.title ?? 'No lesson selected'}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {noteSaved && <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent)' }}>✅ Saved</span>}
+                  <button onClick={() => setNotesOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--text3)', lineHeight: 1 }}>✕</button>
+                </div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem', overflow: 'hidden' }}>
+                <textarea ref={textareaRef} value={noteText} onChange={e => handleNoteChange(e.target.value)}
+                  placeholder={`Jot down notes for "${activeLesson?.title ?? 'this lesson'}"...\n\nTip: Use # for headings, - for bullet points`}
+                  style={{ flex: 1, resize: 'none', border: '1.5px solid var(--border)', borderRadius: '0.875rem', padding: '0.875rem 1rem', fontFamily: "'Baloo 2', sans-serif", fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text2)', background: 'var(--bg)', outline: 'none' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
+                    {noteText.trim() ? `${noteText.trim().split(/\s+/).length} words` : 'Start typing…'}
+                  </span>
+                  <button onClick={() => { if (activeLesson) { localStorage.setItem(`iotlearn_note_${activeLesson.id}`, noteText); setNoteSaved(true); setTimeout(() => setNoteSaved(false), 2000); } }}
+                    style={{ padding: '0.35rem 0.875rem', borderRadius: '999px', border: '1.5px solid var(--primary)', background: 'var(--primary)', color: '#fff', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                    💾 Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SIDEBAR */}
+          <aside style={{ width: '280px', background: 'var(--card)', borderRight: '1px solid var(--border)', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '1.25rem 1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Lessons</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ flex: 1, height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'linear-gradient(90deg, var(--primary), var(--accent))', width: `${progress}%`, transition: 'width 0.5s ease', borderRadius: '3px' }} />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text3)', fontWeight: 700, whiteSpace: 'nowrap' }}>{completed.size}/{lessons.length}</span>
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              {lessons.map((lesson, i) => {
+                const meta = TYPE_META[lesson.type] ?? { emoji: '📄', color: '#718096', label: lesson.type };
+                const isDone = completed.has(lesson.id);
+                const isActive = activeLesson?.id === lesson.id;
+                return (
+                  <button key={lesson.id} onClick={() => setActiveLesson(lesson)}
+                    style={{ width: '100%', textAlign: 'left', padding: '0.85rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem', background: isActive ? `${meta.color}11` : 'transparent', borderLeft: isActive ? `3px solid ${meta.color}` : '3px solid transparent', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg)'; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                    <div style={{ width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, background: isDone ? 'var(--accent)' : isActive ? meta.color : 'var(--border)', color: isDone || isActive ? '#fff' : 'var(--text3)', transition: 'all 0.2s' }}>
+                      {isDone ? '✓' : i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: isActive ? 700 : 600, color: isActive ? 'var(--text)' : 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lesson.title}</div>
+                      <div style={{ fontSize: '0.7rem', color: meta.color, fontWeight: 700, marginTop: '0.1rem' }}>{meta.emoji} {meta.label}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT */}
+          <main style={{ flex: 1, overflowY: 'auto', padding: 'clamp(1.5rem,4vw,3rem)' }}>
+            {activeLesson ? (() => {
+              const meta = TYPE_META[activeLesson.type] ?? { emoji: '📄', color: '#718096', label: activeLesson.type };
+              const isDone = completed.has(activeLesson.id);
+              return (
+                <div style={{ maxWidth: '760px', margin: '0 auto' }}>
+                  <div className="animate-fadeUp" style={{ marginBottom: '1.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, background: meta.color + '22', color: meta.color }}>
+                        {meta.emoji} {meta.label}
+                      </span>
+                      {isDone && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(0,200,150,0.15)', color: 'var(--accent)' }}>
+                          ✅ Completed
+                        </span>
+                      )}
+                    </div>
+                    <h1 style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>
+                      {activeLesson.title}
+                    </h1>
+                  </div>
+
+                  {/* VIDEO */}
+                  {activeLesson.type === 'video' && activeLesson.content_url && (
+                    <div className="animate-popIn" style={{ marginBottom: '1.75rem', borderRadius: '1.25rem', overflow: 'hidden', background: '#000', aspectRatio: '16/9', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+                      <video src={activeLesson.content_url} controls style={{ width: '100%', height: '100%' }} onEnded={() => completeLesson(activeLesson.id)} />
+                    </div>
+                  )}
+                  {activeLesson.type === 'video' && !activeLesson.content_url && (
+                    <div className="animate-popIn" style={{ marginBottom: '1.75rem', borderRadius: '1.25rem', background: '#1A1A2E', aspectRatio: '16/9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+                      <div style={{ fontSize: '3rem' }}>🎬</div>
+                      <div style={{ color: '#aaa', fontSize: '0.9rem' }}>Video coming soon</div>
+                    </div>
+                  )}
+
+                  {/* TEXT / LESSON */}
+                  {(activeLesson.type === 'text' || activeLesson.type === 'lesson') && (
+                    <div className="animate-fadeUp" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid var(--border)', padding: '2rem', marginBottom: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+                      {contentLoading ? (
+                        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text3)' }}>
+                          <div className="animate-spin" style={{ fontSize: '2rem', display: 'inline-block', marginBottom: '0.75rem' }}>⚙️</div>
+                          <div>Loading content...</div>
+                        </div>
+                      ) : lessonContent ? (
+                        <div>{renderContent(lessonContent.content_json)}</div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '3rem' }}>
+                          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
+                          <p style={{ color: 'var(--text3)', marginBottom: '1rem' }}>No content yet.</p>
+                          <Link href={`/admin/courses/${courseId}/lessons/${activeLesson.id}/content`}
+                            style={{ display: 'inline-block', padding: '0.6rem 1.5rem', background: 'var(--primary)', color: '#fff', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 700 }}>
+                            Add via Content Editor →
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* LAB */}
+                  {activeLesson.type === 'lab' && (
+                    <div className="animate-popIn" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(168,85,247,0.2)', padding: '3rem', marginBottom: '1.75rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(168,85,247,0.1)' }}>
+                      <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="animate-float">🔬</div>
+                      <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Hands-on Lab</h3>
+                      <p style={{ color: 'var(--text3)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                        Open the Arduino simulator with Monaco editor + Wokwi
+                      </p>
+                      <Link href={`/lab/${activeLesson.id}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, #A855F7, #7c3aed)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(168,85,247,0.35)' }}>
+                        🚀 Open Lab Simulator
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* QUIZ */}
+                  {activeLesson.type === 'quiz' && (
+                    <div className="animate-popIn" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(255,107,53,0.2)', padding: '3rem', marginBottom: '1.75rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+                      <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="animate-float">📝</div>
+                      <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Knowledge Quiz</h3>
+                      <p style={{ color: 'var(--text3)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                        Test what you've learned in this lesson
+                      </p>
+                      <Link href={`/quiz/${activeLesson.id}`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, var(--primary), #ff8c5a)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(255,107,53,0.35)' }}>
+                        ▶ Start Quiz
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* COMPLETE / NEXT ACTIONS */}
+                  {activeLesson.type !== 'video' && (
+                    <div className="animate-fadeUp delay-200" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
+                      {!isDone ? (
+                        <button onClick={() => completeLesson(activeLesson.id)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.75rem', background: 'linear-gradient(135deg, var(--secondary), #1557cc)', color: '#fff', border: 'none', borderRadius: '999px', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(26,115,232,0.3)' }}>
+                          ✓ Mark as Complete
+                        </button>
+                      ) : (
+                        <>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', background: 'rgba(0,200,150,0.12)', color: 'var(--accent)', borderRadius: '999px', fontWeight: 700, fontSize: '0.9rem', border: '1.5px solid rgba(0,200,150,0.25)' }}>
+                            ✅ Lesson Complete!
+                          </div>
+                          {lessons.findIndex(l => l.id === activeLesson.id) < lessons.length - 1 && (
+                            <button onClick={() => {
+                              const next = lessons[lessons.findIndex(l => l.id === activeLesson.id) + 1];
+                              if (next) setActiveLesson(next);
+                            }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.75rem', background: 'linear-gradient(135deg, var(--primary), #ff8c5a)', color: '#fff', border: 'none', borderRadius: '999px', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(255,107,53,0.3)' }}>
+                              Next Lesson →
+                            </button>
+                          )}
+                          {progress === 100 && (
+                            <Link href={`/certificate/${courseId}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.75rem', background: 'linear-gradient(135deg, #FFD93D, #f59e0b)', color: '#1A1A2E', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(255,211,61,0.4)' }}>
+                              🏆 Get Certificate
+                            </Link>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })() : (
+              <div style={{ textAlign: 'center', padding: '5rem', color: 'var(--text3)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
+                <div>No lessons yet.</div>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
     </div>
   );
 }

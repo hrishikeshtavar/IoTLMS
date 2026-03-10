@@ -1,4 +1,5 @@
 'use client';
+import { apiFetch, getUser } from '../../lib/auth';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -163,7 +164,8 @@ function ConfettiCanvas({ active }: { active: boolean }) {
 // ─── Main Quiz Page ───────────────────────────────────────────────────────────
 export default function QuizPage() {
   const { assessmentId } = useParams();
-  const assessmentIdParam = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
+  const _rawId = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
+  const assessmentIdParam = _rawId?.startsWith("asmt-") ? _rawId : `asmt-${_rawId}`;
   const router = useRouter();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -177,7 +179,7 @@ export default function QuizPage() {
 
   useEffect(() => {
     if (!assessmentIdParam) return;
-    fetch(`http://localhost:3001/api/assessments/${assessmentIdParam}`)
+    apiFetch(`/api/assessments/${assessmentIdParam}`)
       .then(r => r.json())
       .then(async (data: Assessment) => {
         setAssessment(data); await cacheAssessment(assessmentIdParam, data); setLoading(false);
@@ -191,9 +193,9 @@ export default function QuizPage() {
 
   const submitQuiz = async () => {
     setSubmitting(true);
-    const currentUser = (await import('../../lib/auth')).getUser();
+    const currentUser = getUser();
     const payload = {
-      user_id: currentUser?.id ?? 'student-1',
+      user_id: currentUser?.id ?? "",
       assessment_id: assessmentIdParam,
       answers: Object.entries(answers).map(([question_id, answer]) => ({ question_id, answer })),
     };
@@ -297,13 +299,13 @@ export default function QuizPage() {
                     <circle cx="70" cy="70" r="60" fill="none"
                       stroke={result.passed ? '#00C896' : '#FF6B35'} strokeWidth="10"
                       strokeDasharray={2 * Math.PI * 60}
-                      strokeDashoffset={2 * Math.PI * 60 * (1 - result.percentage / 100)}
+                      strokeDashoffset={2 * Math.PI * 60 * (1 - (result?.percentage ?? result?.score ?? 0) / 100)}
                       strokeLinecap="round"
                       className="progress-ring-circle"
                       style={{ transform: 'rotate(-90deg)', transformOrigin: '70px 70px' }} />
                   </svg>
                   <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 800, color: result.passed ? '#00C896' : '#FF6B35', lineHeight: 1 }}>{result.percentage}%</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: result.passed ? '#00C896' : '#FF6B35', lineHeight: 1 }}>{result?.percentage ?? result?.score ?? 0}%</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text3)', fontWeight: 600 }}>score</div>
                   </div>
                 </div>
@@ -323,9 +325,9 @@ export default function QuizPage() {
                 </div>
 
                 {/* Per-question breakdown */}
-                {result.results.length > 0 && (
+                {result?.results?.length > 0 && (
                   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {result.results.map((r, i) => (
+                    {result?.results?.map((r, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '0.875rem', background: r.is_correct ? 'rgba(0,200,150,0.08)' : 'rgba(255,107,53,0.08)', border: `1px solid ${r.is_correct ? 'rgba(0,200,150,0.2)' : 'rgba(255,107,53,0.2)'}` }}>
                         <span style={{ fontSize: '1.1rem' }}>{r.is_correct ? '✅' : '❌'}</span>
                         <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text2)', fontWeight: 600 }}>

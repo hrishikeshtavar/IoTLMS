@@ -26,6 +26,15 @@ export class PaymentsService {
     });
   }
 
+  async update(id: string, dto: { student?: string; amount?: number; method?: string; status?: string }) {
+    return this.prisma.payment.update({ where: { id }, data: dto });
+  }
+
+  async remove(id: string) {
+    await this.prisma.payment.delete({ where: { id } });
+    return { ok: true };
+  }
+
   async updateStatus(id: string, status: string) {
     return this.prisma.payment.update({ where: { id }, data: { status } });
   }

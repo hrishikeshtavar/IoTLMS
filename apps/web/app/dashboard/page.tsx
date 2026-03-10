@@ -137,6 +137,7 @@ function getWeeklyData(enrollments: Enrollment[], userId?: string, weeklyActivit
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [locale, setLocale] = useState<Locale>('en');
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +150,8 @@ export default function DashboardPage() {
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
 
     const user = getUser();
+    if (user?.role === "super_admin") { router.push("/super-admin"); return; }
+    if (user?.role === "admin") { router.push("/admin"); return; }
     if (!user) return;
 
     apiFetch(`/api/enrollments/user/${user.id}`)

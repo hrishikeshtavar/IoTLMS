@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // Input validation
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false }));
 
   // CORS from env
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
