@@ -119,12 +119,20 @@ function ProgressRing({ percent, size = 56, color = '#FF6B35' }: { percent: numb
   );
 }
 
-// Generate mock weekly data based on enrollments
-function getWeeklyData(enrollments: Enrollment[]) {
+// Generate stable weekly data seeded on userId so it never flickers
+function getWeeklyData(enrollments: Enrollment[], userId?: string, weeklyActivity?: number[]) {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  if (weeklyActivity && weeklyActivity.length === 7) {
+    return days.map((day, i) => ({ day, minutes: weeklyActivity[i] ?? 0 }));
+  }
+  if (enrollments.length === 0) return days.map(day => ({ day, minutes: 0 }));
+  // Stable seeded random from userId
+  let seed = 0;
+  for (let i = 0; i < (userId || 'x').length; i++) seed = (seed * 31 + (userId || 'x').charCodeAt(i)) & 0xffff;
+  const rng = () => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 4294967296; };
   return days.map((day, i) => ({
     day,
-    minutes: enrollments.length > 0 ? Math.floor(Math.random() * 45 + (i === 5 || i === 6 ? 10 : 15)) : 0,
+    minutes: Math.floor(rng() * 40 + (i === 5 || i === 6 ? 8 : 12)),
   }));
 }
 
@@ -134,6 +142,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState(0);
   const [realStats, setRealStats] = useState<any>(null);
+  const [weeklyActivity, setWeeklyActivity] = useState<number[] | undefined>(undefined);
 
   useEffect(() => {
     const saved = localStorage.getItem('iotlearn_locale') as Locale;
@@ -149,7 +158,14 @@ export default function DashboardPage() {
 
     apiFetch('/api/gamification/stats')
       .then(r => r.json())
-      .then(data => { setRealStats(data); setStreak(data.streak ?? 0); })
+      .then(data => {
+        setRealStats(data);
+        setStreak(data.streak ?? 0);
+        // Extract weekly activity if available (7-day array of minute values)
+        if (Array.isArray(data.weeklyMinutes) && data.weeklyMinutes.length === 7) {
+          setWeeklyActivity(data.weeklyMinutes);
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -179,7 +195,7 @@ export default function DashboardPage() {
   };
   const earnedBadgeCodes = new Set((realStats?.badges ?? []).map((b: any) => b.badge?.code ?? b.code));
 
-  const weeklyData = getWeeklyData(enrollments);
+  const weeklyData = getWeeklyData(enrollments, getUser()?.id, weeklyActivity);
   const totalWeeklyMinutes = weeklyData.reduce((s, d) => s + d.minutes, 0);
 
   const hour = new Date().getHours();

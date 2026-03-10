@@ -1,22 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { apiFetch, getUser } from '../lib/auth';
 
 type Locale = 'en' | 'hi' | 'mr';
-
-function resolveApiUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window === 'undefined') return 'http://localhost:3001';
-
-  const host = window.location.hostname;
-  const protocol = window.location.protocol;
-
-  if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:3001';
-  if (host === 'api.iotlearn.in') return `${protocol}//api.iotlearn.in`;
-  if (host.endsWith('.iotlearn.in') || host === 'iotlearn.in') return `${protocol}//api.iotlearn.in`;
-
-  return 'http://localhost:3001';
-}
 
 const T: Record<Locale, Record<string, string>> = {
   en: {
@@ -32,6 +19,7 @@ const T: Record<Locale, Record<string, string>> = {
     students: 'students',
     lessons: 'lessons',
     back_home: '← Home',
+    login_required: 'Please log in to enroll',
   },
   hi: {
     title: 'सभी कोर्स',
@@ -46,6 +34,7 @@ const T: Record<Locale, Record<string, string>> = {
     students: 'छात्र',
     lessons: 'पाठ',
     back_home: '← होम',
+    login_required: 'एनरोल करने के लिए लॉगिन करें',
   },
   mr: {
     title: 'सर्व कोर्स',
@@ -60,19 +49,20 @@ const T: Record<Locale, Record<string, string>> = {
     students: 'विद्यार्थी',
     lessons: 'धडे',
     back_home: '← मुख्यपृष्ठ',
+    login_required: 'नोंदणी करण्यासाठी लॉगिन करा',
   },
 };
 
 const categoryColors: Record<string, string> = {
-  Arduino:    '#00C896',
-  'Raspberry Pi': '#A855F7',
-  ARM:        '#1A73E8',
-  'RISC-V':   '#FF6B35',
-  ESP32:      '#FFD93D',
-  Sensors:    '#00C896',
-  Electronics: '#FF6B35',
-  IoT:        '#1A73E8',
-  General:    '#718096',
+  Arduino:       '#00C896',
+  'Raspberry Pi':'#A855F7',
+  ARM:           '#1A73E8',
+  'RISC-V':      '#FF6B35',
+  ESP32:         '#FFD93D',
+  Sensors:       '#00C896',
+  Electronics:   '#FF6B35',
+  IoT:           '#1A73E8',
+  General:       '#718096',
 };
 
 interface Course {
@@ -102,38 +92,56 @@ function ProgressRing({ percent, size = 44, color = '#FF6B35' }: { percent: numb
   );
 }
 
+// Stable enrollment % seeded on course id (no Math.random flicker)
+function stablePercent(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
+  return 15 + (h % 70);
+}
+
 export default function CoursesPage() {
-  const apiUrl = resolveApiUrl();
-  const [locale, setLocale] = useState<Locale>('en');
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [locale, setLocale]       = useState<Locale>('en');
+  const [courses, setCourses]     = useState<Course[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch]       = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+  const [enrolling, setEnrolling] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('iotlearn_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
 
-    fetch(`${apiUrl}/api/courses`)
-      .then(async (r) => {
-        if (!r.ok) {
-          const body = await r.text();
-          throw new Error(body || `HTTP ${r.status}`);
-        }
+    // Load courses
+    apiFetch('/api/courses')
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then(data => {
-        const list = Array.isArray(data) ? data : (data.data || []);
-        setCourses(list.map((c: Course) => ({ ...c, enrollmentPercent: Math.floor(Math.random() * 85) + 10 })));
+        const list: Course[] = Array.isArray(data) ? data : (data.data || []);
+        setCourses(list.map(c => ({ ...c, enrollmentPercent: stablePercent(c.id) })));
       })
       .catch((err: unknown) => {
         setCourses([]);
         setLoadError(err instanceof Error ? err.message : 'Failed to load courses');
       })
       .finally(() => setLoading(false));
-  }, [apiUrl]);
+
+    // Load the logged-in user's enrollments to pre-fill enrolled state
+    const user = getUser();
+    if (user?.id) {
+      apiFetch(`/api/enrollments/user/${user.id}`)
+        .then(r => r.json())
+        .then((data: { course_id: string }[]) => {
+          if (Array.isArray(data)) {
+            setEnrolledIds(new Set(data.map(e => e.course_id)));
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('iotlearn_locale', l); };
 
@@ -149,14 +157,25 @@ export default function CoursesPage() {
   });
 
   const handleEnroll = async (courseId: string) => {
+    const user = getUser();
+    if (!user?.id) {
+      window.location.href = '/login';
+      return;
+    }
+    setEnrolling(courseId);
     try {
-      await fetch(`${apiUrl}/api/enrollments`, {
+      const res = await apiFetch('/api/enrollments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course_id: courseId, user_id: 'student-1' }),
+        body: JSON.stringify({ course_id: courseId, user_id: user.id }),
       });
+      if (res.ok || res.status === 409) { // 409 = already enrolled
+        setEnrolledIds(prev => new Set([...prev, courseId]));
+      }
+    } catch {
       setEnrolledIds(prev => new Set([...prev, courseId]));
-    } catch { setEnrolledIds(prev => new Set([...prev, courseId])); }
+    } finally {
+      setEnrolling(null);
+    }
   };
 
   return (
@@ -223,7 +242,6 @@ export default function CoursesPage() {
           <div style={{ textAlign: 'center', padding: '3rem', color: '#b91c1c', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '1rem' }}>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Could not load courses</div>
             <div style={{ fontSize: '0.9rem' }}>{loadError}</div>
-            <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#7f1d1d' }}>API URL: {apiUrl}/api/courses</div>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text3)' }}>
@@ -235,12 +253,11 @@ export default function CoursesPage() {
             {filtered.map((course, i) => {
               const displayTitle =
                 (locale === 'hi' ? course.title_hi : locale === 'mr' ? course.title_mr : null) ||
-                course.title ||
-                course.title_en ||
-                'Untitled Course';
+                course.title || course.title_en || 'Untitled Course';
               const cat = course.category || 'General';
               const catColor = categoryColors[cat] || '#718096';
               const isEnrolled = enrolledIds.has(course.id);
+              const isEnrollingThis = enrolling === course.id;
               const pct = course.enrollmentPercent || 0;
               return (
                 <div key={course.id} className={`card-hover animate-popIn delay-${Math.min((i % 5 + 1) * 100, 500)}`}
@@ -269,10 +286,12 @@ export default function CoursesPage() {
                       <span>📚 {course._count?.lessons || 0} {t.lessons}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
-                      <button onClick={() => handleEnroll(course.id)} disabled={isEnrolled}
+                      <button
+                        onClick={() => !isEnrolled && handleEnroll(course.id)}
+                        disabled={isEnrolled || isEnrollingThis}
                         className={`btn-primary ${isDevanagari ? 'lang-hi' : ''}`}
-                        style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.85rem', opacity: isEnrolled ? 0.7 : 1, background: isEnrolled ? 'var(--accent)' : undefined }}>
-                        {isEnrolled ? t.enrolled : t.enroll}
+                        style={{ flex: 1, padding: '0.6rem 1rem', fontSize: '0.85rem', opacity: isEnrollingThis ? 0.7 : 1, background: isEnrolled ? 'var(--accent)' : undefined, cursor: isEnrolled ? 'default' : 'pointer' }}>
+                        {isEnrollingThis ? '⏳' : isEnrolled ? t.enrolled : t.enroll}
                       </button>
                       <Link href={`/courses/${course.id}`}
                         className={`btn-secondary ${isDevanagari ? 'lang-hi' : ''}`}

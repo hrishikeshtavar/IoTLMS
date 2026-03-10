@@ -7,7 +7,7 @@ export class CoursesService {
 
   async findAll(tenantId: string) {
     return this.prisma.course.findMany({
-      where: { tenant_id: tenantId },
+      where: tenantId ? { tenant_id: tenantId } : undefined,
       orderBy: { created_at: 'desc' },
     });
   }

@@ -76,7 +76,7 @@ export class AnalyticsService {
         where: { id: userId, tenant_id: tenantId },
       }),
       this.prisma.brandKit.findFirst({
-        where: { tenant_id: tenantId },
+        where: tenantId ? { tenant_id: tenantId } : undefined,
       }),
       this.prisma.submission.findMany({
         where: {

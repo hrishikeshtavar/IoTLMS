@@ -191,14 +191,14 @@ export default function QuizPage() {
 
   const submitQuiz = async () => {
     setSubmitting(true);
-    const currentUser = (await import('../lib/auth')).getUser();
+    const currentUser = (await import('../../lib/auth')).getUser();
     const payload = {
       user_id: currentUser?.id ?? 'student-1',
       assessment_id: assessmentIdParam,
       answers: Object.entries(answers).map(([question_id, answer]) => ({ question_id, answer })),
     };
     try {
-      const { apiFetch } = await import('../lib/auth');
+      const { apiFetch } = await import('../../lib/auth');
       const res = await apiFetch('/api/assessments/submit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
