@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '../lib/auth';
+import { apiFetch } from '../../lib/auth';
 
 export default function AdminPage() {
   const router = useRouter();
