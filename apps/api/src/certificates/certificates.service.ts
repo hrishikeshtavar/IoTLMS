@@ -1,6 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
+
+function genCode(len = 8): string {
+  return randomBytes(Math.ceil(len * 3 / 4))
+    .toString('base64url')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, len);
+}
 
 @Injectable()
 export class CertificatesService {
@@ -32,7 +40,7 @@ export class CertificatesService {
     // Generate cert code: IOTL-{tenantSlug}-{random8}
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     const slug = tenant?.slug?.toUpperCase() ?? 'IOTL';
-    const cert_code = `IOTL-${slug}-${nanoid(8).toUpperCase()}`;
+    const cert_code = `IOTL-${slug}-${genCode(8)}`;
 
     return this.prisma.certificate.create({
       data: { user_id: userId, course_id: courseId, tenant_id: tenantId, cert_code, score_pct },

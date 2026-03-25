@@ -164,8 +164,7 @@ function ConfettiCanvas({ active }: { active: boolean }) {
 // ─── Main Quiz Page ───────────────────────────────────────────────────────────
 export default function QuizPage() {
   const { assessmentId } = useParams();
-  const _rawId = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
-  const assessmentIdParam = _rawId?.startsWith("asmt-") ? _rawId : `asmt-${_rawId}`;
+  const assessmentIdParam = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
   const router = useRouter();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});

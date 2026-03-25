@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 async function getBrandKit(slug: string) {
   try {
-    const res = await fetch('http://localhost:3001/api/branding/' + slug, { next: { revalidate: 3600 } });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const res = await fetch(`${apiUrl}/api/branding/${slug}`, { next: { revalidate: 3600 } });
     if (!res.ok) return null;
     const text = await res.text();
     if (!text) return null;

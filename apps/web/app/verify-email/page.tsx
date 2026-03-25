@@ -10,7 +10,8 @@ function VerifyForm() {
 
   useEffect(() => {
     if (!token) return setStatus('error');
-    fetch('http://localhost:3001/api/auth/verify-email?token=' + token)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/auth/verify-email?token=` + token)
       .then(r => r.ok ? setStatus('success') : setStatus('error'))
       .catch(() => setStatus('error'));
   }, [token]);

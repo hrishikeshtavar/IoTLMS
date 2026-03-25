@@ -21,6 +21,10 @@ export class AssessmentsService {
     });
   }
 
+  async getAssessmentByLesson(lessonId: string) {
+    return this.prisma.assessment.findFirst({ where: { lesson_id: lessonId }, include: { questions: true } });
+  }
+
   async getAssessmentWithQuestions(id: string) {
     return this.prisma.assessment.findUnique({
       where: { id },

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/auth';
 
 type Course = {
   id: string;
@@ -20,7 +21,7 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/courses')
+    apiFetch('/api/courses')
       .then(r => r.json())
       .then(data => { setCourses(Array.isArray(data) ? data : data.data || []); setLoading(false); })
       .catch(() => setLoading(false));

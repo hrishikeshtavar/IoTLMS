@@ -34,12 +34,12 @@ model User {
   last_login         DateTime?
   password_hash      String?
   refresh_token_hash String?
-  last_active         DateTime?
-  email_verified      Boolean  @default(false)
-  email_verify_token  String?
-  reset_token         String?
+  last_active        DateTime?
+  email_verified     Boolean   @default(false)
+  email_verify_token String?
+  reset_token        String?
   reset_token_expires DateTime?
-  created_at          DateTime  @default(now())
+  created_at         DateTime  @default(now())
 
   tenant         Tenant         @relation(fields: [tenant_id], references: [id])
   refresh_tokens RefreshToken[]
@@ -59,16 +59,27 @@ model BrandKit {
 }
 
 model Course {
-  id         String   @id @default(uuid())
-  tenant_id  String
-  title_en   String
-  title_hi   String?
-  title_mr   String?
-  slug       String
-  category   String?
-  status     String   @default("draft")
-  created_by String?
-  created_at DateTime @default(now())
+  id              String   @id @default(uuid())
+  tenant_id       String
+  title_en        String
+  title_hi        String?
+  title_mr        String?
+  description_en  String?
+  description_hi  String?
+  description_mr  String?
+  slug            String
+  category        String?
+  level           String?  @default("beginner")
+  duration_hours  Int?
+  price           Int?     @default(0)
+  tags_json       Json?
+  thumbnail_url   String?
+  target_grade    String?
+  stream          String?  @default("GENERAL")
+  playlist_url    String?
+  status          String   @default("draft")
+  created_by      String?
+  created_at      DateTime @default(now())
 
   tenant      Tenant       @relation(fields: [tenant_id], references: [id])
   lessons     Lesson[]
@@ -79,9 +90,14 @@ model Lesson {
   id          String   @id @default(uuid())
   course_id   String
   title       String
+  title_hi    String?
+  title_mr    String?
+  description String?
   type        String   @default("video")
   order_index Int      @default(0)
   content_url String?
+  duration_min Int?    @default(10)
+  is_preview  Boolean  @default(false)
   created_at  DateTime @default(now())
 
   course      Course          @relation(fields: [course_id], references: [id])
@@ -150,7 +166,7 @@ model LessonContent {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  lesson   Lesson           @relation(fields: [lesson_id], references: [id])
+  lesson   Lesson         @relation(fields: [lesson_id], references: [id])
   versions ContentVersion[]
 
   @@unique([lesson_id, locale])
@@ -206,13 +222,13 @@ model RefreshToken {
 }
 
 model Certificate {
-  id         String   @id @default(uuid())
-  user_id    String
-  course_id  String
-  tenant_id  String
-  cert_code  String   @unique
-  score_pct  Int      @default(100)
-  issued_at  DateTime @default(now())
+  id        String   @id @default(uuid())
+  user_id   String
+  course_id String
+  tenant_id String
+  cert_code String   @unique
+  score_pct Int      @default(100)
+  issued_at DateTime @default(now())
 
   @@unique([user_id, course_id])
 }
@@ -227,8 +243,8 @@ model UserActivity {
 }
 
 model Badge {
-  id              String      @id @default(uuid())
-  code            String      @unique
+  id              String    @id @default(uuid())
+  code            String    @unique
   name_en         String
   name_hi         String?
   name_mr         String?

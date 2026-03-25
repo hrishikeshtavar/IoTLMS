@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/auth';
 
 type PreviewRow = Record<string, string>;
 
@@ -36,7 +37,7 @@ Ms. Desai,desai@school.in,teacher,en`);
   const handleImport = async () => {
     if (preview.length === 0) return;
     setImporting(true);
-    const res = await fetch('http://localhost:3001/api/users/bulk-import', {
+    const res = await apiFetch('/api/users/bulk-import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rows: preview }),

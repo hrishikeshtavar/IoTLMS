@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/auth';
 
 const PLANS = [
   { id: 'free',    label: 'Free',    desc: 'Up to 50 students, 5 courses',   price: '₹0/mo',    color: '#718096' },
@@ -15,7 +16,7 @@ export default function SchoolSignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const API = 'http://localhost:3001';
+  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
   function update(field: string, value: string) {
     setForm(f => {

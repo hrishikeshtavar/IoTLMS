@@ -18,6 +18,11 @@ export class AssessmentsController {
     return this.assessmentsService.createQuestion(dto);
   }
 
+  @Get('by-lesson/:lessonId')
+  getByLesson(@Param('lessonId') lessonId: string) {
+    return this.assessmentsService.getAssessmentByLesson(lessonId);
+  }
+
   @Get(':id')
   getAssessment(@Param('id') id: string) {
     return this.assessmentsService.getAssessmentWithQuestions(id);

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { apiFetch } from '@/lib/auth';
 
 const RichTextEditor = dynamic(() => import('@/components/cms/RichTextEditor'), { ssr: false });
 
@@ -38,7 +39,7 @@ export default function LessonContentPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/lesson-content/lesson/${lessonId}`)
+    apiFetch(`/api/lesson-content/lesson/${lessonId}`)
       .then(r => r.json())
       .then((data: Array<{ locale: string; id: string; content_json: Record<string, unknown>; status: string }>) => {
         const map = { ...contents };
@@ -50,7 +51,7 @@ export default function LessonContentPage() {
   const handleSave = async () => {
     setSaving(true);
     const cur = contents[activeLocale];
-    await fetch('http://localhost:3001/api/lesson-content', {
+    await apiFetch('/api/lesson-content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lesson_id: lessonId, locale: activeLocale, content_json: cur.content_json }),
@@ -63,7 +64,7 @@ export default function LessonContentPage() {
   const handleStatusChange = async (newStatus: string) => {
     const id = contents[activeLocale]?.id;
     if (!id) return;
-    await fetch(`http://localhost:3001/api/lesson-content/${id}/status`, {
+    await apiFetch(`/api/lesson-content/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),

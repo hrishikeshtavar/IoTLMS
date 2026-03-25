@@ -9,6 +9,9 @@ export class CoursesService {
     return this.prisma.course.findMany({
       where: tenantId ? { tenant_id: tenantId } : undefined,
       orderBy: { created_at: 'desc' },
+      include: {
+        _count: { select: { enrollments: true, lessons: true } },
+      },
     });
   }
 

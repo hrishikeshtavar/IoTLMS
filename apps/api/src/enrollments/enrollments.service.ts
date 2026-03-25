@@ -34,11 +34,25 @@ export class EnrollmentsService {
   }
 
   async updateProgress(userId: string, courseId: string, progressPct: number) {
-    return this.prisma.enrollment.updateMany({
+    const existing = await this.prisma.enrollment.findFirst({
       where: { user_id: userId, course_id: courseId },
+    });
+    const clampedPct = Math.min(Math.round(progressPct), 100);
+    if (existing) {
+      return this.prisma.enrollment.update({
+        where: { id: existing.id },
+        data: {
+          progress_pct: clampedPct,
+          completed_at: clampedPct >= 100 ? existing.completed_at ?? new Date() : null,
+        },
+      });
+    }
+    return this.prisma.enrollment.create({
       data: {
-        progress_pct: progressPct,
-        completed_at: progressPct >= 100 ? new Date() : null,
+        user_id: userId,
+        course_id: courseId,
+        progress_pct: clampedPct,
+        completed_at: clampedPct >= 100 ? new Date() : null,
       },
     });
   }

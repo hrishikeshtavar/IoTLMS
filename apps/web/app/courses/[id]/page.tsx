@@ -28,6 +28,20 @@ const TYPE_META: Record<string, { emoji: string; color: string; label: string }>
   quiz:   { emoji: '📝', color: '#FF6B35', label: 'Quiz' },
 };
 
+function toEmbedUrl(url: string): string {
+  try {
+    // youtu.be/ID
+    const short = url.match(/youtu\.be\/([^?&]+)/);
+    if (short) return `https://www.youtube.com/embed/${short[1]}`;
+    // youtube.com/watch?v=ID
+    const watch = url.match(/[?&]v=([^?&]+)/);
+    if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
+    // youtube.com/embed/... already
+    if (url.includes('youtube.com/embed/')) return url;
+  } catch {}
+  return url;
+}
+
 function renderContent(content: LessonContent['content_json'] | null) {
   if (!content || !content.content) return null;
   return content.content.map((node, i) => {
@@ -76,6 +90,7 @@ export default function CoursePage() {
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [lessonContent, setLessonContent] = useState<LessonContent | null>(null);
   const [completed, setCompleted]       = useState<Set<string>>(new Set());
+  const [assessmentMap, setAssessmentMap] = useState<Record<string, string>>({}); 
   const [loading, setLoading]           = useState(true);
   const [contentLoading, setContentLoading] = useState(false);
   const [notesOpen, setNotesOpen]       = useState(false);
@@ -95,10 +110,16 @@ export default function CoursePage() {
     if (!courseId) { setLoading(false); return; }
     apiFetch(`/api/lessons/course/${courseId}`)
       .then(r => r.json())
-      .then((data: Lesson[]) => {
+      .then(async (data: Lesson[]) => {
         setLessons(data);
         if (data.length > 0) setActiveLesson(data[0] ?? null);
         setLoading(false);
+        const quizLessons = data.filter((l) => l.type === 'quiz');
+        const map: Record<string, string> = {};
+        await Promise.all(quizLessons.map(async (l) => {
+          try { const r = await apiFetch('/api/assessments/by-lesson/' + l.id); const a = await r.json(); if (a && a.id) map[l.id] = a.id; } catch {}
+        }));
+        setAssessmentMap(map);
       })
       .catch(() => setLoading(false));
   }, [courseId]);
@@ -307,7 +328,10 @@ export default function CoursePage() {
                   {/* VIDEO */}
                   {activeLesson.type === 'video' && activeLesson.content_url && (
                     <div className="animate-popIn" style={{ marginBottom: '1.75rem', borderRadius: '1.25rem', overflow: 'hidden', background: '#000', aspectRatio: '16/9', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
-                      <video src={activeLesson.content_url} controls style={{ width: '100%', height: '100%' }} onEnded={() => completeLesson(activeLesson.id)} />
+                      {activeLesson.content_url.includes('youtube.com') || activeLesson.content_url.includes('youtu.be')
+                        ? <iframe src={toEmbedUrl(activeLesson.content_url)} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                        : <video src={activeLesson.content_url} controls style={{ width: '100%', height: '100%' }} onEnded={() => completeLesson(activeLesson.id)} />
+                      }
                     </div>
                   )}
                   {activeLesson.type === 'video' && !activeLesson.content_url && (
@@ -363,7 +387,7 @@ export default function CoursePage() {
                       <p style={{ color: 'var(--text3)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                         Test what you've learned in this lesson
                       </p>
-                      <Link href={`/quiz/${activeLesson.id}`}
+                      <Link href={`/quiz/${assessmentMap[activeLesson.id] ?? activeLesson.id}`}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, var(--primary), #ff8c5a)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(255,107,53,0.35)' }}>
                         ▶ Start Quiz
                       </Link>
@@ -371,7 +395,7 @@ export default function CoursePage() {
                   )}
 
                   {/* COMPLETE / NEXT ACTIONS */}
-                  {activeLesson.type !== 'video' && (
+                  {(
                     <div className="animate-fadeUp delay-200" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
                       {!isDone ? (
                         <button onClick={() => completeLesson(activeLesson.id)}

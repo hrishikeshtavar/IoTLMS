@@ -70,7 +70,7 @@ async function main() {
   // 5. Courses
   const courses = await Promise.all([
     {
-      id: 'course-fixed-id-001',
+      id: 'course-fixed-id-001', slug: 'intro-to-iot',
       title_en: 'Introduction to IoT',
       title_hi: 'IoT का परिचय',
       description_en: 'Learn the fundamentals of Internet of Things including sensors, actuators, and connectivity.',
@@ -80,7 +80,7 @@ async function main() {
       status: 'published',
     },
     {
-      id: 'course-fixed-id-002',
+      id: 'course-fixed-id-002', slug: 'esp32-arduino',
       title_en: 'ESP32 & Arduino Programming',
       title_hi: 'ESP32 और Arduino प्रोग्रामिंग',
       description_en: 'Master microcontroller programming with hands-on ESP32 and Arduino projects.',
@@ -90,7 +90,7 @@ async function main() {
       status: 'published',
     },
     {
-      id: 'course-fixed-id-003',
+      id: 'course-fixed-id-003', slug: 'industrial-iot-scada',
       title_en: 'Industrial IoT & SCADA',
       title_hi: 'औद्योगिक IoT और SCADA',
       description_en: 'Advanced course on industrial automation, MQTT, and SCADA systems.',
@@ -108,10 +108,10 @@ async function main() {
 
   // 6. Lessons for course 1
   const lessons = await Promise.all([
-    { id: 'lesson-fixed-id-001', title_en: 'What is IoT?',           order: 1 },
-    { id: 'lesson-fixed-id-002', title_en: 'Sensors & Actuators',    order: 2 },
-    { id: 'lesson-fixed-id-003', title_en: 'Connectivity Protocols', order: 3 },
-    { id: 'lesson-fixed-id-004', title_en: 'Cloud Platforms',        order: 4 },
+    { id: 'lesson-fixed-id-001', title: 'What is IoT?',           order_index: 1 },
+    { id: 'lesson-fixed-id-002', title: 'Sensors & Actuators',    order_index: 2 },
+    { id: 'lesson-fixed-id-003', title: 'Connectivity Protocols', order_index: 3 },
+    { id: 'lesson-fixed-id-004', title: 'Cloud Platforms',        order_index: 4 },
   ].map(l => prisma.lesson.upsert({
     where: { id: l.id },
     update: {},

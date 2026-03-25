@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/auth';
 
 type BrandKit = {
   primaryColor: string;
@@ -35,7 +36,7 @@ export default function BrandingPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    await fetch('http://localhost:3001/api/branding', {
+    await apiFetch('/api/branding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
