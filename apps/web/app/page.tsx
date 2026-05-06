@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { getUser, logout } from './lib/auth';
 
 type Locale = 'en' | 'hi' | 'mr';
 
@@ -125,11 +126,13 @@ function StatCard({ labelKey, target, locale, started }: { labelKey: string; tar
 export default function Home() {
   const [locale, setLocale] = useState<Locale>('en');
   const [statsStarted, setStatsStarted] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const statsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('iotlearn_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
+    setUser(getUser());
   }, []);
 
   useEffect(() => {
@@ -164,6 +167,23 @@ export default function Home() {
           <Link href="/courses" className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
             {t.nav_explore}
           </Link>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+                  {user.name?.[0]?.toUpperCase() ?? 'U'}
+                </span>
+                {user.name?.split(' ')[0]}
+              </Link>
+              <button onClick={() => logout()} style={{ padding: '0.35rem 0.8rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text2)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" style={{ padding: '0.4rem 1rem', borderRadius: '999px', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>
+              Login
+            </Link>
+          )}
         </div>
       </nav>
 

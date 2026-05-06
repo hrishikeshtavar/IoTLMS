@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, getUser, isLoggedIn } from '../lib/auth';
+import { apiFetch, getUser, isLoggedIn, logout } from '../lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Locale = 'en' | 'hi' | 'mr';
@@ -221,6 +221,17 @@ export default function DashboardPage() {
           <Link href="/courses" className="btn-primary" style={{ padding: '0.5rem 1.1rem', fontSize: '0.82rem' }}>
             {t.browse}
           </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)' }}>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+              {getUser()?.name?.[0]?.toUpperCase() ?? 'U'}
+            </span>
+            <span style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700 }}>
+              {getUser()?.name?.split(' ')[0]}
+            </span>
+          </div>
+          <button onClick={() => logout()} style={{ padding: '0.35rem 0.8rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text2)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+            Sign Out
+          </button>
         </div>
       </nav>
 
