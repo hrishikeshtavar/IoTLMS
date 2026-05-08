@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'IoTLearn LMS',
+  title: 'SimuLearning LMS',
   description: 'IoT & Processor Education Platform',
 };
 

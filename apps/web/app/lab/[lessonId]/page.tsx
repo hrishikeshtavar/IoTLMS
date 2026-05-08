@@ -33,7 +33,7 @@ const int LED_PIN = 13;
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   Serial.begin(115200);
-  Serial.println("IoTLearn Lab Started!");
+  Serial.println("SimuLearning Lab Started!");
 }
 
 void loop() {

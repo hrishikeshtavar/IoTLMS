@@ -39,6 +39,9 @@ model User {
   email_verify_token String?
   reset_token        String?
   reset_token_expires DateTime?
+  username           String?   // Custom username
+  class_grade        Int?      // Grade 1-10
+  division           String?   // Division e.g. A, B, C
   created_at         DateTime  @default(now())
 
   tenant         Tenant         @relation(fields: [tenant_id], references: [id])

@@ -101,7 +101,7 @@ export default function CoursePage() {
 
   // Load locale preference
   useEffect(() => {
-    const saved = localStorage.getItem('iotlearn_locale') as Locale;
+    const saved = localStorage.getItem('simulearning_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
   }, []);
 
@@ -129,7 +129,7 @@ export default function CoursePage() {
     if (!activeLesson) return;
     setContentLoading(true);
     setLessonContent(null);
-    const saved = localStorage.getItem(`iotlearn_note_${activeLesson.id}`) ?? '';
+    const saved = localStorage.getItem(`simulearning_note_${activeLesson.id}`) ?? '';
     setNoteText(saved);
     setNoteSaved(false);
 
@@ -153,7 +153,7 @@ export default function CoursePage() {
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
       if (activeLesson) {
-        localStorage.setItem(`iotlearn_note_${activeLesson.id}`, val);
+        localStorage.setItem(`simulearning_note_${activeLesson.id}`, val);
         setNoteSaved(true);
         setTimeout(() => setNoteSaved(false), 2000);
       }
@@ -195,12 +195,12 @@ export default function CoursePage() {
         <Link href="/courses" style={{ color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
           ← Courses
         </Link>
-        <Link href="/" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>⚡ IoTLearn</Link>
+        <Link href="/" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {/* Locale switcher */}
           <div style={{ display: 'flex', gap: '0.3rem' }}>
             {(['en','hi','mr'] as Locale[]).map(l => (
-              <button key={l} onClick={() => { setLocale(l); localStorage.setItem('iotlearn_locale', l); }}
+              <button key={l} onClick={() => { setLocale(l); localStorage.setItem('simulearning_locale', l); }}
                 style={{ padding: '0.2rem 0.55rem', borderRadius: '999px', border: '1.5px solid', borderColor: locale === l ? 'var(--primary)' : 'var(--border)', background: locale === l ? 'var(--primary)' : 'transparent', color: locale === l ? '#fff' : 'var(--text3)', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2' }}>
                 {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
               </button>
@@ -259,7 +259,7 @@ export default function CoursePage() {
                   <span style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>
                     {noteText.trim() ? `${noteText.trim().split(/\s+/).length} words` : 'Start typing…'}
                   </span>
-                  <button onClick={() => { if (activeLesson) { localStorage.setItem(`iotlearn_note_${activeLesson.id}`, noteText); setNoteSaved(true); setTimeout(() => setNoteSaved(false), 2000); } }}
+                  <button onClick={() => { if (activeLesson) { localStorage.setItem(`simulearning_note_${activeLesson.id}`, noteText); setNoteSaved(true); setTimeout(() => setNoteSaved(false), 2000); } }}
                     style={{ padding: '0.35rem 0.875rem', borderRadius: '999px', border: '1.5px solid var(--primary)', background: 'var(--primary)', color: '#fff', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
                     💾 Save
                   </button>

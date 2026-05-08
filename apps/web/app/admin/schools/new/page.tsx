@@ -42,7 +42,7 @@ export default function SchoolSignupPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Failed to create school'); return; }
       setDone(true);
-      setTimeout(() => router.push('/admin'), 2500);
+      setTimeout(() => router.push('/super-admin'), 2500);
     } catch { setError('Something went wrong. Please try again.'); }
     finally { setLoading(false); }
   }
@@ -61,8 +61,8 @@ export default function SchoolSignupPage() {
         <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🏫</div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.5rem' }}>School Created!</h1>
         <p style={{ color: 'var(--text3)' }}><strong>{form.name_en}</strong> is ready at</p>
-        <code style={{ background: 'var(--bg)', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', color: 'var(--primary)', fontWeight: 700 }}>{form.slug}.iotlearn.in</code>
-        <p style={{ color: 'var(--text3)', marginTop: '1rem', fontSize: '0.85rem' }}>Redirecting to admin panel…</p>
+        <code style={{ background: 'var(--bg)', padding: '0.4rem 0.8rem', borderRadius: '0.5rem', color: 'var(--primary)', fontWeight: 700 }}>{form.slug}.simulearning.in</code>
+        <p style={{ color: 'var(--text3)', marginTop: '1rem', fontSize: '0.85rem' }}>Redirecting to Super Admin…</p>
       </div>
     </div>
   );
@@ -71,7 +71,7 @@ export default function SchoolSignupPage() {
     <div style={S.page}>
       <div style={S.card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-          <Link href="/admin" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>← Admin</Link>
+          <Link href="/super-admin" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>← Admin</Link>
           <span style={{ color: 'var(--border)' }}>|</span>
           <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)' }}>🏫 New School</span>
         </div>
@@ -89,7 +89,7 @@ export default function SchoolSignupPage() {
           <label style={S.label}>School Slug *</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <input value={form.slug} onChange={e => update('slug', e.target.value.toLowerCase())} placeholder="delhi-public" style={{ ...S.input, flex: 1 }} />
-            <span style={{ color: 'var(--text3)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>.iotlearn.in</span>
+            <span style={{ color: 'var(--text3)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>.simulearning.in</span>
           </div>
           <p style={{ fontSize: '0.72rem', color: 'var(--text3)', marginBottom: '0.65rem' }}>Lowercase letters, numbers and hyphens only</p>
           <label style={S.label}>Admin Email *</label>

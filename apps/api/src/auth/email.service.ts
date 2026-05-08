@@ -5,7 +5,7 @@ import { Resend } from 'resend';
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
   private logger = new Logger(EmailService.name);
-  private from = process.env.FROM_EMAIL || 'noreply@iotlearn.in';
+  private from = process.env.FROM_EMAIL || 'noreply@simulearning.in';
 
   async sendVerification(to: string, name: string, token: string, tenantSlug: string) {
     const url = `http://localhost:3000/verify-email?token=${token}`;
@@ -13,7 +13,7 @@ export class EmailService {
       await this.resend.emails.send({
         from: this.from,
         to,
-        subject: 'Verify your IoTLearn account',
+        subject: 'Verify your SimuLearning account',
         html: `<h2>Welcome, ${name}!</h2>
                <p>Click below to verify your email address:</p>
                <a href="${url}" style="background:#1A73E8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">
@@ -34,7 +34,7 @@ export class EmailService {
       await this.resend.emails.send({
         from: this.from,
         to,
-        subject: 'Reset your IoTLearn password',
+        subject: 'Reset your SimuLearning password',
         html: `<h2>Password Reset</h2>
                <p>Click below to reset your password. This link expires in 1 hour.</p>
                <a href="${url}" style="background:#FF6B35;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">

@@ -12,7 +12,7 @@ type QuizResult = { passed: boolean; score: number; max_score: number; percentag
 // ─── IndexedDB helpers ───────────────────────────────────────────────────────
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('iotlearn', 1);
+    const req = indexedDB.open('simulearning', 1);
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains('assessments')) db.createObjectStore('assessments', { keyPath: 'id' });
@@ -251,7 +251,7 @@ export default function QuizPage() {
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Baloo 2'" }}>← Back</button>
-        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>📝 IoTLearn Quiz</div>
+        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>📝 SimuLearning Quiz</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isOffline && <span style={{ padding: '0.25rem 0.65rem', background: 'rgba(255,107,53,0.12)', color: 'var(--primary)', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700 }}>📡 Offline</span>}
           {!result && <span style={{ fontSize: '0.82rem', color: 'var(--text3)', fontWeight: 600 }}>{Object.keys(answers).length}/{questions.length} answered</span>}

@@ -111,7 +111,7 @@ export default function CoursesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('iotlearn_locale') as Locale;
+    const saved = localStorage.getItem('simulearning_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
     setCurrentUser(getUser());
 
@@ -145,7 +145,7 @@ export default function CoursesPage() {
     }
   }, []);
 
-  const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('iotlearn_locale', l); };
+  const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('simulearning_locale', l); };
 
   const categories = ['', ...Array.from(new Set(courses.map(c => c.category || 'General').filter(Boolean)))];
   const t = T[locale];
@@ -186,7 +186,7 @@ export default function CoursesPage() {
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ IoTLearn</Link>
+          <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
           <Link href="/" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>{t.back_home}</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

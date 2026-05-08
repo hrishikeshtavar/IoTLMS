@@ -30,7 +30,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState('');
 
   if (typeof window !== 'undefined' && !name) {
-    try { setName(JSON.parse(localStorage.getItem('iotlearn_user') || '{}')?.name || 'Student'); } catch {}
+    try { setName(JSON.parse(localStorage.getItem('simulearning_user') || '{}')?.name || 'Student'); } catch {}
   }
 
   function toggleInterest(id: string) {
@@ -39,9 +39,9 @@ export default function OnboardingPage() {
 
   async function finish() {
     setLoading(true);
-    localStorage.setItem('iotlearn_locale', language);
-    localStorage.setItem('iotlearn_interests', JSON.stringify(interests));
-    localStorage.setItem('iotlearn_onboarded', 'true');
+    localStorage.setItem('simulearning_locale', language);
+    localStorage.setItem('simulearning_interests', JSON.stringify(interests));
+    localStorage.setItem('simulearning_onboarded', 'true');
     setStep('done');
     setTimeout(() => router.push('/courses'), 1800);
     setLoading(false);

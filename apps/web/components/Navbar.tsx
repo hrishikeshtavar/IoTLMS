@@ -18,7 +18,7 @@ export default function Navbar() {
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
           ⚡
         </div>
-        <span className="text-lg font-bold text-blue-600">IoTLearn</span>
+        <span className="text-lg font-bold text-blue-600">SimuLearning</span>
       </Link>
 
       <div className="flex items-center gap-1">

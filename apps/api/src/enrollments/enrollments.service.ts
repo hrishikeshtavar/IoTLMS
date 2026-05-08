@@ -56,4 +56,16 @@ export class EnrollmentsService {
       },
     });
   }
+
+  async getAllByTenant(tenantId: string) {
+    return this.prisma.enrollment.findMany({
+      where: {
+        course: { tenant_id: tenantId },
+      },
+      include: {
+        course: { select: { title_en: true, category: true, tenant_id: true } },
+      },
+      orderBy: { enrolled_at: 'desc' },
+    });
+  }
 }

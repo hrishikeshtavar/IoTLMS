@@ -102,7 +102,7 @@ export class AnalyticsService {
           }),
       score: `${pct}%`,
       certId: `IOTL-${courseId.slice(0, 8).toUpperCase()}`,
-      school: brandKit ? 'School' : 'IoTLearn',
+      school: brandKit ? 'School' : 'SimuLearning',
       primaryColor: (brandKit?.colors_json as any)?.primary ?? '#2563eb',
       logoUrl: brandKit?.logo_url ?? null,
     };

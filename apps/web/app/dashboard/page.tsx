@@ -147,7 +147,7 @@ export default function DashboardPage() {
   const [weeklyActivity, setWeeklyActivity] = useState<number[] | undefined>(undefined);
 
   useEffect(() => {
-    const saved = localStorage.getItem('iotlearn_locale') as Locale;
+    const saved = localStorage.getItem('simulearning_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
 
     const user = getUser();
@@ -173,7 +173,7 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('iotlearn_locale', l); };
+  const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('simulearning_locale', l); };
 
   const t = T[locale];
   const isDevanagari = locale !== 'en';
@@ -210,7 +210,7 @@ export default function DashboardPage() {
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ IoTLearn</Link>
+        <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {(['en','hi','mr'] as Locale[]).map(l => (
             <button key={l} onClick={() => switchLocale(l)}

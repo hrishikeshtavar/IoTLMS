@@ -12,8 +12,8 @@ export class MinioService implements OnModuleInit {
       endPoint: process.env.MINIO_ENDPOINT || 'localhost',
       port: parseInt(process.env.MINIO_PORT || '9000'),
       useSSL: process.env.MINIO_USE_SSL === 'true',
-      accessKey: process.env.MINIO_ACCESS_KEY || 'iotlearn_admin',
-      secretKey: process.env.MINIO_SECRET_KEY || 'iotlearn_secret',
+      accessKey: process.env.MINIO_ACCESS_KEY || 'simulearning_admin',
+      secretKey: process.env.MINIO_SECRET_KEY || 'simulearning_secret',
     });
     try {
       await this.initBuckets();

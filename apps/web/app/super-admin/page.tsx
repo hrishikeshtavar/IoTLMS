@@ -2,26 +2,89 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, getUser } from '../lib/auth';
+import { apiFetch, getUser, logout } from '../lib/auth';
 
 type Tenant = {
   id: string; name: string; slug: string;
   plan_id: string | null; is_active: boolean; created_at: string;
   _count: { students: number; courses: number; certs: number };
 };
-
 type Stats = { tenants: number; students: number; courses: number; certs: number };
 
-const PLAN_COLORS: Record<string, string> = {
-  free: '#718096', starter: '#1A73E8', pro: '#A855F7',
+const PLAN_COLORS: Record<string, { bg: string; color: string }> = {
+  free:    { bg: '#F1F5F9', color: '#64748B' },
+  starter: { bg: '#EFF6FF', color: '#1D4ED8' },
+  pro:     { bg: '#F5F3FF', color: '#7C3AED' },
 };
 
-const STAT_CARDS = [
-  { key: 'tenants',  label: 'Schools',      emoji: '🏫', color: '#1A73E8' },
-  { key: 'students', label: 'Students',     emoji: '👨‍🎓', color: '#FF6B35' },
-  { key: 'courses',  label: 'Courses',      emoji: '📚', color: '#A855F7' },
-  { key: 'certs',    label: 'Certificates', emoji: '🏆', color: '#00C896' },
-];
+function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
+  const colors = ['#1A73E8', '#A855F7', '#00C896', '#FF6B35', '#D97706'];
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: colors[hash % colors.length], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: size * 0.35, flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
+function EditSchoolModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose: () => void; onSaved: (t: Tenant) => void }) {
+  const [form, setForm] = useState({ name: tenant.name, plan_id: tenant.plan_id || 'free', is_active: tenant.is_active });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function save() {
+    setSaving(true); setErr('');
+    const res = await apiFetch(`/api/tenants/${tenant.id}`, { method: 'PATCH', body: JSON.stringify(form) });
+    setSaving(false);
+    if (res.ok) { const d = await res.json(); onSaved({ ...tenant, ...d }); onClose(); }
+    else setErr('Failed to update school.');
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 440, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+        <div style={{ background: 'linear-gradient(135deg,#0F172A,#1E3A5F)', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 800, color: '#fff', fontSize: '1rem' }}>Edit School</div>
+            <div style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: 2 }}>{tenant.slug}.simulearning.in</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+        </div>
+        <div style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
+          {err && <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600 }}>❌ {err}</div>}
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>School Name</label>
+            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+              style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
+            <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
+              style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+              <option value="free">Free</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
+            <button onClick={() => setForm({ ...form, is_active: !form.is_active })}
+              style={{ padding: '6px 16px', borderRadius: 999, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', background: form.is_active ? '#DCFCE7' : '#FEE2E2', color: form.is_active ? '#15803D' : '#DC2626' }}>
+              {form.is_active ? '✅ Active' : '❌ Inactive'}
+            </button>
+          </div>
+          <button onClick={save} disabled={saving}
+            style={{ padding: '0.75rem', borderRadius: 10, background: '#1A73E8', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -29,15 +92,14 @@ export default function SuperAdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [toggling, setToggling] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [editing, setEditing] = useState<Tenant | null>(null);
+  const [superUser, setSuperUser] = useState<any>(null);
 
   useEffect(() => {
     const user = getUser();
-    if (!user || user.role !== 'super_admin') {
-      router.push('/admin');
-      return;
-    }
+    if (!user || user.role !== 'super_admin') { router.push('/login'); return; }
+    setSuperUser(user);
     Promise.all([
       apiFetch('/api/tenants').then(r => r.json()),
       apiFetch('/api/tenants/stats').then(r => r.json()),
@@ -48,19 +110,6 @@ export default function SuperAdminPage() {
     }).catch(() => setLoading(false));
   }, [router]);
 
-  async function toggleActive(tenant: Tenant) {
-    setToggling(tenant.id);
-    try {
-      const updated = await apiFetch(`/api/tenants/${tenant.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ is_active: !tenant.is_active }),
-      }).then(r => r.json());
-      setTenants(prev => prev.map(t => t.id === tenant.id ? { ...t, is_active: updated.is_active } : t));
-    } finally {
-      setToggling(null);
-    }
-  }
-
   const filtered = tenants.filter(t => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
     const matchFilter = filter === 'all' || (filter === 'active' ? t.is_active : !t.is_active);
@@ -68,114 +117,162 @@ export default function SuperAdminPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(26,26,46,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#0F172A', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/admin" style={{ color: '#aaa', fontSize: '0.85rem' }}>← Admin</Link>
-          <span style={{ color: '#444' }}>|</span>
-          <span style={{ fontWeight: 800, color: '#fff', fontSize: '1rem' }}>⚡ Super Admin</span>
-          <span style={{ padding: '0.2rem 0.6rem', background: 'rgba(255,107,53,0.2)', color: '#FF6B35', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700 }}>PLATFORM</span>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🚀</div>
+            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>SimuLearning</span>
+          </Link>
+          <span style={{ color: '#334155' }}>|</span>
+          <span style={{ padding: '3px 10px', background: 'rgba(255,107,53,0.2)', color: '#FF6B35', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Super Admin</span>
         </div>
-        <Link href="/admin/schools/new" className="btn-primary" style={{ padding: '0.5rem 1.1rem', fontSize: '0.82rem' }}>
-          + New School
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button onClick={() => router.push('/super-admin/profile')}
+            style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+            👤 My Profile
+          </button>
+          <button onClick={logout}
+            style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', color: '#F87171', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+            Sign Out
+          </button>
+        </div>
       </nav>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-
-        {/* STATS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-          {STAT_CARDS.map(s => (
-            <div key={s.key} style={{ background: 'var(--card)', borderRadius: '1.25rem', padding: '1.25rem', border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '0.875rem', background: s.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', flexShrink: 0 }}>{s.emoji}</div>
+      {/* HERO */}
+      <div style={{ background: 'linear-gradient(135deg,#0F172A 0%,#1E3A5F 60%,#0E7490 100%)', padding: '2.5rem 2rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg,#FF6B35,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#fff', border: '3px solid rgba(255,255,255,0.2)' }}>
+                {superUser?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'SA'}
+              </div>
               <div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color, lineHeight: 1 }}>
-                  {loading ? '—' : stats?.[s.key as keyof Stats] ?? 0}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text3)', fontWeight: 600, marginTop: '0.2rem' }}>{s.label}</div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px' }}>Platform Administrator</div>
+                <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 800, marginTop: 2 }}>{superUser?.name || 'Super Admin'}</div>
+                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', marginTop: 3 }}>🌐 SimuLearning Platform · All Schools</div>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* TOOLBAR */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="🔍  Search schools…"
-            style={{ flex: 1, minWidth: '200px', padding: '0.65rem 1rem', borderRadius: '0.875rem', border: '1.5px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'Baloo 2'", outline: 'none' }}
-          />
-          {(['all', 'active', 'inactive'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              style={{ padding: '0.5rem 1rem', borderRadius: '999px', border: '1.5px solid', borderColor: filter === f ? 'var(--primary)' : 'var(--border)', background: filter === f ? 'var(--primary)' : 'transparent', color: filter === f ? '#fff' : 'var(--text2)', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'Baloo 2'", textTransform: 'capitalize' }}>
-              {f} {f !== 'all' && `(${tenants.filter(t => f === 'active' ? t.is_active : !t.is_active).length})`}
-            </button>
-          ))}
-        </div>
-
-        {/* SCHOOLS TABLE */}
-        <div style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-          {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '1rem', padding: '0.75rem 1.25rem', background: 'var(--bg)', borderBottom: '1px solid var(--border)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <span>School</span><span>Plan</span><span>Students</span><span>Courses</span><span>Certs</span><span>Status</span>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {[
+                { label: 'Schools', value: stats?.tenants ?? '—', icon: '🏫', color: '#60A5FA' },
+                { label: 'Students', value: stats?.students ?? '—', icon: '👨‍🎓', color: '#34D399' },
+                { label: 'Courses', value: stats?.courses ?? '—', icon: '📚', color: '#C084FC' },
+                { label: 'Certificates', value: stats?.certs ?? '—', icon: '🏆', color: '#FCD34D' },
+              ].map(s => (
+                <div key={s.label} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '0.875rem 1.25rem', textAlign: 'center', minWidth: 90 }}>
+                  <div style={{ fontSize: '1rem', marginBottom: 4 }}>{s.icon}</div>
+                  <div style={{ fontWeight: 900, fontSize: '1.5rem', color: s.color, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', fontWeight: 700, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
+      </div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text3)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚙️</div>
-              Loading schools…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text3)' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🏫</div>
-              {search ? 'No schools match your search' : 'No schools yet'}
-            </div>
-          ) : filtered.map((tenant, i) => (
-            <div key={tenant.id}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '1rem', padding: '1rem 1.25rem', borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', alignItems: 'center', transition: 'background 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+      {/* MAIN */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}>
 
-              {/* Name + slug */}
-              <div>
-                <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.9rem' }}>{tenant.name}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text3)', fontFamily: 'monospace' }}>{tenant.slug}.iotlearn.in</div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text3)', marginTop: '0.15rem' }}>
-                  Since {new Date(tenant.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-                </div>
-              </div>
-
-              {/* Plan badge */}
-              <div>
-                <span style={{ padding: '0.25rem 0.65rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, background: (PLAN_COLORS[tenant.plan_id ?? 'free'] ?? '#718096') + '20', color: PLAN_COLORS[tenant.plan_id ?? 'free'] ?? '#718096', textTransform: 'capitalize' }}>
-                  {tenant.plan_id ?? 'free'}
-                </span>
-              </div>
-
-              {/* Counts */}
-              <div style={{ fontWeight: 700, color: 'var(--text2)', fontSize: '0.9rem' }}>{tenant._count.students}</div>
-              <div style={{ fontWeight: 700, color: 'var(--text2)', fontSize: '0.9rem' }}>{tenant._count.courses}</div>
-              <div style={{ fontWeight: 700, color: 'var(--text2)', fontSize: '0.9rem' }}>{tenant._count.certs}</div>
-
-              {/* Toggle */}
-              <button
-                onClick={() => toggleActive(tenant)}
-                disabled={toggling === tenant.id}
-                style={{ padding: '0.35rem 0.875rem', borderRadius: '999px', border: '1.5px solid', borderColor: tenant.is_active ? 'rgba(0,200,150,0.3)' : 'rgba(255,107,53,0.3)', background: tenant.is_active ? 'rgba(0,200,150,0.1)' : 'rgba(255,107,53,0.1)', color: tenant.is_active ? '#00C896' : '#FF6B35', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'Baloo 2'", whiteSpace: 'nowrap', opacity: toggling === tenant.id ? 0.5 : 1 }}>
-                {toggling === tenant.id ? '…' : tenant.is_active ? '✅ Active' : '⏸ Inactive'}
-              </button>
-            </div>
-          ))}
+        {/* Toolbar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: '#0F172A' }}>All Schools</h2>
+            <p style={{ color: '#64748B', marginTop: 4, fontSize: '0.85rem' }}>{tenants.length} schools on platform</p>
+          </div>
+          <button onClick={() => router.push('/admin/schools/new')}
+            style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#1A73E8,#0EA5E9)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(26,115,232,0.3)' }}>
+            + Add New School
+          </button>
         </div>
 
-        {filtered.length > 0 && (
-          <p style={{ textAlign: 'center', color: 'var(--text3)', fontSize: '0.8rem', marginTop: '1rem' }}>
-            Showing {filtered.length} of {tenants.length} schools
-          </p>
+        {/* Search + filter */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🔍</span>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search schools…"
+              style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.5rem', borderRadius: 999, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            {(['all','active','inactive'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{ padding: '0.5rem 1rem', borderRadius: 999, border: '1.5px solid', borderColor: filter === f ? '#1A73E8' : '#E2E8F0', background: filter === f ? '#1A73E8' : '#fff', color: filter === f ? '#fff' : '#64748B', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', textTransform: 'capitalize' }}>
+                {f} {f !== 'all' && `(${tenants.filter(t => f === 'active' ? t.is_active : !t.is_active).length})`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Schools grid */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#64748B' }}>Loading schools…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#64748B' }}>No schools found</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            {filtered.map(tenant => {
+              const plan = PLAN_COLORS[tenant.plan_id ?? 'free'] || PLAN_COLORS.free;
+              return (
+                <div key={tenant.id} style={{ background: '#fff', borderRadius: 18, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'pointer' }}
+                  onClick={() => router.push(`/super-admin/schools/${tenant.id}`)}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}>
+
+                  {/* Status bar */}
+                  <div style={{ height: 4, background: tenant.is_active ? 'linear-gradient(90deg,#00C896,#1A73E8)' : '#E2E8F0' }} />
+
+                  <div style={{ padding: '1.25rem' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', marginBottom: 14 }}>
+                      <Avatar name={tenant.name} size={44} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0F172A', lineHeight: 1.3 }}>{tenant.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace', marginTop: 2 }}>{tenant.slug}.simulearning.in</div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: plan.bg, color: plan.color, fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span>
+                          <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: tenant.is_active ? '#DCFCE7' : '#F1F5F9', color: tenant.is_active ? '#15803D' : '#64748B', fontWeight: 700 }}>
+                            {tenant.is_active ? '● Active' : '○ Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 14 }}>
+                      {[
+                        { label: 'Students', value: tenant._count.students, icon: '👨‍🎓', color: '#1A73E8', bg: '#EFF6FF' },
+                        { label: 'Courses', value: tenant._count.courses, icon: '📚', color: '#7C3AED', bg: '#F5F3FF' },
+                        { label: 'Certs', value: tenant._count.certs, icon: '🏆', color: '#D97706', bg: '#FFFBEB' },
+                      ].map(s => (
+                        <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: '0.6rem 0.4rem', textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.9rem', marginBottom: 2 }}>{s.icon}</div>
+                          <div style={{ fontWeight: 900, fontSize: '1.1rem', color: s.color }}>{s.value}</div>
+                          <div style={{ fontSize: '0.6rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: 12 }}>
+                      <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+                        Since {new Date(tenant.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                      </span>
+                      <button onClick={() => setEditing(tenant)}
+                        style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+                        ✏️ Edit
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {editing && <EditSchoolModal tenant={editing} onClose={() => setEditing(null)} onSaved={t => { setTenants(prev => prev.map(x => x.id === t.id ? t : x)); setEditing(null); }} />}
     </div>
   );
 }

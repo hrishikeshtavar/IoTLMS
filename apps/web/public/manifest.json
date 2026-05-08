@@ -1,6 +1,6 @@
 {
-  "name": "IoTLearn LMS",
-  "short_name": "IoTLearn",
+  "name": "SimuLearning LMS",
+  "short_name": "SimuLearning",
   "description": "IoT & Processor Education Platform",
   "start_url": "/",
   "display": "standalone",

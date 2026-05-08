@@ -34,7 +34,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={styles.logo}>
           <span style={styles.logoIcon}>⚡</span>
-          <span style={styles.logoText}>IoTLearn</span>
+          <span style={styles.logoText}>SimuLearning</span>
         </div>
 
         <h1 style={styles.title}>Welcome back</h1>

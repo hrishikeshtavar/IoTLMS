@@ -1,18 +1,23 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { apiFetch } from '../../lib/auth';
+import { useRouter } from 'next/navigation';
+import { apiFetch, getUser, logout } from '../../../app/lib/auth';
 
 type User = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: string;
   language_pref: string;
   is_active: boolean;
   email_verified: boolean;
   created_at: string;
   last_login?: string;
+  last_active?: string;
+  class_grade?: number;
+  division?: string;
 };
 
 type Enrollment = {
@@ -22,15 +27,8 @@ type Enrollment = {
   course: { title_en: string; category: string };
 };
 
-const LANG_FLAGS: Record<string, string> = { en: '🇬🇧', hi: '🇮🇳', mr: '🟠' };
-const CATEGORY_COLORS: Record<string, string> = {
-  Arduino: '#00C896', 'Raspberry Pi': '#A855F7', ARM: '#1A73E8',
-  'RISC-V': '#FF6B35', ESP32: '#FFD93D', IoT: '#1A73E8', General: '#718096',
-};
-
 function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-  // Deterministic color from name
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
   const colors = ['#FF6B35', '#1A73E8', '#A855F7', '#00C896', '#FFD93D', '#ff4d6d', '#06d6a0'];
@@ -42,82 +40,240 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   );
 }
 
-function StudentDrawer({ userId, name, onClose }: { userId: string; name: string; onClose: () => void }) {
+// ── Edit Modal ──────────────────────────────────────────────
+function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void; onSaved: (u: User) => void }) {
+  const [tab, setTab] = useState<'info' | 'password'>('info');
+  const [form, setForm] = useState({
+    name: user.name || '',
+    phone: user.phone || '',
+    language_pref: user.language_pref || 'en',
+    class_grade: user.class_grade?.toString() || '',
+    division: user.division || '',
+  });
+  const [pw, setPw] = useState({ next: '', confirm: '' });
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function saveInfo() {
+    setSaving(true); setErr(''); setMsg('');
+    const payload: any = { name: form.name, phone: form.phone, language_pref: form.language_pref, division: form.division };
+    if (form.class_grade) payload.class_grade = parseInt(form.class_grade);
+    const res = await apiFetch(`/api/users/${user.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    setSaving(false);
+    if (res.ok) { setMsg('Saved!'); onSaved({ ...user, ...payload }); }
+    else setErr('Failed to save.');
+  }
+
+  async function savePassword() {
+    if (pw.next !== pw.confirm) { setErr('Passwords do not match.'); return; }
+    if (pw.next.length < 8) { setErr('Min. 8 characters.'); return; }
+    setSaving(true); setErr(''); setMsg('');
+    const res = await apiFetch(`/api/users/${user.id}/password`, { method: 'PATCH', body: JSON.stringify({ password: pw.next }) });
+    setSaving(false);
+    if (res.ok) { setMsg('Password changed!'); setPw({ next: '', confirm: '' }); }
+    else setErr('Failed to change password.');
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ background: 'linear-gradient(135deg,#1A73E8,#00C896)', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Avatar name={user.name} size={44} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, color: '#fff', fontSize: '1rem' }}>{user.name}</div>
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem' }}>{user.email}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb' }}>
+          {(['info', 'password'] as const).map(t => (
+            <button key={t} onClick={() => { setTab(t); setMsg(''); setErr(''); }}
+              style={{ flex: 1, padding: '0.75rem', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', background: tab === t ? '#EFF6FF' : '#fff', color: tab === t ? '#1A73E8' : '#6b7280', borderBottom: tab === t ? '2px solid #1A73E8' : '2px solid transparent' }}>
+              {t === 'info' ? '👤 Info' : '🔒 Password'}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ padding: '1.5rem' }}>
+          {msg && <div style={{ background: '#DCFCE7', color: '#15803D', padding: '0.6rem 1rem', borderRadius: 8, marginBottom: 12, fontWeight: 600, fontSize: '0.875rem' }}>✅ {msg}</div>}
+          {err && <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '0.6rem 1rem', borderRadius: 8, marginBottom: 12, fontWeight: 600, fontSize: '0.875rem' }}>❌ {err}</div>}
+
+          {tab === 'info' && (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {[
+                { label: 'Full Name', key: 'name', placeholder: 'Student name' },
+                { label: 'Phone', key: 'phone', placeholder: '+91 9876543210' },
+                { label: 'Division', key: 'division', placeholder: 'A, B, C...' },
+              ].map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</label>
+                  <input value={form[key as keyof typeof form]} onChange={e => setForm({ ...form, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Class</label>
+                  <select value={form.class_grade} onChange={e => setForm({ ...form, class_grade: e.target.value })}
+                    style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+                    <option value="">Select</option>
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Class {g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Language</label>
+                  <select value={form.language_pref} onChange={e => setForm({ ...form, language_pref: e.target.value })}
+                    style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+                    <option value="en">English</option>
+                    <option value="hi">हिंदी</option>
+                    <option value="mr">मराठी</option>
+                  </select>
+                </div>
+              </div>
+              <button onClick={saveInfo} disabled={saving}
+                style={{ padding: '0.75rem', borderRadius: 10, background: '#1A73E8', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+
+          {tab === 'password' && (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {[
+                { label: 'New Password', key: 'next', placeholder: 'Min. 8 characters' },
+                { label: 'Confirm Password', key: 'confirm', placeholder: 'Repeat password' },
+              ].map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</label>
+                  <input type="password" placeholder={placeholder}
+                    value={pw[key as keyof typeof pw]}
+                    onChange={e => setPw({ ...pw, [key]: e.target.value })}
+                    style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <button onClick={savePassword} disabled={saving}
+                style={{ padding: '0.75rem', borderRadius: 10, background: '#1A73E8', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving…' : 'Change Password'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── View Drawer ─────────────────────────────────────────────
+function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => void; onEdit: () => void }) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch(`/api/enrollments/user/${userId}`)
+    apiFetch(`/api/enrollments/user/${user.id}`)
       .then(r => r.json())
       .then(data => { setEnrollments(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [userId]);
+  }, [user.id]);
 
-  const completed = enrollments.filter(e => e.completed_at).length;
+  const completed = enrollments.filter(e => e.completed_at);
+  const username = user.email?.split('@')[0] || '—';
+
+  function downloadCert(courseId: string, courseName: string) {
+    window.open(`/certificate/${courseId}`, '_blank');
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--card)', width: 'min(420px, 100vw)', height: '100%', borderLeft: '1.5px solid var(--border)', boxShadow: '-8px 0 40px rgba(0,0,0,0.15)', animation: 'slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+      <div style={{ background: '#fff', width: 'min(440px,100vw)', height: '100%', borderLeft: '1.5px solid #e5e7eb', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
         {/* Header */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Avatar name={name} size={52} />
+        <div style={{ background: 'linear-gradient(135deg,#1A73E8,#00C896)', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <Avatar name={user.name} size={56} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)' }}>{name}</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text3)', marginTop: '0.15rem' }}>
-              {enrollments.length} enrolled · {completed} completed
-            </div>
+            <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>{user.name}</div>
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.8rem', marginTop: 2 }}>@{username}</div>
+            {(user.class_grade || user.division) && (
+              <div style={{ marginTop: 6 }}>
+                <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '2px 10px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
+                  {user.class_grade ? `Class ${user.class_grade}` : ''}{user.division ? ` – Div ${user.division}` : ''}
+                </span>
+              </div>
+            )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem', color: 'var(--text3)' }}>✕</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <button onClick={onEdit} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>✏️ Edit</button>
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem' }}>✕ Close</button>
+          </div>
         </div>
 
-        {/* Progress summary */}
-        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+        {/* Info grid */}
+        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           {[
-            { label: 'Enrolled', value: enrollments.length, emoji: '📚', color: '#1A73E8' },
-            { label: 'Completed', value: completed, emoji: '✅', color: '#00C896' },
-            { label: 'Avg Progress', value: `${enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + e.progress_pct, 0) / enrollments.length) : 0}%`, emoji: '📈', color: '#FF6B35' },
-          ].map(s => (
-            <div key={s.label} style={{ background: 'var(--bg)', borderRadius: '0.75rem', padding: '0.875rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '1.25rem', marginBottom: '0.2rem' }}>{s.emoji}</div>
-              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text3)', fontWeight: 600 }}>{s.label}</div>
+            { label: 'Email', value: user.email || '—' },
+            { label: 'Phone', value: user.phone || 'Not set' },
+            { label: 'Username', value: `@${username}` },
+            { label: 'Language', value: { en: 'English', hi: 'हिंदी', mr: 'मराठी' }[user.language_pref] || 'English' },
+            { label: 'Status', value: user.is_active ? '✅ Active' : '❌ Inactive' },
+            { label: 'Last Login', value: user.last_login ? new Date(user.last_login).toLocaleDateString('en-IN') : 'Never' },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ background: '#f9fafb', borderRadius: 8, padding: '0.6rem 0.875rem' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#111827', marginTop: 2, wordBreak: 'break-all' }}>{value}</div>
             </div>
           ))}
         </div>
 
-        {/* Course progress list */}
+        {/* Stats */}
+        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem' }}>
+          {[
+            { label: 'Enrolled', value: enrollments.length, emoji: '📚', color: '#1A73E8' },
+            { label: 'Completed', value: completed.length, emoji: '✅', color: '#00C896' },
+            { label: 'Avg Progress', value: `${enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + e.progress_pct, 0) / enrollments.length) : 0}%`, emoji: '📈', color: '#FF6B35' },
+          ].map(s => (
+            <div key={s.label} style={{ background: '#f9fafb', borderRadius: 10, padding: '0.875rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.2rem', marginBottom: 2 }}>{s.emoji}</div>
+              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: '0.65rem', color: '#9ca3af', fontWeight: 600 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Courses */}
         <div style={{ padding: '1rem 1.5rem', flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Course Progress</div>
+          <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Course Progress</div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text3)' }}>
-              <div style={{ fontSize: '1.5rem', display: 'inline-block', animation: 'spin 1s linear infinite' }}>⚙️</div>
-            </div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>Loading…</div>
           ) : enrollments.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text3)', fontSize: '0.85rem' }}>
-              No enrollments yet
-            </div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af', fontSize: '0.85rem' }}>No enrollments yet</div>
           ) : enrollments.map(e => {
             const pct = Math.round(e.progress_pct);
-            const cat = e.course.category || 'General';
-            const color = CATEGORY_COLORS[cat] || '#718096';
+            const isDone = !!e.completed_at;
             return (
-              <div key={e.course_id} style={{ marginBottom: '1rem', padding: '0.875rem', background: 'var(--bg)', borderRadius: '0.875rem', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)' }}>{e.course.title_en}</div>
-                    <span style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '999px', background: color + '22', color, fontWeight: 700 }}>{cat}</span>
+              <div key={e.course_id} style={{ marginBottom: '0.875rem', padding: '0.875rem', background: '#f9fafb', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827' }}>{e.course.title_en}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: 2 }}>{e.course.category}</div>
                   </div>
-                  <span style={{ fontWeight: 800, fontSize: '0.9rem', color: e.completed_at ? 'var(--accent)' : 'var(--primary)' }}>{pct}%</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.875rem', color: isDone ? '#00C896' : '#1A73E8', marginLeft: 8 }}>{pct}%</span>
                 </div>
-                <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: e.completed_at ? '#00C896' : color, width: `${pct}%`, borderRadius: '3px', transition: 'width 0.5s' }} />
+                <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
+                  <div style={{ height: '100%', background: isDone ? '#00C896' : '#1A73E8', width: `${pct}%`, borderRadius: 3 }} />
                 </div>
-                {e.completed_at && (
-                  <div style={{ fontSize: '0.65rem', color: 'var(--accent)', marginTop: '0.35rem', fontWeight: 600 }}>
-                    ✅ Completed {new Date(e.completed_at).toLocaleDateString('en-IN')}
+                {isDone && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#00C896', fontWeight: 600 }}>✅ Completed {new Date(e.completed_at!).toLocaleDateString('en-IN')}</span>
+                    <button onClick={() => downloadCert(e.course_id, e.course.title_en)}
+                      style={{ padding: '4px 10px', borderRadius: 6, background: '#DCFCE7', color: '#15803D', border: 'none', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                      📄 Certificate
+                    </button>
                   </div>
                 )}
               </div>
@@ -129,23 +285,32 @@ function StudentDrawer({ userId, name, onClose }: { userId: string; name: string
   );
 }
 
+// ── Main Page ────────────────────────────────────────────────
 export default function AdminUsersPage() {
-  const [users,    setUsers]    = useState<User[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
-  const [filter,   setFilter]   = useState<'all' | 'active' | 'verified'>('all');
-  const [selected, setSelected] = useState<User | null>(null);
+  const router = useRouter();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'active' | 'verified'>('all');
+  const [viewing, setViewing] = useState<User | null>(null);
+  const [editing, setEditing] = useState<User | null>(null);
+  const [adminUser, setAdminUser] = useState<any>(null);
+  useEffect(() => { setAdminUser(getUser()); }, []);
 
   useEffect(() => {
     apiFetch('/api/users')
       .then(r => r.json())
       .then(data => {
-        const students = Array.isArray(data) ? data.filter((u: User) => u.role === 'student') : [];
-        setUsers(students);
+        setUsers(Array.isArray(data) ? data.filter((u: User) => u.role === 'student') : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
+
+  function handleSaved(updated: User) {
+    setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated } : u));
+    setViewing(prev => prev?.id === updated.id ? { ...prev, ...updated } : prev);
+  }
 
   const filtered = users.filter(u => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -154,69 +319,70 @@ export default function AdminUsersPage() {
     return matchSearch && matchFilter;
   });
 
-  const activeCount   = users.filter(u => u.is_active).length;
-  const verifiedCount = users.filter(u => u.email_verified).length;
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ IoTLearn</Link>
-          <Link href="/admin" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>← Admin Panel</Link>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}>
+            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🚀</div>
+            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#1A73E8' }}>SimuLearning</span>
+          </Link>
+          <span style={{ color: '#d1d5db' }}>|</span>
+          <Link href={adminUser?.role === 'super_admin' ? '/super-admin' : '/admin'} style={{ color: '#6b7280', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 500 }}>← {adminUser?.role === 'super_admin' ? 'Super Admin' : 'Admin Panel'}</Link>
         </div>
-        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text3)' }}>
-          {users.length} students total
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>{users.length} students</span>
+          <button onClick={() => router.push(adminUser?.role === 'super_admin' ? '/super-admin/profile' : '/admin/profile')}
+            style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+            👤 {adminUser?.name?.split(' ')[0] || 'Profile'}
+          </button>
+          <button onClick={logout}
+            style={{ padding: '6px 14px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+            Sign Out
+          </button>
+        </div>
       </nav>
 
       {/* HEADER */}
-      <div style={{ background: 'linear-gradient(135deg, var(--text) 0%, #2d2d4e 100%)', padding: '2.5rem 2rem', position: 'relative', overflow: 'hidden' }}>
-        {['👨‍🎓','👩‍💻','🎓','📊','🏆'].map((em, i) => (
-          <div key={i} className="animate-float" style={{ position: 'absolute', fontSize: '1.8rem', opacity: 0.07, left: `${i * 22 + 4}%`, top: `${(i * 19) % 60 + 10}%`, animationDelay: `${i * 0.5}s` }}>{em}</div>
-        ))}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: '1100px', margin: '0 auto' }}>
-          <h1 className="animate-fadeUp" style={{ fontSize: 'clamp(1.6rem,4vw,2.5rem)', fontWeight: 800, color: '#fff', marginBottom: '0.25rem' }}>
-            👨‍🎓 Students
-          </h1>
-          <p className="animate-fadeUp delay-100" style={{ color: '#aaa', fontSize: '0.95rem' }}>
-            Manage students, track progress, and view enrollments
-          </p>
-
-          {/* Stats */}
-          <div className="animate-fadeUp delay-200" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+      <div style={{ background: 'linear-gradient(135deg,#1e1e3f,#2d2d5e)', padding: '2.5rem 2rem' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <span style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '3px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
+              {adminUser?.name || 'Admin'} · Greenfield IoT Academy
+            </span>
+          </div>
+          <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.2rem)', fontWeight: 800, color: '#fff', margin: '0.5rem 0 0.25rem' }}>👨‍🎓 Students</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>Manage students, track progress, and view enrollments</p>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
             {[
-              { label: 'Total Students', value: users.length, emoji: '👥', color: '#1A73E8' },
-              { label: 'Active',          value: activeCount,  emoji: '✅', color: '#00C896' },
-              { label: 'Email Verified',  value: verifiedCount, emoji: '📧', color: '#A855F7' },
+              { label: 'Total', value: users.length, color: '#1A73E8' },
+              { label: 'Active', value: users.filter(u => u.is_active).length, color: '#00C896' },
+              { label: 'Verified', value: users.filter(u => u.email_verified).length, color: '#A855F7' },
             ].map(s => (
-              <div key={s.label} style={{ background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(10px)', borderRadius: '1rem', padding: '0.875rem 1.25rem', border: '1px solid rgba(255,255,255,0.1)', minWidth: '140px' }}>
-                <div style={{ fontSize: '1.3rem', marginBottom: '0.2rem' }}>{s.emoji}</div>
-                <div style={{ fontWeight: 800, fontSize: '1.4rem', color: s.color, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: '0.72rem', color: '#aaa', fontWeight: 600, marginTop: '0.15rem' }}>{s.label}</div>
+              <div key={s.label} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '0.875rem 1.25rem', border: '1px solid rgba(255,255,255,0.1)', minWidth: 110 }}>
+                <div style={{ fontWeight: 800, fontSize: '1.4rem', color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '2rem 1.5rem' }}>
 
         {/* Search + filters */}
-        <div className="animate-fadeUp" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-            <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', pointerEvents: 'none' }}>🔍</span>
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by name or email..."
-              style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.5rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'Baloo 2'", outline: 'none' }}
-              onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>🔍</span>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
+              style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.5rem', borderRadius: 999, border: '1.5px solid #e5e7eb', background: '#fff', fontSize: '0.9rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['all', 'active', 'verified'] as const).map(f => (
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            {(['all','active','verified'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                style={{ padding: '0.5rem 1rem', borderRadius: '999px', border: '1.5px solid', borderColor: filter === f ? 'var(--primary)' : 'var(--border)', background: filter === f ? 'var(--primary)' : 'transparent', color: filter === f ? '#fff' : 'var(--text3)', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'Baloo 2'", transition: 'all 0.2s', textTransform: 'capitalize' }}>
+                style={{ padding: '0.5rem 1rem', borderRadius: 999, border: '1.5px solid', borderColor: filter === f ? '#1A73E8' : '#e5e7eb', background: filter === f ? '#1A73E8' : '#fff', color: filter === f ? '#fff' : '#6b7280', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', textTransform: 'capitalize' }}>
                 {f}
               </button>
             ))}
@@ -224,96 +390,72 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Table */}
-        <div className="animate-fadeUp delay-100" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           {/* Table header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 80px', padding: '0.75rem 1.5rem', background: 'var(--bg)', borderBottom: '1px solid var(--border)', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <div>Student</div>
-            <div>Email</div>
-            <div>Language</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 120px', padding: '0.75rem 1.5rem', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div>Name</div>
+            <div>Username</div>
+            <div>Class / Div</div>
             <div>Status</div>
             <div>Joined</div>
             <div></div>
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text3)' }}>
-              <div className="animate-spin" style={{ fontSize: '2rem', display: 'inline-block', marginBottom: '1rem' }}>⚙️</div>
-              <div>Loading students...</div>
-            </div>
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#9ca3af' }}>Loading students…</div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text3)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-              <div>No students found</div>
-            </div>
-          ) : filtered.map((user, i) => (
+            <div style={{ textAlign: 'center', padding: '4rem', color: '#9ca3af' }}>No students found</div>
+          ) : filtered.map(user => (
             <div key={user.id}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1fr 80px', padding: '0.875rem 1.5rem', borderBottom: '1px solid var(--border)', alignItems: 'center', transition: 'background 0.15s', cursor: 'pointer' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              onClick={() => setSelected(user)}>
-              {/* Name + avatar */}
+              style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 120px', padding: '0.875rem 1.5rem', borderBottom: '1px solid #f3f4f6', alignItems: 'center' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#fafafa')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+
+              {/* Name */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Avatar name={user.name} size={36} />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{user.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text3)', marginTop: '0.05rem' }}>
-                    {user.role}
-                  </div>
-                </div>
+                <Avatar name={user.name} size={34} />
+                <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#111827' }}>{user.name}</div>
               </div>
 
-              {/* Email */}
-              <div style={{ fontSize: '0.82rem', color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.email || '—'}
+              {/* Username */}
+              <div style={{ fontSize: '0.82rem', color: '#6b7280' }}>@{user.email?.split('@')[0] || '—'}</div>
+
+              {/* Class / Division */}
+              <div style={{ fontSize: '0.82rem', color: '#374151', fontWeight: 600 }}>
+                {user.class_grade ? `Class ${user.class_grade}` : '—'}
+                {user.division ? ` / ${user.division}` : ''}
               </div>
 
-              {/* Language */}
-              <div style={{ fontSize: '0.85rem' }}>
-                {LANG_FLAGS[user.language_pref] || '🌐'} {user.language_pref?.toUpperCase()}
-              </div>
-
-              {/* Status badges */}
-              <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '999px', fontWeight: 700, background: user.is_active ? 'rgba(0,200,150,0.15)' : 'rgba(113,128,150,0.15)', color: user.is_active ? '#00C896' : '#718096' }}>
+              {/* Status */}
+              <div>
+                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: user.is_active ? '#DCFCE7' : '#F3F4F6', color: user.is_active ? '#15803D' : '#6b7280' }}>
                   {user.is_active ? 'Active' : 'Inactive'}
                 </span>
-                {user.email_verified && (
-                  <span style={{ fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '999px', fontWeight: 700, background: 'rgba(26,115,232,0.15)', color: '#1A73E8' }}>
-                    ✓ Verified
-                  </span>
-                )}
               </div>
 
-              {/* Joined date */}
-              <div style={{ fontSize: '0.78rem', color: 'var(--text3)' }}>
+              {/* Joined */}
+              <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>
                 {new Date(user.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </div>
 
-              {/* View button */}
-              <div>
-                <button
-                  style={{ padding: '0.3rem 0.75rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'Baloo 2'", transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,53,0.08)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
-                  View →
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <button onClick={() => setViewing(user)}
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #e5e7eb', background: '#fff', color: '#1A73E8', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                  View
+                </button>
+                <button onClick={() => setEditing(user)}
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #e5e7eb', background: '#FFF7ED', color: '#EA580C', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+                  Edit
                 </button>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Empty state nudge */}
-        {!loading && users.length === 0 && (
-          <div style={{ textAlign: 'center', marginTop: '2rem', padding: '3rem', background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px dashed var(--border)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👋</div>
-            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '0.5rem' }}>No students yet</div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text3)' }}>Run the demo seed to populate students for your demo.</div>
-          </div>
-        )}
       </div>
 
-      {/* Drawer */}
-      {selected && <StudentDrawer userId={selected.id} name={selected.name} onClose={() => setSelected(null)} />}
+      {viewing && !editing && <StudentDrawer user={viewing} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null); }} />}
+      {editing && <EditModal user={editing} onClose={() => setEditing(null)} onSaved={u => { handleSaved(u); setEditing(null); }} />}
     </div>
   );
 }

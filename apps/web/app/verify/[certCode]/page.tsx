@@ -68,7 +68,7 @@ export default function VerifyPage() {
             </div>
           ))}
         </div>
-        <Link href="/" className="btn-secondary">← IoTLearn Home</Link>
+        <Link href="/" className="btn-secondary">← SimuLearning Home</Link>
       </div>
     </div>
   );

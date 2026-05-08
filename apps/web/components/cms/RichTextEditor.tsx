@@ -57,7 +57,7 @@ export default function RichTextEditor({ content, onChange, locale = 'en', readO
 
       {/* EDITOR CONTENT */}
       <style>{`
-        .iotlearn-editor .ProseMirror {
+        .simulearning-editor .ProseMirror {
           outline: none;
           padding: 1.5rem;
           min-height: 280px;
@@ -66,18 +66,18 @@ export default function RichTextEditor({ content, onChange, locale = 'en', readO
           line-height: ${isDevanagari ? '1.9' : '1.7'};
           color: var(--text2);
         }
-        .iotlearn-editor .ProseMirror p { margin-bottom: 0.85rem; }
-        .iotlearn-editor .ProseMirror h2 { font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; font-family: 'Baloo 2', sans-serif; }
-        .iotlearn-editor .ProseMirror ul { padding-left: 1.5rem; margin-bottom: 0.85rem; }
-        .iotlearn-editor .ProseMirror li { margin-bottom: 0.3rem; }
-        .iotlearn-editor .ProseMirror pre { background: #1A1A2E; color: #00C896; border-radius: 0.75rem; padding: 1rem 1.25rem; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.85rem; margin-bottom: 1rem; overflow-x: auto; }
-        .iotlearn-editor .ProseMirror code { background: rgba(255,107,53,0.1); color: var(--primary); padding: 0.1rem 0.35rem; border-radius: 0.25rem; font-size: 0.875em; font-family: 'Courier New', monospace; }
-        .iotlearn-editor .ProseMirror strong { color: var(--text); font-weight: 700; }
-        .iotlearn-editor .ProseMirror em { color: var(--text2); }
-        .iotlearn-editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text3); float: left; height: 0; pointer-events: none; }
-        .iotlearn-editor .ProseMirror blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; color: var(--text3); margin: 1rem 0; font-style: italic; }
+        .simulearning-editor .ProseMirror p { margin-bottom: 0.85rem; }
+        .simulearning-editor .ProseMirror h2 { font-size: 1.3rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; font-family: 'Baloo 2', sans-serif; }
+        .simulearning-editor .ProseMirror ul { padding-left: 1.5rem; margin-bottom: 0.85rem; }
+        .simulearning-editor .ProseMirror li { margin-bottom: 0.3rem; }
+        .simulearning-editor .ProseMirror pre { background: #1A1A2E; color: #00C896; border-radius: 0.75rem; padding: 1rem 1.25rem; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.85rem; margin-bottom: 1rem; overflow-x: auto; }
+        .simulearning-editor .ProseMirror code { background: rgba(255,107,53,0.1); color: var(--primary); padding: 0.1rem 0.35rem; border-radius: 0.25rem; font-size: 0.875em; font-family: 'Courier New', monospace; }
+        .simulearning-editor .ProseMirror strong { color: var(--text); font-weight: 700; }
+        .simulearning-editor .ProseMirror em { color: var(--text2); }
+        .simulearning-editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text3); float: left; height: 0; pointer-events: none; }
+        .simulearning-editor .ProseMirror blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; color: var(--text3); margin: 1rem 0; font-style: italic; }
       `}</style>
-      <div className="iotlearn-editor">
+      <div className="simulearning-editor">
         <EditorContent editor={editor} />
       </div>
     </div>

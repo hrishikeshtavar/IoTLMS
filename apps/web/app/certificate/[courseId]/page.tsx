@@ -50,7 +50,7 @@ export default function CertificatePage() {
           score: `${issued.score_pct}%`,
           certId: issued.cert_code,
           certCode: issued.cert_code,
-          school: analytics.school ?? 'IoTLearn',
+          school: analytics.school ?? 'SimuLearning',
           primaryColor: analytics.primaryColor ?? '#FF6B35',
           logoUrl: analytics.logoUrl ?? null,
         });
@@ -108,7 +108,7 @@ export default function CertificatePage() {
               : <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: cert.primaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: '#fff' }}>⚡</div>
             }
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: cert.primaryColor }}>IoTLearn LMS</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: cert.primaryColor }}>SimuLearning LMS</div>
               <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{cert.school}</div>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function CertificatePage() {
           <div style={{ fontSize: '0.9rem', color: '#64748B', marginBottom: '2.5rem' }}>with a score of <strong style={{ color: '#16A34A' }}>{cert.score}</strong></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '2rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#334155' }}>IoTLearn</div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#334155' }}>SimuLearning</div>
               <div style={{ width: '120px', height: '1px', background: '#CBD5E1', margin: '6px auto' }} />
               <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>Platform Director</div>
             </div>
@@ -139,7 +139,7 @@ export default function CertificatePage() {
         </div>
         <div style={{ height: '6px', background: `linear-gradient(to right, #f97316, #9333ea, ${cert.primaryColor})` }} />
       </div>
-      <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#94A3B8' }}>प्रमाणपत्र — IoTLearn द्वारा जारी किया गया ✅</p>
+      <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#94A3B8' }}>प्रमाणपत्र — SimuLearning द्वारा जारी किया गया ✅</p>
     </main>
   );
 }
