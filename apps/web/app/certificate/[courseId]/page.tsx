@@ -53,6 +53,7 @@ export default function CertificatePage() {
           school: analytics.school ?? 'SimuLearning',
           primaryColor: analytics.primaryColor ?? '#FF6B35',
           logoUrl: analytics.logoUrl ?? null,
+          certTemplateUrl: analytics.certTemplateUrl ?? null,
         });
       } catch {
         setError('Failed to load certificate');
@@ -90,6 +91,44 @@ export default function CertificatePage() {
   );
 
   if (!cert) return null;
+
+  // ── Template certificate ──────────────────────────────
+  if (cert?.certTemplateUrl) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1rem', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button onClick={() => window.print()} style={{ padding: '10px 22px', borderRadius: 9, background: 'linear-gradient(135deg,#1A73E8,#00C896)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}>🖨️ Print / Download PDF</button>
+          <button onClick={() => window.history.back()} style={{ padding: '10px 18px', borderRadius: 9, border: '1.5px solid #e5e7eb', background: '#fff', color: '#374151', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>← Back</button>
+        </div>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 900, borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+          <img src={cert.certTemplateUrl} style={{ width: '100%', display: 'block' }} alt='Certificate' />
+          {/* Overlay: logo top-left */}
+          {cert.logoUrl && (
+            <div style={{ position: 'absolute', top: '6%', left: '5%' }}>
+              <img src={cert.logoUrl} style={{ maxHeight: 64, maxWidth: 140, objectFit: 'contain' }} alt='School Logo' />
+            </div>
+          )}
+          {/* Overlay: dynamic text centred */}
+          <div style={{ position: 'absolute', top: '42%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%', pointerEvents: 'none' }}>
+            <div style={{ fontSize: 'clamp(1.4rem,4vw,2.4rem)', fontWeight: 800, color: '#1a1a2e', letterSpacing: '-0.5px', lineHeight: 1.1, marginBottom: '0.4rem', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>{cert.studentName}</div>
+            <div style={{ fontSize: 'clamp(0.85rem,2.5vw,1.2rem)', color: '#374151', fontWeight: 600, marginBottom: '0.25rem', textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}>{cert.courseName}</div>
+            <div style={{ fontSize: 'clamp(0.72rem,2vw,0.95rem)', color: '#6b7280', marginBottom: '0.2rem' }}>{cert.completedDate}</div>
+            <div style={{ fontSize: 'clamp(0.65rem,1.5vw,0.8rem)', color: '#9ca3af', fontFamily: 'monospace' }}>{cert.certId}</div>
+          </div>
+          {/* QR code bottom-right */}
+          {qrDataUrl && (
+            <div style={{ position: 'absolute', bottom: '5%', right: '4%' }}>
+              <img src={qrDataUrl} style={{ width: 72, height: 72, borderRadius: 6, border: '2px solid rgba(255,255,255,0.8)' }} alt='QR Code' />
+            </div>
+          )}
+        </div>
+        <div style={{ marginTop: '1rem', fontSize: '0.78rem', color: '#9ca3af', textAlign: 'center' }}>
+          Certificate ID: {cert.certCode} · Verify at {typeof window !== 'undefined' ? window.location.origin : ''}/verify/{cert.certCode}
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <main style={{ minHeight: '100vh', background: '#F1F5F9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>

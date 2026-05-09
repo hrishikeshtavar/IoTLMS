@@ -182,10 +182,13 @@ export default function SuperAdminPage() {
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: '#0F172A' }}>All Schools</h2>
             <p style={{ color: '#64748B', marginTop: 4, fontSize: '0.85rem' }}>{tenants.length} schools on platform</p>
           </div>
-          <button onClick={() => router.push('/admin/schools/new')}
-            style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#1A73E8,#0EA5E9)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(26,115,232,0.3)' }}>
-            + Add New School
-          </button>
+          <div style={{ display:"flex", gap:"0.75rem", alignItems:"center" }}>
+            <Link href="/super-admin/courses" style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1A73E8,#00C896)", color:"#fff", textDecoration:"none", borderRadius:10, fontWeight:700, fontSize:"0.9rem", boxShadow:"0 4px 12px rgba(0,200,150,0.3)" }}>📚 Manage Courses</Link>
+            <button onClick={() => router.push("/super-admin/schools/new")} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1A73E8,#0EA5E9)", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:"0.9rem", boxShadow:"0 4px 12px rgba(26,115,232,0.3)" }}>+ Add New School</button>
+          </div>
+
+
+
         </div>
 
         {/* Search + filter */}

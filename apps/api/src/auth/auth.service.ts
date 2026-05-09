@@ -17,7 +17,7 @@ export class AuthService {
 
   async register(dto: RegisterDto, tenantId: string) {
     const existing = await this.prisma.user.findFirst({
-      where: { email: dto.email },
+      where: { email: dto.email, tenant_id: tenantId },
     });
     if (existing) throw new ConflictException('Email already registered');
 
@@ -43,9 +43,10 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, tenantId: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { email: dto.email },
+    let user = await this.prisma.user.findFirst({
+      where: { email: dto.email, tenant_id: tenantId },
     });
+    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
     if (!user || !user.password_hash)
       throw new UnauthorizedException('Invalid credentials');
 

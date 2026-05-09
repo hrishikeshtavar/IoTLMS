@@ -105,6 +105,7 @@ export class AnalyticsService {
       school: brandKit ? 'School' : 'SimuLearning',
       primaryColor: (brandKit?.colors_json as any)?.primary ?? '#2563eb',
       logoUrl: brandKit?.logo_url ?? null,
+      certTemplateUrl: (brandKit as any)?.cert_template_url ?? null,
     };
   }
 }

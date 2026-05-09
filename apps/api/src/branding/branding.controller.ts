@@ -13,9 +13,19 @@ export class BrandingController {
     return this.brandingService.getBrandKitBySlug(slug);
   }
 
+  @Get('tenant/:tenantId')
+  @Roles('admin', 'super_admin')
+  async getBrandKitByTenant(@Param('tenantId') tenantId: string) {
+    return this.brandingService.getBrandKitByTenantId(tenantId);
+  }
+
   @Post()
-  @Roles('school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   async saveBrandKit(@Req() req: any, @Body() body: any) {
-    return this.brandingService.saveBrandKit(req.tenantId, body);
+    const { tenantId: bodyTenantId, ...data } = body;
+    const tenantId = (req.user?.role === 'super_admin' && bodyTenantId)
+      ? bodyTenantId
+      : req.tenantId;
+    return this.brandingService.saveBrandKit(tenantId, data);
   }
 }

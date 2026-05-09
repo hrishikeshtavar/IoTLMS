@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Req } from '@nestjs/common';
+import { Controller, Query, Get, Post, Patch, Delete, Body, Param, Req } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -9,8 +9,9 @@ export class CoursesController {
 
   @Get()
   @Public()
-  findAll(@Req() req: any) {
-    return this.coursesService.findAll(req.tenantId);
+  findAll(@Req() req: any, @Query('tenantId') queryTenantId?: string) {
+    const tenantId = (req.user?.role === 'super_admin' && queryTenantId) ? queryTenantId : req.tenantId;
+    return this.coursesService.findAll(tenantId);
   }
 
   @Get(':id')

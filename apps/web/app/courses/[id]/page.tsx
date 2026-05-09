@@ -89,13 +89,22 @@ export default function CoursePage() {
   const [lessons, setLessons]           = useState<Lesson[]>([]);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [lessonContent, setLessonContent] = useState<LessonContent | null>(null);
-  const [completed, setCompleted]       = useState<Set<string>>(new Set());
+  const [completed, setCompleted] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined' || !courseId) return new Set<string>();
+    try { return new Set(JSON.parse(localStorage.getItem(`simulearning_progress_${courseId}`) || '[]')); } catch { return new Set<string>(); }
+  });
   const [assessmentMap, setAssessmentMap] = useState<Record<string, string>>({}); 
   const [loading, setLoading]           = useState(true);
   const [contentLoading, setContentLoading] = useState(false);
   const [notesOpen, setNotesOpen]       = useState(false);
   const [noteText, setNoteText]         = useState('');
   const [noteSaved, setNoteSaved]       = useState(false);
+  // Persist lesson completion
+  useEffect(() => {
+    if (!courseId) return;
+    localStorage.setItem(`simulearning_progress_${courseId}`, JSON.stringify([...completed]));
+  }, [completed, courseId]);
+
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

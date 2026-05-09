@@ -11,12 +11,17 @@ export class BrandingService {
     return this.prisma.brandKit.findUnique({ where: { tenant_id: tenant.id } });
   }
 
+  async getBrandKitByTenantId(tenantId: string) {
+    return this.prisma.brandKit.findUnique({ where: { tenant_id: tenantId } });
+  }
+
   async saveBrandKit(tenantId: string, data: {
     logo_url?: string;
     colors_json?: any;
     fonts_json?: any;
     favicon_url?: string;
     domain?: string;
+    cert_template_url?: string;
   }) {
     return this.prisma.brandKit.upsert({
       where: { tenant_id: tenantId },

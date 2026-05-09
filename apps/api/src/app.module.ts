@@ -49,7 +49,6 @@ const throttlerLimit = Number(process.env.THROTTLER_LIMIT ?? 1000);
     AuthModule,
     CertificatesModule,
     GamificationModule,
-    TenantModule,
   ],
   controllers: [AppController],
   providers: [
@@ -57,6 +56,7 @@ const throttlerLimit = Number(process.env.THROTTLER_LIMIT ?? 1000);
     PrismaService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    ...(throttlerEnabled ? [{ provide: APP_GUARD, useClass: ThrottlerGuard }] : []),
   ],
 })
 export class AppModule implements NestModule {

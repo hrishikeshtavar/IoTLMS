@@ -61,7 +61,7 @@ export class UsersService {
           division: row.division,
         };
         if (row.password) {
-          const bcrypt = require('bcrypt');
+          
           data.password_hash = await bcrypt.hash(row.password, 12);
         }
         return this.prisma.user.create({ data });

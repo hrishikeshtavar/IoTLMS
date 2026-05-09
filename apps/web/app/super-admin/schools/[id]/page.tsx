@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, getUser, logout } from '../../../lib/auth';
+import { apiFetch, getUser, getToken, logout } from '../../../lib/auth';
 
 type Tenant = {
   id: string; name: string; slug: string;
@@ -40,7 +40,7 @@ export default function SchoolDetailPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'students' | 'courses'>('overview');
+  const [tab, setTab] = useState<'overview' | 'students' | 'courses' | 'branding' | 'admins'>('overview');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', plan_id: 'free', is_active: true });
   const [msg, setMsg] = useState('');
@@ -56,6 +56,17 @@ export default function SchoolDetailPage() {
   const [singleSaving, setSingleSaving] = useState(false);
   const [classFilter, setClassFilter] = useState('');
   const [divisionFilter, setDivisionFilter] = useState('');
+  const [brandKit, setBrandKit] = useState<any>(null);
+  const [brandMsg, setBrandMsg] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [certUploading, setCertUploading] = useState(false);
+  const [admins, setAdmins] = useState<User[]>([]);
+  const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [adminMsg, setAdminMsg] = useState('');
+  const [adminErr, setAdminErr] = useState('');
+  const [editingAdminId, setEditingAdminId] = useState<string|null>(null);
+  const [editAdminForm, setEditAdminForm] = useState({ name: '', email: '', password: '' });
 
   useEffect(() => {
     const u = getUser();
@@ -63,8 +74,8 @@ export default function SchoolDetailPage() {
 
     Promise.all([
       apiFetch('/api/tenants').then(r => r.json()),
-      apiFetch('/api/users').then(r => r.json()),
-      apiFetch('/api/courses').then(r => r.json()),
+      apiFetch(`/api/users?tenantId=${schoolId}`).then(r => r.json()),
+      apiFetch(`/api/courses?tenantId=${schoolId}`).then(r => r.json()),
     ]).then(([tenants, allUsers, allCourses]) => {
       const t = Array.isArray(tenants) ? tenants.find((x: any) => x.id === schoolId) : null;
       if (t) {
@@ -72,8 +83,10 @@ export default function SchoolDetailPage() {
         setForm({ name: t.name, plan_id: t.plan_id || 'free', is_active: t.is_active });
       }
       setUsers(Array.isArray(allUsers) ? allUsers.filter((u: User) => u.role === 'student') : []);
+      setAdmins(Array.isArray(allUsers) ? allUsers.filter((u: User) => u.role === 'admin') : []);
       setCourses(Array.isArray(allCourses) ? allCourses : []);
       setLoading(false);
+      apiFetch(`/api/branding/tenant/${schoolId}`).then(r=>r.json()).then(d=>{if(d?.id)setBrandKit(d);}).catch(()=>{});
     }).catch(() => setLoading(false));
   }, [schoolId]);
 
@@ -96,13 +109,13 @@ export default function SchoolDetailPage() {
     if (singleForm.phone) payload.phone = singleForm.phone;
     if (singleForm.class_grade) payload.class_grade = parseInt(singleForm.class_grade);
     if (singleForm.division) payload.division = singleForm.division;
-    const res = await apiFetch('/api/users/bulk-import', { method: 'POST', body: JSON.stringify({ rows: [payload] }) });
+    const res = await apiFetch('/api/users/bulk-import', { method: 'POST', body: JSON.stringify({ tenantId: schoolId, rows: [payload] }) });
     const data = await res.json();
     setSingleSaving(false);
     if (data.imported > 0) {
       setImportResult({ imported: 1, failed: 0, total: 1 });
       setSingleForm({ name: '', username: '', email: '', phone: '', class_grade: '', division: '', language_pref: 'en' });
-      const updated = await apiFetch('/api/users').then(r => r.json());
+      const updated = await apiFetch(`/api/users?tenantId=${schoolId}`).then(r => r.json());
       setUsers(Array.isArray(updated) ? updated.filter((u: User) => u.role === 'student') : []);
     } else setImportError('Failed to add student. Email may already exist.');
   }
@@ -125,11 +138,11 @@ export default function SchoolDetailPage() {
             const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
             return { name: cols[nameIdx] || '', email: cols[emailIdx] || '', role: 'student', language: langIdx >= 0 ? cols[langIdx] || 'en' : 'en' };
           }).filter(r => r.name && r.email);
-          const res = await apiFetch('/api/users/bulk-import', { method: 'POST', body: JSON.stringify({ rows }) });
+          const res = await apiFetch('/api/users/bulk-import', { method: 'POST', body: JSON.stringify({ tenantId: schoolId, rows }) });
           const data = await res.json();
           setImportResult(data);
           if (data.imported > 0) {
-            const updated = await apiFetch('/api/users').then(r => r.json());
+            const updated = await apiFetch(`/api/users?tenantId=${schoolId}`).then(r => r.json());
             setUsers(Array.isArray(updated) ? updated.filter((u: User) => u.role === 'student') : []);
           }
         } catch { setImportError('Failed to parse file.'); }
@@ -170,6 +183,63 @@ export default function SchoolDetailPage() {
   const uniqueClasses = [...new Set(users.map(u => u.class_grade).filter(Boolean))].sort((a,b) => (a||0)-(b||0));
   const uniqueDivisions = [...new Set(users.map(u => u.division).filter(Boolean))].sort();
   const totalEnrollments = courses.reduce((s, c) => s + (c._count?.enrollments || 0), 0);
+
+  async function uploadAsset(file: File): Promise<string|null> {
+    const fd=new FormData(); fd.append('file',file);
+    const token=getToken();
+    const res=await fetch(`${process.env.NEXT_PUBLIC_API_URL||'http://localhost:3001'}/api/upload/file`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+    if(!res.ok)return null;
+    return (await res.json()).url??null;
+  }
+  async function uploadLogo(file: File) {
+    setLogoUploading(true);
+    const url=await uploadAsset(file);
+    if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,logo_url:url})});setBrandKit((p:any)=>({...(p||{}),logo_url:url}));setBrandMsg('Logo uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
+    setLogoUploading(false);
+  }
+  async function uploadCertTemplate(file: File) {
+    setCertUploading(true);
+    const url=await uploadAsset(file);
+    if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,cert_template_url:url})});setBrandKit((p:any)=>({...(p||{}),cert_template_url:url}));setBrandMsg('Certificate template uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
+    setCertUploading(false);
+  }
+  async function removeCertTemplate() {
+    await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,cert_template_url:''})});
+    setBrandKit((p:any)=>({...(p||{}),cert_template_url:null}));
+    setBrandMsg('Template removed.');setTimeout(()=>setBrandMsg(''),2000);
+  }
+  async function createAdmin() {
+    if(!adminForm.name||!adminForm.email||!adminForm.password){setAdminErr('Name, email and password required.');return;}
+    setAdminSaving(true);setAdminErr('');setAdminMsg('');
+    const res=await apiFetch('/api/users/bulk-import',{method:'POST',body:JSON.stringify({tenantId:schoolId,rows:[{name:adminForm.name,email:adminForm.email,password:adminForm.password,role:'admin'}]})});
+    if(res.ok){setAdminMsg('Admin created!');setAdminForm({name:'',email:'',password:''});const u=await apiFetch(`/api/users?tenantId=${schoolId}`).then(r=>r.json());setAdmins(Array.isArray(u)?u.filter((x:User)=>x.role==='admin'):[]);}
+    else setAdminErr('Failed to create admin.');
+    setAdminSaving(false);setTimeout(()=>{setAdminMsg('');setAdminErr('');},3000);
+  }
+  async function removeAdmin(id: string) {
+    if(!confirm('Remove this admin?'))return;
+    await apiFetch(`/api/users/${id}`,{method:'DELETE'});
+    setAdmins(prev=>prev.filter(a=>a.id!==id));
+  }
+  function startEditAdmin(admin: User) {
+    setEditingAdminId(admin.id);
+    setEditAdminForm({ name: admin.name, email: admin.email||'', password: '' });
+  }
+  async function saveAdminEdit(id: string) {
+    setAdminSaving(true); setAdminErr(''); setAdminMsg('');
+    const updates: any[] = [];
+    updates.push(apiFetch(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify({ name: editAdminForm.name, phone: undefined }) }));
+    if (editAdminForm.password.length >= 8) {
+      updates.push(apiFetch(`/api/users/${id}/password`, { method: 'PATCH', body: JSON.stringify({ password: editAdminForm.password }) }));
+    }
+    await Promise.all(updates);
+    setAdmins(prev => prev.map(a => a.id===id ? { ...a, name: editAdminForm.name, email: editAdminForm.email } : a));
+    setEditingAdminId(null);
+    setAdminMsg('Admin updated!');
+    setAdminSaving(false);
+    setTimeout(() => setAdminMsg(''), 2500);
+  }
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
@@ -237,10 +307,10 @@ export default function SchoolDetailPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {(['overview', 'students', 'courses'] as const).map(t => (
+          {(['overview','students','courses','branding','admins'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '0.6rem 1.5rem', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', background: tab === t ? '#0F172A' : '#F1F5F9', color: tab === t ? '#fff' : '#374151', textTransform: 'capitalize' }}>
-              {t === 'overview' ? '📋 Overview' : t === 'students' ? `👨‍🎓 Students (${tenant._count.students})` : `📚 Courses (${tenant._count.courses})`}
+              {t==='overview'?'📋 Overview':t==='students'?`Students (${tenant._count.students})`:t==='courses'?`Courses (${tenant._count.courses})`:t==='branding'?'🎨 Branding':`Admins (${admins.length})`}
             </button>
           ))}
         </div>
@@ -563,6 +633,133 @@ export default function SchoolDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+        {tab==='branding'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+            {brandMsg&&<div style={{background:'#DCFCE7',color:'#15803D',padding:'0.75rem 1rem',borderRadius:8,fontWeight:600,fontSize:'0.875rem'}}>✅ {brandMsg}</div>}
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>🏫 School Logo</div>
+              <div style={{padding:'1.5rem',display:'flex',alignItems:'center',gap:'2rem',flexWrap:'wrap'}}>
+                <div style={{width:112,height:112,borderRadius:12,border:'2px solid #e5e7eb',display:'flex',alignItems:'center',justifyContent:'center',background:'#f9fafb',overflow:'hidden',flexShrink:0}}>
+                  {brandKit?.logo_url?<img src={brandKit.logo_url} style={{width:'100%',height:'100%',objectFit:'contain'}} alt='Logo'/>:<span style={{fontSize:'2.5rem'}}>🏫</span>}
+                </div>
+                <div>
+                  <p style={{color:'#6b7280',fontSize:'0.875rem',marginBottom:'0.75rem',maxWidth:340}}>Upload your school logo. Shown on certificates and the student portal. PNG/JPG, recommended 400×400px.</p>
+                  <label htmlFor='logo-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:logoUploading?'#9ca3af':'#1A73E8',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
+                    {logoUploading?'⏳ Uploading…':'⬆️ Upload Logo'}
+                    <input id='logo-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadLogo(f);}}/>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>🏆 Certificate Template</div>
+              <div style={{padding:'1.5rem'}}>
+                <p style={{color:'#6b7280',fontSize:'0.875rem',marginBottom:'1rem',maxWidth:540}}>Upload a background image for student certificates (PNG/JPG, A4 landscape 1123×794px recommended). Student name, course, date and certificate code will be overlaid automatically.</p>
+                {brandKit?.cert_template_url?(
+                  <div style={{marginBottom:'1rem'}}>
+                    <div style={{position:'relative',borderRadius:10,overflow:'hidden',border:'1px solid #e5e7eb',background:'#f9fafb',maxWidth:560}}>
+                      <img src={brandKit.cert_template_url} style={{width:'100%',display:'block',maxHeight:300,objectFit:'contain'}} alt='Certificate Template'/>
+                      <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center',background:'rgba(0,0,0,0.55)',borderRadius:8,padding:'0.6rem 1.25rem',color:'#fff',pointerEvents:'none'}}>
+                        <div style={{fontWeight:800,fontSize:'1rem'}}>Student Name</div>
+                        <div style={{fontSize:'0.78rem',opacity:0.85}}>Course · Date · Cert Code</div>
+                      </div>
+                    </div>
+                    <button onClick={removeCertTemplate} style={{marginTop:'0.75rem',padding:'6px 14px',borderRadius:7,border:'1.5px solid #fecaca',background:'#FFF5F5',color:'#DC2626',fontSize:'0.8rem',fontWeight:700,cursor:'pointer'}}>🗑️ Remove Template</button>
+                  </div>
+                ):(
+                  <div style={{marginBottom:'1rem',padding:'2rem',border:'2px dashed #e5e7eb',borderRadius:10,textAlign:'center',background:'#f9fafb',color:'#94a3b8',fontSize:'0.875rem'}}>No template uploaded — certificates will use the default SimuLearning design</div>
+                )}
+                <label htmlFor='cert-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:certUploading?'#9ca3af':'linear-gradient(135deg,#FFD93D,#f59e0b)',color:'#111827',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
+                  {certUploading?'⏳ Uploading…':'📄 Upload Certificate Template'}
+                  <input id='cert-upload' type='file' accept='image/png,image/jpeg' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadCertTemplate(f);}}/>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+        {tab==='admins'&&(
+          <div style={{display:'flex',flexDirection:'column',gap:'1.5rem'}}>
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>➕ Create School Admin</div>
+              <div style={{padding:'1.5rem'}}>
+                {adminMsg&&<div style={{background:'#DCFCE7',color:'#15803D',padding:'0.6rem 0.875rem',borderRadius:7,fontSize:'0.85rem',fontWeight:600,marginBottom:12}}>✅ {adminMsg}</div>}
+                {adminErr&&<div style={{background:'#FEE2E2',color:'#DC2626',padding:'0.6rem 0.875rem',borderRadius:7,fontSize:'0.85rem',fontWeight:600,marginBottom:12}}>❌ {adminErr}</div>}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'0.75rem',alignItems:'end',flexWrap:'wrap'}}>
+                  <div>
+                    <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:4}}>Full Name</label>
+                    <input value={adminForm.name} onChange={e=>setAdminForm(f=>({...f,name:e.target.value}))} placeholder='Admin name' style={{display:'block',width:'100%',padding:'0.6rem 0.75rem',borderRadius:7,border:'1.5px solid #d1d5db',fontSize:'0.875rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                  </div>
+                  <div>
+                    <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:4}}>Email</label>
+                    <input value={adminForm.email} onChange={e=>setAdminForm(f=>({...f,email:e.target.value}))} placeholder='admin@school.in' type='email' style={{display:'block',width:'100%',padding:'0.6rem 0.75rem',borderRadius:7,border:'1.5px solid #d1d5db',fontSize:'0.875rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                  </div>
+                  <div>
+                    <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:4}}>Password</label>
+                    <input value={adminForm.password} onChange={e=>setAdminForm(f=>({...f,password:e.target.value}))} placeholder='Min 8 characters' type='password' style={{display:'block',width:'100%',padding:'0.6rem 0.75rem',borderRadius:7,border:'1.5px solid #d1d5db',fontSize:'0.875rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                  </div>
+                  <button onClick={createAdmin} disabled={adminSaving} style={{padding:'0.6rem 1.25rem',borderRadius:8,background:adminSaving?'#9ca3af':'#1A73E8',color:'#fff',border:'none',fontWeight:700,fontSize:'0.875rem',cursor:'pointer',whiteSpace:'nowrap'}}>
+                    {adminSaving?'Creating…':'+ Create Admin'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>School Admins ({admins.length})</div>
+              {admins.length===0?(
+                <div style={{textAlign:'center',padding:'3rem',color:'#9ca3af'}}>
+                  <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>👤</div>
+                  <div style={{fontSize:'0.875rem'}}>No admins yet. Create one above.</div>
+                </div>
+              ):(
+                <div>
+                  <div style={{display:'grid',gridTemplateColumns:'2fr 2fr 1fr 140px',padding:'0.5rem 1.5rem',background:'#f9fafb',borderBottom:'1px solid #e5e7eb',fontSize:'0.68rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em'}}>
+                    <div>Name</div><div>Email</div><div>Status</div><div></div>
+                  </div>
+                  {admins.map(admin=>(
+                    <div key={admin.id}
+                      style={{display:'grid',gridTemplateColumns:'2fr 2fr 1fr 140px',padding:'0.875rem 1.5rem',borderBottom:'1px solid #f3f4f6',alignItems:'center'}}
+                      onMouseEnter={e=>(e.currentTarget.style.background='#fafafa')}
+                      onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                      <div style={{display:'flex',alignItems:'center',gap:'0.6rem'}}>
+                        <Avatar name={admin.name} size={32}/>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:'0.875rem',color:'#111827'}}>{admin.name}</div>
+                          <div style={{fontSize:'0.7rem',color:'#9ca3af'}}>{admin.email||'—'}</div>
+                        </div>
+                      </div>
+                      <div style={{fontSize:'0.82rem',color:'#6b7280'}}>{admin.email||'—'}</div>
+                      <div><span style={{fontSize:'0.7rem',padding:'2px 8px',borderRadius:999,fontWeight:700,background:admin.is_active?'#DCFCE7':'#F3F4F6',color:admin.is_active?'#15803D':'#6b7280'}}>{admin.is_active?'Active':'Inactive'}</span></div>
+                      <div style={{display:'flex',gap:'0.35rem'}}>
+                        <button onClick={()=>startEditAdmin(admin)} style={{padding:'4px 10px',borderRadius:6,border:'1.5px solid #bfdbfe',background:'#EFF6FF',color:'#1A73E8',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>Edit</button>
+                        <button onClick={()=>removeAdmin(admin.id)} style={{padding:'4px 10px',borderRadius:6,border:'1.5px solid #fecaca',background:'#FFF5F5',color:'#DC2626',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>Remove</button>
+                      </div>
+                    {editingAdminId===admin.id&&(
+                      <div style={{gridColumn:'1/-1',padding:'0.875rem 1rem',background:'#f8fafc',borderTop:'1px solid #e5e7eb',display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto',gap:'0.6rem',alignItems:'end'}}>
+                        <div>
+                          <label style={{display:'block',fontSize:'0.65rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',marginBottom:3}}>Name</label>
+                          <input value={editAdminForm.name} onChange={e=>setEditAdminForm(f=>({...f,name:e.target.value}))} style={{display:'block',width:'100%',padding:'0.5rem 0.65rem',borderRadius:6,border:'1.5px solid #d1d5db',fontSize:'0.82rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                        </div>
+                        <div>
+                          <label style={{display:'block',fontSize:'0.65rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',marginBottom:3}}>Email</label>
+                          <input value={editAdminForm.email} onChange={e=>setEditAdminForm(f=>({...f,email:e.target.value}))} style={{display:'block',width:'100%',padding:'0.5rem 0.65rem',borderRadius:6,border:'1.5px solid #d1d5db',fontSize:'0.82rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                        </div>
+                        <div>
+                          <label style={{display:'block',fontSize:'0.65rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',marginBottom:3}}>New Password <span style={{color:'#9ca3af',fontWeight:400}}>(leave blank to keep)</span></label>
+                          <input type='password' value={editAdminForm.password} onChange={e=>setEditAdminForm(f=>({...f,password:e.target.value}))} placeholder='Min 8 chars to change' style={{display:'block',width:'100%',padding:'0.5rem 0.65rem',borderRadius:6,border:'1.5px solid #d1d5db',fontSize:'0.82rem',fontFamily:'inherit',boxSizing:'border-box'}}/>
+                        </div>
+                        <div style={{display:'flex',gap:'0.35rem'}}>
+                          <button onClick={()=>saveAdminEdit(admin.id)} disabled={adminSaving} style={{padding:'0.5rem 1rem',borderRadius:6,background:'#1A73E8',color:'#fff',border:'none',fontWeight:700,fontSize:'0.78rem',cursor:'pointer'}}>{adminSaving?'…':'Save'}</button>
+                          <button onClick={()=>setEditingAdminId(null)} style={{padding:'0.5rem 0.75rem',borderRadius:6,border:'1.5px solid #e5e7eb',background:'#fff',color:'#6b7280',fontSize:'0.78rem',cursor:'pointer'}}>Cancel</button>
+                        </div>
+                    </div>
+                  )}
+                  </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

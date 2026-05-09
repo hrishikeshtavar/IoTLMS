@@ -74,29 +74,6 @@ interface Course {
   category?: string;
   status?: string;
   _count?: { enrollments?: number; lessons?: number };
-  enrollmentPercent?: number;
-}
-
-function ProgressRing({ percent, size = 44, color = '#FF6B35' }: { percent: number; size?: number; color?: string }) {
-  const r = (size - 6) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (percent / 100) * circ;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#eee" strokeWidth="5" />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
-        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-        className="progress-ring-circle" />
-      <text x="50%" y="54%" textAnchor="middle" fontSize="10" fontWeight="700" fill={color}>{percent}%</text>
-    </svg>
-  );
-}
-
-// Stable enrollment % seeded on course id (no Math.random flicker)
-function stablePercent(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
-  return 15 + (h % 70);
 }
 
 export default function CoursesPage() {
@@ -123,7 +100,7 @@ export default function CoursesPage() {
       })
       .then(data => {
         const list: Course[] = Array.isArray(data) ? data : (data.data || []);
-        setCourses(list.map(c => ({ ...c, enrollmentPercent: stablePercent(c.id) })));
+        setCourses(list);
       })
       .catch((err: unknown) => {
         setCourses([]);
@@ -277,7 +254,6 @@ export default function CoursesPage() {
               const catColor = categoryColors[cat] || '#718096';
               const isEnrolled = enrolledIds.has(course.id);
               const isEnrollingThis = enrolling === course.id;
-              const pct = course.enrollmentPercent || 0;
               return (
                 <div key={course.id} className={`card-hover animate-popIn delay-${Math.min((i % 5 + 1) * 100, 500)}`}
                   style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -295,7 +271,6 @@ export default function CoursesPage() {
                           </span>
                         )}
                       </div>
-                      <ProgressRing percent={pct} color={catColor} />
                     </div>
                     <h3 className={isDevanagari ? 'lang-hi' : ''} style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)', marginBottom: '0.75rem', lineHeight: 1.3 }}>
                       {displayTitle}
