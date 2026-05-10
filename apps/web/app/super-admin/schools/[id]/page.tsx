@@ -52,7 +52,7 @@ export default function SchoolDetailPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{imported: number; failed: number; total: number} | null>(null);
   const [importError, setImportError] = useState('');
-  const [singleForm, setSingleForm] = useState({ name: '', username: '', email: '', phone: '', class_grade: '', division: '', language_pref: 'en' });
+  const [singleForm, setSingleForm] = useState({ name: '', username: '', email: '', phone: '', password: '', class_grade: '', division: '', language_pref: 'en' });
   const [singleSaving, setSingleSaving] = useState(false);
   const [classFilter, setClassFilter] = useState('');
   const [divisionFilter, setDivisionFilter] = useState('');
@@ -67,6 +67,8 @@ export default function SchoolDetailPage() {
   const [adminErr, setAdminErr] = useState('');
   const [editingAdminId, setEditingAdminId] = useState<string|null>(null);
   const [editAdminForm, setEditAdminForm] = useState({ name: '', email: '', password: '' });
+  const [viewingStudent, setViewingStudent] = useState<User|null>(null);
+  const [editingStudent, setEditingStudent] = useState<User|null>(null);
 
   useEffect(() => {
     const u = getUser();
@@ -105,7 +107,7 @@ export default function SchoolDetailPage() {
   async function saveSingleStudent() {
     if (!singleForm.name || !singleForm.email) { setImportError('Name and Email are required.'); return; }
     setSingleSaving(true); setImportError(''); setImportResult(null);
-    const payload: any = { name: singleForm.name, username: singleForm.username, email: singleForm.email, role: 'student', language: singleForm.language_pref };
+    const payload: any = { name: singleForm.name, username: singleForm.username, email: singleForm.email, role: 'student', language: singleForm.language_pref, password: singleForm.password || 'Student@1234' };
     if (singleForm.phone) payload.phone = singleForm.phone;
     if (singleForm.class_grade) payload.class_grade = parseInt(singleForm.class_grade);
     if (singleForm.division) payload.division = singleForm.division;
@@ -114,7 +116,7 @@ export default function SchoolDetailPage() {
     setSingleSaving(false);
     if (data.imported > 0) {
       setImportResult({ imported: 1, failed: 0, total: 1 });
-      setSingleForm({ name: '', username: '', email: '', phone: '', class_grade: '', division: '', language_pref: 'en' });
+      setSingleForm({ name: '', username: '', email: '', phone: '', password: '', class_grade: '', division: '', language_pref: 'en' });
       const updated = await apiFetch(`/api/users?tenantId=${schoolId}`).then(r => r.json());
       setUsers(Array.isArray(updated) ? updated.filter((u: User) => u.role === 'student') : []);
     } else setImportError('Failed to add student. Email may already exist.');
@@ -448,6 +450,7 @@ export default function SchoolDetailPage() {
                           { label: 'Username *', key: 'username', placeholder: 'rahul.sharma', type: 'text' },
                           { label: 'Email Address *', key: 'email', placeholder: 'rahul@school.edu', type: 'email' },
                           { label: 'Phone Number', key: 'phone', placeholder: '+91 9876543210', type: 'text' },
+                          { label: 'Password', key: 'password', placeholder: 'Default: Student@1234', type: 'password' },
                         ].map(({ label, key, placeholder, type }) => (
                           <div key={key}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</label>
@@ -595,11 +598,11 @@ export default function SchoolDetailPage() {
                 <div><span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: user.is_active ? '#DCFCE7' : '#F1F5F9', color: user.is_active ? '#15803D' : '#64748B' }}>{user.is_active ? 'Active' : 'Inactive'}</span></div>
                 <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{new Date(user.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => router.push('/admin/users')}
+                  <button onClick={() => setViewingStudent(user)}
                     style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #E2E8F0', background: '#fff', color: '#1A73E8', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
                     View
                   </button>
-                  <button onClick={() => router.push('/admin/users')}
+                  <button onClick={() => setEditingStudent(user)}
                     style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #E2E8F0', background: '#FFF7ED', color: '#EA580C', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
                     Edit
                   </button>
@@ -763,6 +766,89 @@ export default function SchoolDetailPage() {
           </div>
         )}
       </div>
+
+      {viewingStudent && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', justifyContent: 'flex-end' }}
+          onClick={e => e.target === e.currentTarget && setViewingStudent(null)}>
+          <div style={{ background: '#fff', width: 'min(440px,100vw)', height: '100%', borderLeft: '1.5px solid #e5e7eb', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', overflowY: 'auto' }}>
+            <div style={{ background: 'linear-gradient(135deg,#1A73E8,#00C896)', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <Avatar name={viewingStudent.name} size={56} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.1rem' }}>{viewingStudent.name}</div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.8rem' }}>@{viewingStudent.email?.split('@')[0]}</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', marginTop: 2 }}>{tenant?.name}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <button onClick={() => { setEditingStudent(viewingStudent); setViewingStudent(null); }}
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>✏️ Edit</button>
+                <button onClick={() => setViewingStudent(null)}
+                  style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: '0.8rem' }}>✕ Close</button>
+              </div>
+            </div>
+            <div style={{ padding: '1.25rem 1.5rem' }}>
+              {([
+                { label: 'Email', value: viewingStudent.email || '—' },
+                { label: 'Class', value: viewingStudent.class_grade ? `Class ${viewingStudent.class_grade}` : '—' },
+                { label: 'Division', value: viewingStudent.division || '—' },
+                { label: 'Status', value: viewingStudent.is_active ? '✅ Active' : '❌ Inactive' },
+                { label: 'Joined', value: new Date(viewingStudent.created_at).toLocaleDateString('en-IN') },
+                { label: 'Last Login', value: viewingStudent.last_login ? new Date(viewingStudent.last_login).toLocaleDateString('en-IN') : 'Never' },
+              ] as {label:string;value:string}[]).map(({ label, value }) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.7rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                  <span style={{ fontSize: '0.82rem', color: '#6b7280', fontWeight: 600 }}>{label}</span>
+                  <span style={{ fontSize: '0.82rem', color: '#111827', fontWeight: 700 }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {editingStudent && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={e => e.target === e.currentTarget && setEditingStudent(null)}>
+          <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 420, padding: '1.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0F172A' }}>✏️ Edit {editingStudent.name}</div>
+              <button onClick={() => setEditingStudent(null)} style={{ background: '#f1f5f9', border: 'none', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+            </div>
+            <div style={{ display: 'grid', gap: '0.875rem' }}>
+              {([
+                { label: 'Full Name', id: 'es-name', defaultValue: editingStudent.name, type: 'text' },
+                { label: 'Username', id: 'es-username', defaultValue: (editingStudent as any).username || editingStudent.email?.split('@')[0] || '', type: 'text' },
+                { label: 'Phone', id: 'es-phone', defaultValue: (editingStudent as any).phone || '', type: 'text' },
+                { label: 'Division', id: 'es-division', defaultValue: editingStudent.division || '', type: 'text' },
+              ] as {label:string;id:string;defaultValue:string;type:string}[]).map(({ label, id, defaultValue, type }) => (
+                <div key={id}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>{label}</label>
+                  <input id={id} type={type} defaultValue={defaultValue}
+                    style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '0.875rem', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', marginBottom: '0.5rem' }}>New Password <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none' }}>(leave blank to keep current)</span></div>
+                <input id="es-password" type="password" placeholder="Min. 8 characters"
+                  style={{ display: 'block', width: '100%', padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              </div>
+              <button onClick={async () => {
+                const name = (document.getElementById('es-name') as HTMLInputElement)?.value;
+                const username = (document.getElementById('es-username') as HTMLInputElement)?.value;
+                const phone = (document.getElementById('es-phone') as HTMLInputElement)?.value;
+                const division = (document.getElementById('es-division') as HTMLInputElement)?.value;
+                const password = (document.getElementById('es-password') as HTMLInputElement)?.value;
+                const payload: any = { name, username, phone, division };
+                await apiFetch(`/api/users/${editingStudent.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+                if (password && password.length >= 8) {
+                  await apiFetch(`/api/users/${editingStudent.id}/password`, { method: 'PATCH', body: JSON.stringify({ password }) });
+                }
+                setUsers(prev => prev.map(u => u.id === editingStudent.id ? { ...u, ...payload } : u));
+                setEditingStudent(null);
+              }} style={{ padding: '0.75rem', borderRadius: 10, background: '#1A73E8', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' }}>
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

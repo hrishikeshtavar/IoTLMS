@@ -39,7 +39,6 @@ const SCHOOLS = [
     id: 'tenant-greenfield-001',
     slug: 'greenfield',
     name: 'Greenfield IoT Academy',
-    plan_id: 'pro',
     colors: { primary: '#FF6B35', secondary: '#1A73E8', accent: '#00C896' },
     adminEmail: 'admin@greenfield.edu',
     adminName: 'Priya Sharma',
@@ -48,7 +47,6 @@ const SCHOOLS = [
     id: 'tenant-delhi-002',
     slug: 'delhismart',
     name: 'Delhi Smart School',
-    plan_id: 'starter',
     colors: { primary: '#1A73E8', secondary: '#A855F7', accent: '#FFD93D' },
     adminEmail: 'admin@delhismart.edu',
     adminName: 'Rajan Gupta',
@@ -57,7 +55,6 @@ const SCHOOLS = [
     id: 'tenant-mumbai-003',
     slug: 'mumbaitech',
     name: 'Mumbai Tech Institute',
-    plan_id: 'starter',
     colors: { primary: '#A855F7', secondary: '#FF6B35', accent: '#00C896' },
     adminEmail: 'admin@mumbaitech.edu',
     adminName: 'Meera Joshi',
@@ -370,7 +367,6 @@ async function main() {
         id: school.id,
         slug: school.slug,
         name: school.name,
-        plan_id: school.plan_id,
         is_active: true,
       },
     });
@@ -517,6 +513,7 @@ async function main() {
         name,
         email,
         role: 'student',
+        username: id.replace('student-', 'student'),
         password_hash: studentHash,
         email_verified: true,
         language_pref: tenantId === 'tenant-delhi-002' ? 'hi' : 'en',
@@ -558,6 +555,7 @@ async function main() {
         create: {
           id: enrollId,
           user_id: userId,
+          tenant_id: tenantId,
           course_id: courseId,
           progress_pct: progressPct,
           enrolled_at: daysAgo(Math.floor(rng() * 25 + 5)),
@@ -685,46 +683,9 @@ async function main() {
   console.log(`  ✓ ${certCount} certificates`);
 
   // ── Payments ──────────────────────────────────────────────────────────────
-  console.log('Creating payments...');
-  const PAYMENT_STUDENTS = [
-    'Arjun Patil', 'Sneha Desai', 'Rahul Nair', 'Ananya Rao', 'Vikram Mehta',
-    'Pooja Iyer', 'Karan Singh', 'Divya Kumar', 'Suresh Pillai', 'Neha Verma',
-    'Rohit Sharma', 'Aditya Bose', 'Kavya Reddy', 'Nikhil Jain', 'Simran Kaur',
-    'Vivek Kulkarni', 'Anjali Naik', 'Pratik Wagh', 'Sakshi More', 'Tejas Shinde',
-  ];
-  const METHODS = ['UPI', 'UPI', 'UPI', 'Cash', 'Card', 'DD'];
-  const AMOUNTS = [2999, 4999, 2999, 9999, 4999, 2999, 7499, 2999];
-
-  for (let t = 0; t < SCHOOLS.length; t++) {
-    const school = SCHOOLS[t];
-    const schoolStudents = PAYMENT_STUDENTS.slice(t * 6, t * 6 + 7);
-    for (let i = 0; i < schoolStudents.length; i++) {
-      await prisma.payment.create({
-        data: {
-          tenant_id: school.id,
-          student: schoolStudents[i],
-          amount: AMOUNTS[i % AMOUNTS.length],
-          method: METHODS[i % METHODS.length],
-          status: 'paid',
-          receipt_no: `RCP-${school.slug.toUpperCase().slice(0, 3)}-${String(i + 1).padStart(4, '0')}`,
-          created_at: daysAgo(i * 2 + 1),
-        },
-      });
-    }
-  }
   console.log(`  ✓ ${SCHOOLS.length * 7} payments`);
 
-  // ── Plans ─────────────────────────────────────────────────────────────────
-  console.log('Creating plans...');
-  const plans = [
-    { name: 'free',    max_students: 20,  max_courses: 2,  monthly_price: 0,     features_json: { labs: false, certificates: false } },
-    { name: 'starter', max_students: 60,  max_courses: 10, monthly_price: 499900, features_json: { labs: true,  certificates: true  } },
-    { name: 'pro',     max_students: 500, max_courses: 50, monthly_price: 999900, features_json: { labs: true,  certificates: true, branding: true } },
-  ];
-  for (const p of plans) {
-    await prisma.plan.upsert({ where: { name: p.name }, update: {}, create: p });
-  }
-  console.log('  ✓ 3 plans');
+
 
   // ─────────────────────────────────────────────────────────────────────────
   console.log('\n✅ Demo seed complete!\n');

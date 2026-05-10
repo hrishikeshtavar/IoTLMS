@@ -13,7 +13,6 @@ async function main() {
       name: 'Greenfield IoT Academy',
       slug: 'greenfield',
       is_active: true,
-      plan_id: 'starter',
     },
   });
   console.log('Tenant:', tenant.id);
@@ -133,7 +132,7 @@ async function main() {
     await prisma.enrollment.upsert({
       where: { id: `enroll-${e.user_id}-${e.course_id}` },
       update: {},
-      create: { id: `enroll-${e.user_id}-${e.course_id}`, ...e },
+      create: { id: `enroll-${e.user_id}-${e.course_id}`, ...e, tenant_id: tenant.id },
     });
   }
   console.log('Enrollments:', enrollments.length);

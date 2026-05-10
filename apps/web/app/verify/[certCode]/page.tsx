@@ -40,7 +40,7 @@ export default function VerifyPage() {
         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#DC2626', marginBottom: '0.5rem' }}>Certificate Not Found</h1>
         <p style={{ color: 'var(--text3)', marginBottom: '1.5rem' }}>The code <strong>{code}</strong> is not valid.</p>
-        <Link href="/" className="btn-secondary">Go Home</Link>
+        <Link href="/dashboard" className="btn-secondary">← Student Dashboard</Link>
       </div>
     </div>
   );
@@ -68,7 +68,7 @@ export default function VerifyPage() {
             </div>
           ))}
         </div>
-        <Link href="/" className="btn-secondary">← SimuLearning Home</Link>
+        <Link href="/dashboard" className="btn-secondary">← Student Dashboard</Link>
       </div>
     </div>
   );

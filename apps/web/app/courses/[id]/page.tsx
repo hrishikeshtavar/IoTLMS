@@ -89,21 +89,14 @@ export default function CoursePage() {
   const [lessons, setLessons]           = useState<Lesson[]>([]);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [lessonContent, setLessonContent] = useState<LessonContent | null>(null);
-  const [completed, setCompleted] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined' || !courseId) return new Set<string>();
-    try { return new Set(JSON.parse(localStorage.getItem(`simulearning_progress_${courseId}`) || '[]')); } catch { return new Set<string>(); }
-  });
+  const [completed, setCompleted] = useState<Set<string>>(new Set<string>());
+  const [serverProgress, setServerProgress] = useState(0);
   const [assessmentMap, setAssessmentMap] = useState<Record<string, string>>({}); 
   const [loading, setLoading]           = useState(true);
   const [contentLoading, setContentLoading] = useState(false);
   const [notesOpen, setNotesOpen]       = useState(false);
   const [noteText, setNoteText]         = useState('');
   const [noteSaved, setNoteSaved]       = useState(false);
-  // Persist lesson completion
-  useEffect(() => {
-    if (!courseId) return;
-    localStorage.setItem(`simulearning_progress_${courseId}`, JSON.stringify([...completed]));
-  }, [completed, courseId]);
 
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -129,6 +122,17 @@ export default function CoursePage() {
           try { const r = await apiFetch('/api/assessments/by-lesson/' + l.id); const a = await r.json(); if (a && a.id) map[l.id] = a.id; } catch {}
         }));
         setAssessmentMap(map);
+        // Load completed lessons from server
+        const user = getUser();
+        if (user?.id) {
+          try {
+            const compRes = await apiFetch(`/api/lessons/course/${courseId}/completed`);
+            if (compRes.ok) {
+              const compData = await compRes.json();
+              setCompleted(new Set(compData.completed || []));
+            }
+          } catch {}
+        }
       })
       .catch(() => setLoading(false));
   }, [courseId]);
@@ -170,31 +174,33 @@ export default function CoursePage() {
   }, [activeLesson]);
 
   const completeLesson = async (lessonId: string) => {
-    const user = getUser();
-    const newCompleted = new Set([...completed, lessonId]);
-    setCompleted(newCompleted);
-    const progressPct = Math.round((newCompleted.size / lessons.length) * 100);
+    // Optimistic UI update
+    setCompleted(prev => new Set([...prev, lessonId]));
 
-    await apiFetch(`/api/enrollments/${courseId}/progress`, {
-      method: 'PATCH',
-      body: JSON.stringify({ user_id: user?.id, progress_pct: progressPct }),
-    }).catch(() => {});
-
-    // Record activity for gamification
-    if (user?.id) {
-      await apiFetch('/api/gamification/activity', {
-        method: 'POST',
-        body: JSON.stringify({ activity_type: 'lesson_complete', entity_id: lessonId }),
-      }).catch(() => {});
-    }
-
-    const currentIndex = lessons.findIndex(l => l.id === lessonId);
-    if (currentIndex < lessons.length - 1) {
-      setActiveLesson(lessons[currentIndex + 1] ?? null);
+    try {
+      const res = await apiFetch(`/api/lessons/${lessonId}/complete`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        // Sync with server's authoritative progress
+        if (data.completed_lessons !== undefined) {
+          const compRes = await apiFetch(`/api/lessons/course/${courseId}/completed`);
+          if (compRes.ok) {
+            const compData = await compRes.json();
+            setCompleted(new Set(compData.completed || []));
+          }
+        }
+        // Auto-advance to next lesson
+        const currentIndex = lessons.findIndex(l => l.id === lessonId);
+        if (currentIndex < lessons.length - 1) {
+          setTimeout(() => setActiveLesson(lessons[currentIndex + 1] ?? null), 600);
+        }
+      }
+    } catch {
+      // Keep optimistic update on error
     }
   };
 
-  const progress = lessons.length > 0 ? Math.round((completed.size / lessons.length) * 100) : 0;
+  const progress = lessons.length > 0 ? Math.min(Math.round((completed.size / lessons.length) * 100), 100) : 0;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>

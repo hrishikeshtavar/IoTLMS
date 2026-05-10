@@ -8,10 +8,7 @@ export class EnrollmentsService {
 
   async enroll(dto: CreateEnrollmentDto) {
     const existing = await this.prisma.enrollment.findFirst({
-      where: {
-        user_id: dto.user_id,
-        course_id: dto.course_id,
-      },
+      where: { user_id: dto.user_id, course_id: dto.course_id },
     });
 
     if (existing) return { ...existing, already_enrolled: true };
@@ -20,6 +17,7 @@ export class EnrollmentsService {
       data: {
         user_id: dto.user_id,
         course_id: dto.course_id,
+        tenant_id: dto.tenant_id,
       },
       include: { course: true },
     });
@@ -33,24 +31,36 @@ export class EnrollmentsService {
     });
   }
 
-  async updateProgress(userId: string, courseId: string, progressPct: number) {
+  async updateProgress(
+    userId: string,
+    courseId: string,
+    progressPct: number,
+    tenantId: string,
+  ) {
+    const clampedPct = Math.min(Math.round(progressPct), 100);
+
     const existing = await this.prisma.enrollment.findFirst({
       where: { user_id: userId, course_id: courseId },
     });
-    const clampedPct = Math.min(Math.round(progressPct), 100);
+
     if (existing) {
       return this.prisma.enrollment.update({
         where: { id: existing.id },
         data: {
           progress_pct: clampedPct,
-          completed_at: clampedPct >= 100 ? existing.completed_at ?? new Date() : null,
+          completed_at: clampedPct >= 100
+            ? existing.completed_at ?? new Date()
+            : null,
         },
       });
     }
+
+    // Auto-enroll if not already enrolled
     return this.prisma.enrollment.create({
       data: {
         user_id: userId,
         course_id: courseId,
+        tenant_id: tenantId,
         progress_pct: clampedPct,
         completed_at: clampedPct >= 100 ? new Date() : null,
       },
@@ -59,9 +69,7 @@ export class EnrollmentsService {
 
   async getAllByTenant(tenantId: string) {
     return this.prisma.enrollment.findMany({
-      where: {
-        course: { tenant_id: tenantId },
-      },
+      where: { tenant_id: tenantId },
       include: {
         course: { select: { title_en: true, category: true, tenant_id: true } },
       },

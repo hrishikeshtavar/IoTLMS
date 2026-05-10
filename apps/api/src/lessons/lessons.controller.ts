@@ -54,4 +54,9 @@ export class LessonsController {
     return this.lessonsService.markComplete(id, req.user.id, req.tenantId);
   }
 
+  @Get('course/:courseId/completed')
+  async getCompleted(@Param('courseId') courseId: string, @Req() req: any) {
+    return this.lessonsService.getCompletedLessons(courseId, req.user.id);
+  }
+
   }

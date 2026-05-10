@@ -41,7 +41,7 @@ export class CoursesService {
   async updateStatus(id: string, status: string, tenantId: string) {
     return this.prisma.course.updateMany({
       where: { id, tenant_id: tenantId },
-      data: { status },
+      data: { status: status as any },
     });
   }
 }

@@ -18,11 +18,11 @@ import { LabSessionsModule } from './lab-sessions/lab-sessions.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SubtitlesModule } from './subtitles/subtitles.module';
-import { PaymentsModule } from './payments/payments.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { GamificationModule } from './gamification/gamification.module';
+import { SearchModule } from './search/search.module';
 
 const throttlerEnabled = process.env.THROTTLER_ENABLED !== 'false';
 const throttlerTtlMs = Number(process.env.THROTTLER_TTL_MS ?? 60000);
@@ -44,11 +44,11 @@ const throttlerLimit = Number(process.env.THROTTLER_LIMIT ?? 1000);
     LabSessionsModule,
     AnalyticsModule,
     SubtitlesModule,
-    PaymentsModule,
     UsersModule,
     AuthModule,
     CertificatesModule,
     GamificationModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

@@ -17,7 +17,7 @@ export default function LoginPage() {
     try {
       const { ok, data } = await login(email, password);
       if (!ok) {
-        setError(data.message || 'Invalid email or password');
+        setError(data.message || 'Invalid credentials');
       } else {
         router.push('/dashboard');
       }
@@ -44,12 +44,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Email</label>
+            <label style={styles.label}>Email or Username</label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@school.com"
+              placeholder="Email or username"
               required
               style={styles.input}
             />

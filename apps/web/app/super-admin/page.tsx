@@ -95,6 +95,15 @@ export default function SuperAdminPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [editing, setEditing] = useState<Tenant | null>(null);
   const [superUser, setSuperUser] = useState<any>(null);
+  const [showSuperAdmins, setShowSuperAdmins] = useState(false);
+  const [superAdmins, setSuperAdmins] = useState<any[]>([]);
+  const [saLoading, setSaLoading] = useState(false);
+  const [saForm, setSaForm] = useState({ name: '', email: '', password: '' });
+  const [saEditId, setSaEditId] = useState<string|null>(null);
+  const [saEditForm, setSaEditForm] = useState({ name: '', email: '', password: '' });
+  const [saMsg, setSaMsg] = useState('');
+  const [saErr, setSaErr] = useState('');
+  const [saSaving, setSaSaving] = useState(false);
 
   useEffect(() => {
     const user = getUser();
@@ -109,6 +118,39 @@ export default function SuperAdminPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [router]);
+
+  async function loadSuperAdmins() {
+    setSaLoading(true);
+    const res = await apiFetch('/api/users/super-admins');
+    if (res.ok) setSuperAdmins(await res.json());
+    setSaLoading(false);
+  }
+
+  async function createSuperAdmin() {
+    if (!saForm.name || !saForm.email || !saForm.password) { setSaErr('All fields required.'); return; }
+    if (saForm.password.length < 8) { setSaErr('Password min 8 characters.'); return; }
+    setSaSaving(true); setSaErr(''); setSaMsg('');
+    const res = await apiFetch('/api/users/super-admins', { method: 'POST', body: JSON.stringify(saForm) });
+    setSaSaving(false);
+    if (res.ok) { setSaMsg('Super admin created!'); setSaForm({ name: '', email: '', password: '' }); loadSuperAdmins(); setTimeout(() => setSaMsg(''), 3000); }
+    else setSaErr('Failed — email may already exist.');
+  }
+
+  async function updateSuperAdmin(id: string) {
+    setSaSaving(true); setSaErr(''); setSaMsg('');
+    const payload: any = { name: saEditForm.name, email: saEditForm.email };
+    if (saEditForm.password.length >= 8) payload.password = saEditForm.password;
+    const res = await apiFetch(`/api/users/super-admins/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    setSaSaving(false);
+    if (res.ok) { setSaMsg('Updated!'); setSaEditId(null); loadSuperAdmins(); setTimeout(() => setSaMsg(''), 2500); }
+    else setSaErr('Failed to update.');
+  }
+
+  async function removeSuperAdmin(id: string, name: string) {
+    if (!confirm(`Remove super admin "${name}"? This cannot be undone.`)) return;
+    await apiFetch(`/api/users/super-admins/${id}`, { method: 'DELETE' });
+    setSuperAdmins(prev => prev.filter(a => a.id !== id));
+  }
 
   const filtered = tenants.filter(t => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) || t.slug.includes(search.toLowerCase());
@@ -185,6 +227,7 @@ export default function SuperAdminPage() {
           <div style={{ display:"flex", gap:"0.75rem", alignItems:"center" }}>
             <Link href="/super-admin/courses" style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1A73E8,#00C896)", color:"#fff", textDecoration:"none", borderRadius:10, fontWeight:700, fontSize:"0.9rem", boxShadow:"0 4px 12px rgba(0,200,150,0.3)" }}>📚 Manage Courses</Link>
             <button onClick={() => router.push("/super-admin/schools/new")} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#1A73E8,#0EA5E9)", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:"0.9rem", boxShadow:"0 4px 12px rgba(26,115,232,0.3)" }}>+ Add New School</button>
+            <button onClick={() => { setShowSuperAdmins(true); loadSuperAdmins(); }} style={{ padding:"10px 22px", background:"linear-gradient(135deg,#7C3AED,#A855F7)", color:"#fff", border:"none", borderRadius:10, fontWeight:700, cursor:"pointer", fontSize:"0.9rem", boxShadow:"0 4px 12px rgba(124,58,237,0.3)" }}>👑 Manage Super Admins</button>
           </div>
 
 
@@ -274,6 +317,99 @@ export default function SuperAdminPage() {
           </div>
         )}
       </div>
+
+      {showSuperAdmins && (
+        <div style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}
+          onClick={e => e.target===e.currentTarget && setShowSuperAdmins(false)}>
+          <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:580, maxHeight:'85vh', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 80px rgba(0,0,0,0.25)' }}>
+            <div style={{ background:'linear-gradient(135deg,#4C1D95,#7C3AED)', padding:'1.25rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+              <div>
+                <div style={{ fontWeight:800, color:'#fff', fontSize:'1rem' }}>👑 Super Admin Management</div>
+                <div style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.78rem', marginTop:2 }}>Create and manage platform administrators</div>
+              </div>
+              <button onClick={() => setShowSuperAdmins(false)} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:32, height:32, borderRadius:'50%', cursor:'pointer', fontSize:'1rem' }}>✕</button>
+            </div>
+            <div style={{ overflowY:'auto', flex:1 }}>
+              {saMsg && <div style={{ background:'#DCFCE7', color:'#15803D', padding:'0.75rem 1.5rem', fontWeight:600, fontSize:'0.85rem' }}>✅ {saMsg}</div>}
+              {saErr && <div style={{ background:'#FEE2E2', color:'#DC2626', padding:'0.75rem 1.5rem', fontWeight:600, fontSize:'0.85rem' }}>❌ {saErr}</div>}
+
+              {/* Create new super admin */}
+              <div style={{ padding:'1.25rem 1.5rem', borderBottom:'1px solid #E2E8F0' }}>
+                <div style={{ fontWeight:700, fontSize:'0.85rem', color:'#4C1D95', marginBottom:'0.875rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>➕ Create New Super Admin</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem', marginBottom:'0.75rem' }}>
+                  {[{label:'Full Name', key:'name', type:'text', placeholder:'Admin name'},{label:'Email', key:'email', type:'email', placeholder:'admin@iotlearn.in'}].map(({label,key,type,placeholder}) => (
+                    <div key={key}>
+                      <label style={{ fontSize:'0.7rem', fontWeight:700, color:'#6b7280', textTransform:'uppercase', display:'block', marginBottom:3 }}>{label}</label>
+                      <input type={type} placeholder={placeholder} value={(saForm as any)[key]}
+                        onChange={e => setSaForm(f => ({...f, [key]:e.target.value}))}
+                        style={{ display:'block', width:'100%', padding:'0.6rem 0.75rem', borderRadius:8, border:'1.5px solid #E2E8F0', fontSize:'0.875rem', fontFamily:'inherit', boxSizing:'border-box' }} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'0.75rem', alignItems:'end' }}>
+                  <div>
+                    <label style={{ fontSize:'0.7rem', fontWeight:700, color:'#6b7280', textTransform:'uppercase', display:'block', marginBottom:3 }}>Password</label>
+                    <input type="password" placeholder="Min 8 characters" value={saForm.password}
+                      onChange={e => setSaForm(f => ({...f, password:e.target.value}))}
+                      style={{ display:'block', width:'100%', padding:'0.6rem 0.75rem', borderRadius:8, border:'1.5px solid #E2E8F0', fontSize:'0.875rem', fontFamily:'inherit', boxSizing:'border-box' }} />
+                  </div>
+                  <button onClick={createSuperAdmin} disabled={saSaving}
+                    style={{ padding:'0.6rem 1.25rem', borderRadius:8, background:'#7C3AED', color:'#fff', border:'none', fontWeight:700, fontSize:'0.875rem', cursor:'pointer', whiteSpace:'nowrap', opacity:saSaving?0.7:1 }}>
+                    {saSaving ? 'Creating…' : '+ Create'}
+                  </button>
+                </div>
+              </div>
+
+              {/* List of super admins */}
+              <div style={{ padding:'1.25rem 1.5rem' }}>
+                <div style={{ fontWeight:700, fontSize:'0.85rem', color:'#4C1D95', marginBottom:'0.875rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Current Super Admins ({superAdmins.length})</div>
+                {saLoading ? (
+                  <div style={{ textAlign:'center', padding:'2rem', color:'#94A3B8' }}>Loading…</div>
+                ) : superAdmins.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'2rem', color:'#94A3B8', fontSize:'0.85rem' }}>No super admins found</div>
+                ) : superAdmins.map(admin => (
+                  <div key={admin.id} style={{ marginBottom:'0.75rem', border:'1.5px solid #E2E8F0', borderRadius:12, overflow:'hidden' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'0.875rem', padding:'0.875rem 1rem' }}>
+                      <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#7C3AED,#A855F7)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:'0.85rem', flexShrink:0 }}>
+                        {admin.name?.split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:700, fontSize:'0.875rem', color:'#0F172A' }}>{admin.name}</div>
+                        <div style={{ fontSize:'0.75rem', color:'#64748B' }}>{admin.email}</div>
+                      </div>
+                      <div style={{ display:'flex', gap:'0.4rem', flexShrink:0 }}>
+                        <button onClick={() => { setSaEditId(admin.id); setSaEditForm({name:admin.name,email:admin.email||'',password:''}); setSaErr(''); setSaMsg(''); }}
+                          style={{ padding:'5px 12px', borderRadius:7, background:'#EFF6FF', color:'#1A73E8', border:'1.5px solid #BFDBFE', fontSize:'0.75rem', fontWeight:700, cursor:'pointer' }}>Edit</button>
+                        <button onClick={() => removeSuperAdmin(admin.id, admin.name)}
+                          style={{ padding:'5px 12px', borderRadius:7, background:'#FFF5F5', color:'#DC2626', border:'1.5px solid #FECACA', fontSize:'0.75rem', fontWeight:700, cursor:'pointer' }}>Remove</button>
+                      </div>
+                    </div>
+                    {saEditId === admin.id && (
+                      <div style={{ borderTop:'1px solid #E2E8F0', padding:'0.875rem 1rem', background:'#F8FAFC', display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:'0.6rem', alignItems:'end' }}>
+                        {[{label:'Name',key:'name',type:'text'},{label:'Email',key:'email',type:'email'},{label:'New Password',key:'password',type:'password'}].map(({label,key,type}) => (
+                          <div key={key}>
+                            <label style={{ fontSize:'0.65rem', fontWeight:700, color:'#6b7280', textTransform:'uppercase', display:'block', marginBottom:3 }}>{label}</label>
+                            <input type={type} value={(saEditForm as any)[key]}
+                              onChange={e => setSaEditForm(f=>({...f,[key]:e.target.value}))}
+                              placeholder={key==='password'?'Leave blank to keep':''}
+                              style={{ display:'block', width:'100%', padding:'0.5rem 0.65rem', borderRadius:6, border:'1.5px solid #D1D5DB', fontSize:'0.82rem', fontFamily:'inherit', boxSizing:'border-box' }} />
+                          </div>
+                        ))}
+                        <div style={{ display:'flex', gap:'0.35rem' }}>
+                          <button onClick={() => updateSuperAdmin(admin.id)} disabled={saSaving}
+                            style={{ padding:'0.5rem 1rem', borderRadius:6, background:'#7C3AED', color:'#fff', border:'none', fontWeight:700, fontSize:'0.78rem', cursor:'pointer' }}>{saSaving?'…':'Save'}</button>
+                          <button onClick={() => setSaEditId(null)}
+                            style={{ padding:'0.5rem 0.75rem', borderRadius:6, border:'1.5px solid #E2E8F0', background:'#fff', color:'#6b7280', fontSize:'0.78rem', cursor:'pointer' }}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editing && <EditSchoolModal tenant={editing} onClose={() => setEditing(null)} onSaved={t => { setTenants(prev => prev.map(x => x.id === t.id ? t : x)); setEditing(null); }} />}
     </div>

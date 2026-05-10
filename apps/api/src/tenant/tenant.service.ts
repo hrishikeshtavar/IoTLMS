@@ -31,15 +31,15 @@ export class TenantService {
     return { tenants, students, courses, certs };
   }
 
-  async create(dto: { name: string; slug: string; plan_id?: string }) {
+  async create(dto: { name: string; slug: string }) {
     const existing = await this.prisma.tenant.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException('School slug already taken');
     return this.prisma.tenant.create({
-      data: { name: dto.name, slug: dto.slug, plan_id: dto.plan_id ?? 'free', is_active: true },
+      data: { name: dto.name, slug: dto.slug, is_active: true },
     });
   }
 
-  async update(id: string, dto: { name?: string; is_active?: boolean; plan_id?: string }) {
+  async update(id: string, dto: { name?: string; is_active?: boolean }) {
     return this.prisma.tenant.update({ where: { id }, data: dto });
   }
 }

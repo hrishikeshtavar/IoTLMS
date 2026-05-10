@@ -120,26 +120,39 @@ function ProgressRing({ percent, size = 56, color = '#FF6B35' }: { percent: numb
   );
 }
 
-// Generate stable weekly data seeded on userId so it never flickers
-function getWeeklyData(enrollments: Enrollment[], userId?: string, weeklyActivity?: number[]) {
+function getWeeklyData(weeklyActivity?: number[]) {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   if (weeklyActivity && weeklyActivity.length === 7) {
     return days.map((day, i) => ({ day, minutes: weeklyActivity[i] ?? 0 }));
   }
-  if (enrollments.length === 0) return days.map(day => ({ day, minutes: 0 }));
-  // Stable seeded random from userId
-  let seed = 0;
-  for (let i = 0; i < (userId || 'x').length; i++) seed = (seed * 31 + (userId || 'x').charCodeAt(i)) & 0xffff;
-  const rng = () => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 4294967296; };
-  return days.map((day, i) => ({
-    day,
-    minutes: Math.floor(rng() * 40 + (i === 5 || i === 6 ? 8 : 12)),
-  }));
+  return days.map(day => ({ day, minutes: 0 }));
 }
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days}d ago`;
+}
+
+const ACTIVITY_META: Record<string, { emoji: string; label: string }> = {
+  lesson_complete: { emoji: '📖', label: 'Completed a lesson' },
+  quiz_pass:       { emoji: '🧠', label: 'Passed a quiz' },
+  lab_complete:    { emoji: '🔬', label: 'Finished a lab' },
+  course_enroll:   { emoji: '📚', label: 'Enrolled in course' },
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>('en');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState(0);
@@ -175,6 +188,18 @@ export default function DashboardPage() {
 
   const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('simulearning_locale', l); };
 
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (!q.trim()) { setSearchResults(null); return; }
+    setSearching(true);
+    try {
+      const user = getUser();
+      const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}&tenantId=${user?.tenantId ?? ''}`);
+      if (res.ok) setSearchResults(await res.json());
+    } catch {}
+    setSearching(false);
+  };
+
   const t = T[locale];
   const isDevanagari = locale !== 'en';
 
@@ -199,7 +224,7 @@ export default function DashboardPage() {
   };
   const earnedBadgeCodes = new Set((realStats?.badges ?? []).map((b: any) => b.badge?.code ?? b.code));
 
-  const weeklyData = getWeeklyData(enrollments, getUser()?.id, weeklyActivity);
+  const weeklyData = getWeeklyData(weeklyActivity);
   const totalWeeklyMinutes = weeklyData.reduce((s, d) => s + d.minutes, 0);
 
   const hour = new Date().getHours();
@@ -218,6 +243,54 @@ export default function DashboardPage() {
               {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
             </button>
           ))}
+          {/* Search */}
+          <div style={{ position: 'relative' }}>
+            <input
+              value={searchQuery}
+              onChange={e => handleSearch(e.target.value)}
+              placeholder="🔍 Search courses..."
+              style={{ padding: '0.4rem 1rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'var(--card)', fontSize: '0.82rem', fontFamily: "'Baloo 2'", color: 'var(--text)', width: 200, outline: 'none' }}
+            />
+            {searchResults && searchQuery && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, width: 320, background: 'var(--card)', border: '1.5px solid var(--border)', borderRadius: '1rem', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 100, overflow: 'hidden' }}>
+                {searching && <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>Searching…</div>}
+                {!searching && searchResults.courses?.length === 0 && searchResults.lessons?.length === 0 && (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>No results found</div>
+                )}
+                {searchResults.courses?.slice(0, 3).map((c: any) => (
+                  <Link key={c.id} href={`/courses/${c.id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <span style={{ fontSize: '1.2rem' }}>📚</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}
+                        dangerouslySetInnerHTML={{ __html: c._formatted?.title_en || c.title_en }} />
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>{c.category}</div>
+                    </div>
+                  </Link>
+                ))}
+                {searchResults.lessons?.slice(0, 2).map((l: any) => (
+                  <Link key={l.id} href={`/courses/${l.course_id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <span style={{ fontSize: '1.2rem' }}>📖</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Lesson</div>
+                    </div>
+                  </Link>
+                ))}
+                {searchResults.total > 5 && (
+                  <Link href={`/courses?q=${encodeURIComponent(searchQuery)}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                    style={{ display: 'block', padding: '0.6rem 1rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
+                    See all {searchResults.total} results →
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
           <Link href="/courses" className="btn-primary" style={{ padding: '0.5rem 1.1rem', fontSize: '0.82rem' }}>
             {t.browse}
           </Link>
@@ -352,20 +425,19 @@ export default function DashboardPage() {
               <h3 className={isDevanagari ? 'lang-hi' : ''} style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text3)', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {t.activity}
               </h3>
-              {enrollments.slice(0, 3).map((e, i) => {
-                const title = (locale === 'hi' ? e.course.title_hi : locale === 'mr' ? e.course.title_mr : null) || e.course.title_en;
-                const timeAgo = i === 0 ? '2h ago' : i === 1 ? 'Yesterday' : '3 days ago';
+              {(realStats?.recentActivity ?? []).slice(0, 5).map((a: any, i: number) => {
+                const meta = ACTIVITY_META[a.activity_type] ?? { emoji: '⚡', label: a.activity_type };
                 return (
-                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,107,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>📖</div>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,107,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>{meta.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className={isDevanagari ? 'lang-hi' : ''} style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)' }}>{meta.label}</div>
                     </div>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text3)', whiteSpace: 'nowrap' }}>{timeAgo}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text3)', whiteSpace: 'nowrap' }}>{timeAgo(a.created_at)}</span>
                   </div>
                 );
               })}
-              {enrollments.length === 0 && (
+              {!(realStats?.recentActivity?.length) && (
                 <div style={{ fontSize: '0.8rem', color: 'var(--text3)', textAlign: 'center', padding: '0.5rem' }}>No activity yet</div>
               )}
             </div>

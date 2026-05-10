@@ -15,6 +15,7 @@ export class UsersService {
 
   async update(id: string, tenantId: string, data: {
     name?: string;
+    username?: string;
     phone?: string;
     language_pref?: string;
     class_grade?: number;
@@ -46,7 +47,27 @@ export class UsersService {
     return { ok: true };
   }
 
-  async bulkImport(tenantId: string, rows: { name: string; email?: string; phone?: string; role?: string; language?: string; username?: string; class_grade?: number; division?: string; password?: string }[]) {
+  async getSuperAdmins() {
+    return this.prisma.user.findMany({
+      where: { role: 'super_admin' },
+      orderBy: { created_at: 'asc' },
+      select: { id: true, name: true, email: true, username: true, is_active: true, created_at: true, last_login: true },
+    });
+  }
+
+  async updateAny(id: string, data: any) {
+    const { password, ...rest } = data;
+    const updateData: any = { ...rest };
+    if (password) updateData.password_hash = await bcrypt.hash(password, 12);
+    return this.prisma.user.update({ where: { id }, data: updateData });
+  }
+
+  async removeAny(id: string) {
+    await this.prisma.user.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async bulkImport(tenantId: string | null | undefined, rows: { name: string; email?: string; phone?: string; role?: string; language?: string; username?: string; class_grade?: number; division?: string; password?: string }[]) {
     const results = await Promise.allSettled(
       rows.map(async row => {
         const data: any = {
@@ -60,10 +81,8 @@ export class UsersService {
           class_grade: row.class_grade,
           division: row.division,
         };
-        if (row.password) {
-          
-          data.password_hash = await bcrypt.hash(row.password, 12);
-        }
+        const pwd = row.password || 'Student@1234';
+        data.password_hash = await bcrypt.hash(pwd, 12);
         return this.prisma.user.create({ data });
       })
     );

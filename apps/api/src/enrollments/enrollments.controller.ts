@@ -8,8 +8,9 @@ export class EnrollmentsController {
   constructor(private enrollmentsService: EnrollmentsService) {}
 
   @Post()
-  enroll(@Body() dto: CreateEnrollmentDto) {
-    return this.enrollmentsService.enroll(dto);
+  enroll(@Body() dto: CreateEnrollmentDto, @Req() req: Request) {
+    const tenantId = (req as any)['tenantId'] ?? '';
+    return this.enrollmentsService.enroll({ ...dto, tenant_id: tenantId });
   }
 
   @Get('user/:userId')
@@ -19,7 +20,7 @@ export class EnrollmentsController {
 
   @Get('tenant/all')
   getAllByTenant(@Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? 'default';
+    const tenantId = (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.getAllByTenant(tenantId);
   }
 
@@ -27,7 +28,9 @@ export class EnrollmentsController {
   updateProgress(
     @Param('courseId') courseId: string,
     @Body() body: { user_id: string; progress_pct: number },
+    @Req() req: Request,
   ) {
-    return this.enrollmentsService.updateProgress(body.user_id, courseId, body.progress_pct);
+    const tenantId = (req as any)['tenantId'] ?? '';
+    return this.enrollmentsService.updateProgress(body.user_id, courseId, body.progress_pct, tenantId);
   }
 }

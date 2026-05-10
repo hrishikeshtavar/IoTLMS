@@ -9,9 +9,7 @@ export class LessonsService {
 
   async create(dto: CreateLessonDto) {
     const count = await this.prisma.lesson.count({ where: { course_id: dto.course_id } });
-    return this.prisma.lesson.create({
-      data: { ...dto, order_index: count },
-    });
+    return this.prisma.lesson.create({ data: { ...dto, order_index: count } });
   }
 
   async findByCourse(courseId: string) {
@@ -38,9 +36,7 @@ export class LessonsService {
   }
 
   async getContent(lessonId: string, locale: string) {
-    return this.prisma.lessonContent.findMany({
-      where: { lesson_id: lessonId, locale },
-    });
+    return this.prisma.lessonContent.findMany({ where: { lesson_id: lessonId, locale } });
   }
 
   async saveContent(lessonId: string, locale: string, contentJson: any, userId?: string) {
@@ -56,41 +52,88 @@ export class LessonsService {
   }
 
   async markComplete(lessonId: string, userId: string, tenantId: string) {
+    // 1. Load lesson + all sibling lessons in the course
     const lesson = await this.prisma.lesson.findFirst({
-      where: { id: lessonId, course: { tenant_id: tenantId } },
-      include: { course: { include: { lessons: true } } },
+      where: { id: lessonId },
+      include: { course: { include: { lessons: { select: { id: true } } } } },
     });
-    if (!lesson) return { ok: false };
+    if (!lesson) return { ok: false, message: 'Lesson not found' };
 
-    const totalLessons = lesson.course.lessons.length;
     const courseId = lesson.course_id;
+    const totalLessons = lesson.course.lessons.length;
+    const courseTenantId = lesson.course.tenant_id;
 
-    // Get or create enrollment
-    let enrollment = await this.prisma.enrollment.findFirst({
+    // 2. Check if already completed (idempotent)
+    const alreadyDone = await this.prisma.userActivity.findFirst({
+      where: { user_id: userId, activity_type: 'lesson_complete', entity_id: lessonId },
+    });
+
+    if (!alreadyDone) {
+      // 3. Record activity only if first time
+      await this.gamification.recordActivity(userId, courseTenantId, 'lesson_complete', lessonId);
+    }
+
+    // 4. Count distinct lessons completed by this user in this course
+    const allLessonIds = lesson.course.lessons.map(l => l.id);
+    const completedActivities = await this.prisma.userActivity.findMany({
+      where: {
+        user_id: userId,
+        activity_type: 'lesson_complete',
+        entity_id: { in: allLessonIds },
+      },
+      distinct: ['entity_id'],
+    });
+    const completedCount = completedActivities.length;
+    const progress = Math.min(Math.round((completedCount / totalLessons) * 100), 100);
+
+    // 5. Get or create enrollment
+    const existingEnrollment = await this.prisma.enrollment.findFirst({
       where: { user_id: userId, course_id: courseId },
     });
-    if (!enrollment) {
-      enrollment = await this.prisma.enrollment.create({
-        data: { user_id: userId, course_id: courseId },
+
+    if (existingEnrollment) {
+      await this.prisma.enrollment.update({
+        where: { id: existingEnrollment.id },
+        data: {
+          progress_pct: progress,
+          completed_at: progress >= 100 ? (existingEnrollment.completed_at ?? new Date()) : null,
+        },
+      });
+    } else {
+      await this.prisma.enrollment.create({
+        data: {
+          user_id: userId,
+          course_id: courseId,
+          tenant_id: courseTenantId,
+          progress_pct: progress,
+          completed_at: progress >= 100 ? new Date() : null,
+        },
       });
     }
 
-    // Recalculate progress (naive: count distinct completed lessons via submissions + this one)
-    const newProgress = Math.min(
-      Math.round(((enrollment.progress_pct / 100) * totalLessons + 1) / totalLessons * 100),
-      100,
-    );
+    return {
+      ok: true,
+      already_completed: !!alreadyDone,
+      progress_pct: progress,
+      completed_lessons: completedCount,
+      total_lessons: totalLessons,
+      course_completed: progress >= 100,
+      courseId,
+    };
+  }
 
-    await this.prisma.enrollment.updateMany({
-      where: { user_id: userId, course_id: courseId },
-      data: {
-        progress_pct: newProgress,
-        completed_at: newProgress >= 100 ? new Date() : null,
-      },
+  // Return which lessons a user has completed in a course
+  async getCompletedLessons(courseId: string, userId: string) {
+    const lessons = await this.prisma.lesson.findMany({
+      where: { course_id: courseId },
+      select: { id: true },
     });
-
-    await this.gamification.recordActivity(userId, tenantId, 'lesson_complete', lessonId);
-    return { ok: true, progress_pct: newProgress, courseId };
+    const lessonIds = lessons.map(l => l.id);
+    const activities = await this.prisma.userActivity.findMany({
+      where: { user_id: userId, activity_type: 'lesson_complete', entity_id: { in: lessonIds } },
+      distinct: ['entity_id'],
+      select: { entity_id: true },
+    });
+    return { completed: activities.map(a => a.entity_id) };
   }
-
-  }
+}

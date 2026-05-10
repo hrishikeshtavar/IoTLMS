@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, getUser, logout } from '../../../app/lib/auth';
 
 type User = {
@@ -288,6 +288,9 @@ function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => v
 // ── Main Page ────────────────────────────────────────────────
 export default function AdminUsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenantIdParam = searchParams.get('tenantId');
+  const schoolNameParam = searchParams.get('schoolName');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -298,7 +301,7 @@ export default function AdminUsersPage() {
   useEffect(() => { setAdminUser(getUser()); }, []);
 
   useEffect(() => {
-    apiFetch('/api/users')
+    apiFetch(tenantIdParam ? `/api/users?tenantId=${tenantIdParam}` : '/api/users')
       .then(r => r.json())
       .then(data => {
         setUsers(Array.isArray(data) ? data.filter((u: User) => u.role === 'student') : []);
@@ -350,7 +353,7 @@ export default function AdminUsersPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ marginBottom: '0.5rem' }}>
             <span style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '3px 12px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700 }}>
-              {adminUser?.name || 'Admin'} · Greenfield IoT Academy
+              {adminUser?.name || 'Admin'} · {schoolNameParam || adminUser?.schoolName || 'School'}
             </span>
           </div>
           <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.2rem)', fontWeight: 800, color: '#fff', margin: '0.5rem 0 0.25rem' }}>👨‍🎓 Students</h1>

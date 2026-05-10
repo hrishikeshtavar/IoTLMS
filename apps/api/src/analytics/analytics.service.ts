@@ -6,15 +6,12 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
   async getDashboardStats(tenantId: string) {
-    const [totalStudents, totalCourses, enrollments, payments, submissions] = await Promise.all([
+    const [totalStudents, totalCourses, enrollments, submissions] = await Promise.all([
       this.prisma.user.count({ where: { tenant_id: tenantId, role: 'student' } }),
       this.prisma.course.count({ where: { tenant_id: tenantId } }),
       this.prisma.enrollment.findMany({
-        where: { course: { tenant_id: tenantId } },
+        where: { tenant_id: tenantId },
         include: { course: true },
-      }),
-      this.prisma.payment.findMany({
-        where: { tenant_id: tenantId, status: 'paid' },
       }),
       this.prisma.submission.findMany({
         where: { assessment: { lesson: { course: { tenant_id: tenantId } } } },
@@ -22,7 +19,6 @@ export class AnalyticsService {
       }),
     ]);
 
-    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
     const completedEnrollments = enrollments.filter(e => e.completed_at).length;
     const completionRate = enrollments.length > 0
       ? Math.round((completedEnrollments / enrollments.length) * 100)
@@ -47,20 +43,14 @@ export class AnalyticsService {
     });
     const coursePerformance = Object.values(courseMap);
 
-    const methodMap: Record<string, number> = {};
-    payments.forEach(p => { methodMap[p.method] = (methodMap[p.method] ?? 0) + 1; });
-    const paymentMethods = Object.entries(methodMap).map(([name, value]) => ({ name, value }));
-
     return {
       totalStudents,
       totalCourses,
       totalEnrollments: enrollments.length,
       completionRate,
-      totalRevenue,
       passRate,
       enrollmentTrend,
       coursePerformance,
-      paymentMethods,
     };
   }
 
@@ -73,7 +63,7 @@ export class AnalyticsService {
         where: { id: courseId, tenant_id: tenantId },
       }),
       this.prisma.user.findFirst({
-        where: { id: userId, tenant_id: tenantId },
+        where: { id: userId },
       }),
       this.prisma.brandKit.findFirst({
         where: tenantId ? { tenant_id: tenantId } : undefined,

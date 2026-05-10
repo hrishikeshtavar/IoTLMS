@@ -43,10 +43,13 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, tenantId: string) {
+    // Try email with tenant, then email globally, then username with tenant, then username globally
     let user = await this.prisma.user.findFirst({
       where: { email: dto.email, tenant_id: tenantId },
     });
     if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, tenant_id: tenantId } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email } });
     if (!user || !user.password_hash)
       throw new UnauthorizedException('Invalid credentials');
 

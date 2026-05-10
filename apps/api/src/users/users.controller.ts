@@ -41,6 +41,31 @@ export class UsersController {
     return this.svc.remove(id, tenantId);
   }
 
+  @Get('super-admins')
+  @Roles('super_admin')
+  getSuperAdmins() {
+    return this.svc.getSuperAdmins();
+  }
+
+  @Post('super-admins')
+  @Roles('super_admin')
+  createSuperAdmin(@Body() body: { name: string; email: string; password: string }) {
+    return this.svc.bulkImport(undefined as any, [{ ...body, role: 'super_admin' }]);
+  }
+
+  @Patch('super-admins/:id')
+  @Roles('super_admin')
+  updateSuperAdmin(@Param('id') id: string, @Body() body: any) {
+    return this.svc.updateAny(id, body);
+  }
+
+  @Delete('super-admins/:id')
+  @Roles('super_admin')
+  @HttpCode(200)
+  removeSuperAdmin(@Param('id') id: string) {
+    return this.svc.removeAny(id);
+  }
+
   @Post('bulk-import')
   bulkImport(@Req() req: Request, @Body() body: { tenantId?: string; rows: { name: string; email?: string; role?: string; language?: string }[] }) {
     const user = (req as any)['user'];
