@@ -2,6 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 
+const SAFE_USER_SELECT = {
+  id: true,
+  tenant_id: true,
+  name: true,
+  email: true,
+  phone: true,
+  role: true,
+  username: true,
+  language_pref: true,
+  class_grade: true,
+  division: true,
+  is_active: true,
+  email_verified: true,
+  last_login: true,
+  last_active: true,
+  created_at: true,
+};
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -9,6 +27,7 @@ export class UsersService {
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
       where: { tenant_id: tenantId },
+      select: SAFE_USER_SELECT,
       orderBy: { created_at: 'desc' },
     });
   }

@@ -1,7 +1,20 @@
+import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
+
 export class CreateQuestionDto {
+  @IsString()
   assessment_id: string;
+
+  @IsString()
   question_text: string;
-  options_json: { label: string; value: string }[];
+
+  @IsArray()
+  @IsOptional()
+  options_json?: any[];
+
+  @IsString()
   correct_answer: string;
-  points: number;
+
+  @IsNumber()
+  @IsOptional()
+  points?: number;
 }

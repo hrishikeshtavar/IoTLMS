@@ -20,25 +20,25 @@ export class LessonsController {
   }
 
   @Post()
-  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   create(@Body() body: any) {
     return this.lessonsService.create(body);
   }
 
   @Patch(':id')
-  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   update(@Param('id') id: string, @Body() body: any) {
     return this.lessonsService.update(id, body);
   }
 
   @Delete(':id')
-  @Roles('school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   remove(@Param('id') id: string) {
     return this.lessonsService.remove(id);
   }
 
   @Post(':id/content')
-  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   saveContent(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     return this.lessonsService.saveContent(id, body.locale || 'en', body.content_json, req.user?.id);
   }

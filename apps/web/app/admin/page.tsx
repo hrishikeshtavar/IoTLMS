@@ -98,13 +98,15 @@ export default function AdminPage() {
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0, color: '#0F172A' }}>All Courses</h2>
             <p style={{ color: '#64748B', marginTop: 4, fontSize: '0.85rem' }}>{courses.length} courses · {totalEnrollments} total enrollments</p>
           </div>
-          <button onClick={() => router.push('/admin/users')}
-            style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#7C3AED,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
-            👨‍🎓 Manage Students</button>
-          <button onClick={() => router.push(`/admin/analytics`)}
-            style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#0EA5E9,#1A73E8)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' }}>
-            📊 Analytics
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => router.push('/admin/users')}
+              style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#7C3AED,#A855F7)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}>
+              👨‍🎓 Manage Students</button>
+            <button onClick={() => router.push('/admin/analytics')}
+              style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#0EA5E9,#1A73E8)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' }}>
+              📊 Analytics
+            </button>
+          </div>
         </div>
 
         {/* Course grid */}

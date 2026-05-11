@@ -8,7 +8,8 @@ export class SearchController {
 
   @Get()
   @Public()
-  search(@Query('q') q = '', @Query('tenantId') tenantId?: string) {
+  search(@Query('q') q = '', @Query('tenantId') queryTenantId?: string, @Req() req?: any) {
+    const tenantId = queryTenantId || req?.tenantId;
     return this.searchService.searchAll(q, tenantId);
   }
 
@@ -16,10 +17,12 @@ export class SearchController {
   @Public()
   courses(
     @Query('q') q = '',
-    @Query('tenantId') tenantId?: string,
+    @Query('tenantId') queryTenantId?: string,
     @Query('category') category?: string,
     @Query('level') level?: string,
+    @Req() req?: any,
   ) {
+    const tenantId = queryTenantId || req?.tenantId;
     return this.searchService.searchCourses(q, tenantId, { category, level });
   }
 

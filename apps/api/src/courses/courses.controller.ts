@@ -10,7 +10,8 @@ export class CoursesController {
   @Get()
   @Public()
   findAll(@Req() req: any, @Query('tenantId') queryTenantId?: string) {
-    const tenantId = (req.user?.role === 'super_admin' && queryTenantId) ? queryTenantId : req.tenantId;
+    const isSuperAdmin = req.user?.role === 'super_admin';
+    const tenantId = (isSuperAdmin && queryTenantId) ? queryTenantId : req.tenantId;
     return this.coursesService.findAll(tenantId);
   }
 
@@ -21,25 +22,25 @@ export class CoursesController {
   }
 
   @Post()
-  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   create(@Body() body: any, @Req() req: any) {
     return this.coursesService.create(body, req.tenantId);
   }
 
   @Patch(':id')
-  @Roles('teacher', 'content_manager', 'school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     return this.coursesService.update(id, body, req.tenantId);
   }
 
   @Patch(':id/status')
-  @Roles('school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   updateStatus(@Param('id') id: string, @Body('status') status: string, @Req() req: any) {
     return this.coursesService.updateStatus(id, status, req.tenantId);
   }
 
   @Delete(':id')
-  @Roles('school_admin', 'super_admin')
+  @Roles('admin', 'super_admin')
   remove(@Param('id') id: string, @Req() req: any) {
     return this.coursesService.remove(id, req.tenantId);
   }
