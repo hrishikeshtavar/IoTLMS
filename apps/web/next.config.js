@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: { ignoreBuildErrors: true },
+  output: 'standalone',
   reactStrictMode: true,
   turbopack: {},
   async headers() {

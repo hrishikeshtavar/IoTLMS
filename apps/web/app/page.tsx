@@ -157,7 +157,7 @@ const T = {
 const SimuSoftLogo = ({ height = 40 }: { height?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" height={height}
     viewBox="0 0 14400 6000"
-    style={{ shapeRendering: 'geometricPrecision', imageRendering: 'optimizeQuality', fillRule: 'evenodd' }}>
+    style={{ shapeRendering: 'geometricPrecision', imageRendering: 'optimizeQuality' as React.CSSProperties['imageRendering'], fillRule: 'evenodd' }}>
     <defs>
       <style>{`.fl0{fill:#2B2A29;fill-rule:nonzero}.fl1{fill:#0078BF;fill-rule:nonzero}.fl2{fill:url(#lg0)}.fl3{fill:#FEFEFE;fill-rule:nonzero}.st0{stroke:#FEFEFE;stroke-width:26.46;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:5.01585;fill:none;fill-rule:nonzero}`}</style>
       <linearGradient id="lg0" gradientUnits="userSpaceOnUse" x1="3333.69" y1="162.8" x2="4519.22" y2="1736.95">
