@@ -10,7 +10,7 @@ export class TenantMiddleware implements NestMiddleware {
     const host = req.hostname;
     const slug = host.split('.')[0];
 
-    if (slug === 'localhost' || slug === '127' || /^\d+$/.test(slug) || slug === 'demo' || req.path === '/api/health') {
+    if (slug === 'localhost' || slug === '127' || /^\d+$/.test(slug) || slug === 'demo' || host.includes('trycloudflare.com') || host.includes('vercel.app') || req.path === '/api/health') {
       // In dev, fall back to a named slug or the first active tenant
       const devSlug = process.env.DEV_TENANT_SLUG ?? 'greenfield';
       const devTenant =
