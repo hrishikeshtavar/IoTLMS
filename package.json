@@ -25,7 +25,6 @@
   "description": "This Turborepo starter is maintained by the Turborepo core team.",
   "main": "index.js",
   "dependencies": {
-    "@prisma/client": "^7.4.2",
     "acorn": "^8.16.0",
     "acorn-jsx": "^5.3.2",
     "ajv": "^6.14.0",
@@ -190,7 +189,6 @@
     "possible-typed-array-names": "^1.1.0",
     "postcss": "^8.4.31",
     "prelude-ls": "^1.2.1",
-    "prisma": "^7.4.2",
     "prop-types": "^15.8.1",
     "punycode": "^2.3.1",
     "qrcode": "^1.5.4",
