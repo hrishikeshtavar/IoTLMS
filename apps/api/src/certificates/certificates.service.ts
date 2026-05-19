@@ -69,4 +69,23 @@ export class CertificatesService {
       issuedAt: cert.issued_at,
     };
   }
+
+  async findAllForTenant(tenantId: string) {
+    return this.prisma.certificate.findMany({
+      where: { tenant_id: tenantId },
+      include: {
+        user: { select: { id: true, name: true, email: true, username: true, class_grade: true } },
+        course: { select: { id: true, title_en: true } },
+      },
+      orderBy: { issued_at: 'desc' },
+    });
+  }
+
+  async findForStudent(userId: string, tenantId: string) {
+    return this.prisma.certificate.findMany({
+      where: { user_id: userId, tenant_id: tenantId },
+      include: { course: { select: { id: true, title_en: true } } },
+      orderBy: { issued_at: 'desc' },
+    });
+  }
 }

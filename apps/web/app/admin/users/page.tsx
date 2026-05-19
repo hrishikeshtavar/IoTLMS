@@ -175,12 +175,17 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
 function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => void; onEdit: () => void }) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [certs, setCerts] = useState<any[]>([]);
 
   useEffect(() => {
     apiFetch(`/api/enrollments/user/${user.id}`)
       .then(r => r.json())
       .then(data => { setEnrollments(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
+    apiFetch(`/api/certificates/student/${user.id}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setCerts(data); })
+      .catch(() => {});
   }, [user.id]);
 
   const completed = enrollments.filter(e => e.completed_at);
@@ -282,6 +287,25 @@ function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => v
             );
           })}
         </div>
+
+        {/* Certificates */}
+        {certs.length > 0 && (
+          <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e5e7eb' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>🏆 Certificates ({certs.length})</div>
+            {certs.map((c: any) => (
+              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.875rem', background: '#F0FDF4', borderRadius: 10, border: '1px solid #BBF7D0', marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#15803D' }}>{c.course?.title_en}</div>
+                  <div style={{ fontSize: '0.68rem', color: '#6b7280', marginTop: 2 }}>{new Date(c.issued_at).toLocaleDateString('en-IN')} · {c.cert_code}</div>
+                </div>
+                <button onClick={() => window.open(`/verify/${c.cert_code}`, '_blank')}
+                  style={{ padding: '4px 10px', borderRadius: 6, background: '#DCFCE7', color: '#15803D', border: 'none', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                  View
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
