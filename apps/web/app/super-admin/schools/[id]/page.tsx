@@ -91,6 +91,7 @@ export default function SchoolDetailPage() {
       setLoading(false);
       apiFetch(`/api/branding/tenant/${schoolId}`).then(r=>r.json()).then(d=>{if(d?.id)setBrandKit(d);}).catch(()=>{});
       apiFetch(`/api/certificates?tenantId=${schoolId}`).then(r=>r.json()).then(d=>{if(Array.isArray(d))setCerts(d);}).catch(()=>{});
+      apiFetch(`/api/certificates?tenantId=${schoolId}`).then(r=>r.json()).then(d=>{if(Array.isArray(d))setCerts(d);}).catch(()=>{});
     }).catch(() => setLoading(false));
   }, [schoolId]);
 
@@ -343,7 +344,17 @@ export default function SchoolDetailPage() {
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Slug / Domain</label>
                   <p style={{ margin: '6px 0 0', fontWeight: 600, color: '#0F172A', fontFamily: 'monospace', fontSize: '0.875rem' }}>{tenant.slug}.simulearning.in</p>
                 </div>
-
+                <div>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
+                  {editing ? (
+                    <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
+                      style={{ display: 'block', width: '100%', marginTop: 6, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
+                      <option value="free">Free</option>
+                      <option value="starter">Starter</option>
+                      <option value="pro">Pro</option>
+                    </select>
+                  ) : <p style={{ margin: '6px 0 0' }}><span style={{ padding: '3px 12px', background: plan.bg, color: plan.color, borderRadius: 999, fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span></p>}
+                </div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
                   {editing ? (
@@ -840,40 +851,6 @@ export default function SchoolDetailPage() {
             </div>
           </div>
         </div>
-
-      )}
-    </div>
-            <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
-            {certs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No certificates issued yet</div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: '#F8FAFC' }}>
-                      {['Student','Course','Score','Issued','Certificate ID'].map(h => (
-                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#64748B', fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '2px solid #E2E8F0' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {certs.map((c: any) => (
-                      <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0F172A' }}>{c.user?.name || '—'}<br/><span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{c.user?.email}</span></td>
-                        <td style={{ padding: '10px 12px', color: '#334155' }}>{c.course?.title_en || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: '#16A34A', fontWeight: 700 }}>{c.score_pct}%</td>
-                        <td style={{ padding: '10px 12px', color: '#64748B' }}>{new Date(c.issued_at).toLocaleDateString('en-IN')}</td>
-                        <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748B' }}>{c.cert_code}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-
         {tab === 'certificates' && (
           <div style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', border: '1px solid #E2E8F0' }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
@@ -905,7 +882,7 @@ export default function SchoolDetailPage() {
             )}
           </div>
         )}
-      </div>
+      )}
     </div>
   );
 }
