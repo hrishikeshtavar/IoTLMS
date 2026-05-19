@@ -840,7 +840,11 @@ export default function SchoolDetailPage() {
             </div>
           </div>
         </div>
-        {tab === 'certificates' && (
+
+      )}
+    </div>
+  );
+}        {tab === 'certificates' && (
           <div style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', border: '1px solid #E2E8F0' }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
             {certs.length === 0 ? (
@@ -871,7 +875,4 @@ export default function SchoolDetailPage() {
             )}
           </div>
         )}
-      )}
-    </div>
-  );
-}
+
