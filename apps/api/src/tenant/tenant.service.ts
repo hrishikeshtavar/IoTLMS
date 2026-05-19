@@ -39,7 +39,7 @@ export class TenantService {
     });
   }
 
-  async update(id: string, dto: { name?: string; is_active?: boolean }) {
+  async update(id: string, dto: { name?: string; is_active?: boolean; plan_id?: string }) {
     return this.prisma.tenant.update({ where: { id }, data: dto });
   }
 
