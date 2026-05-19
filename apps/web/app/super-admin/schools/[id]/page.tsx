@@ -40,7 +40,8 @@ export default function SchoolDetailPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'overview' | 'students' | 'courses' | 'branding' | 'admins'>('overview');
+  const [tab, setTab] = useState<'overview' | 'students' | 'courses' | 'branding' | 'admins' | 'certificates'>('overview');
+  const [certs, setCerts] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', plan_id: 'free', is_active: true });
   const [msg, setMsg] = useState('');
@@ -89,6 +90,7 @@ export default function SchoolDetailPage() {
       setCourses(Array.isArray(allCourses) ? allCourses : []);
       setLoading(false);
       apiFetch(`/api/branding/tenant/${schoolId}`).then(r=>r.json()).then(d=>{if(d?.id)setBrandKit(d);}).catch(()=>{});
+      apiFetch(`/api/certificates?tenantId=${schoolId}`).then(r=>r.json()).then(d=>{if(Array.isArray(d))setCerts(d);}).catch(()=>{});
     }).catch(() => setLoading(false));
   }, [schoolId]);
 
@@ -309,10 +311,10 @@ export default function SchoolDetailPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {(['overview','students','courses','branding','admins'] as const).map(t => (
+          {(['overview','students','courses','branding','admins','certificates'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{ padding: '0.6rem 1.5rem', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', background: tab === t ? '#0F172A' : '#F1F5F9', color: tab === t ? '#fff' : '#374151', textTransform: 'capitalize' }}>
-              {t==='overview'?'📋 Overview':t==='students'?`Students (${tenant._count.students})`:t==='courses'?`Courses (${tenant._count.courses})`:t==='branding'?'🎨 Branding':`Admins (${admins.length})`}
+              {t==='overview'?'📋 Overview':t==='students'?`Students (${tenant._count.students})`:t==='courses'?`Courses (${tenant._count.courses})`:t==='branding'?'🎨 Branding':t==='certificates'?`🏆 Certificates (${certs.length})`:`Admins (${admins.length})`}
             </button>
           ))}
         </div>
@@ -848,6 +850,37 @@ export default function SchoolDetailPage() {
             </div>
           </div>
         </div>
+        {tab === 'certificates' && (
+          <div style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', border: '1px solid #E2E8F0' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
+            {certs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No certificates issued yet</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC' }}>
+                      {['Student','Course','Score','Issued','Certificate ID'].map(h => (
+                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#64748B', fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '2px solid #E2E8F0' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {certs.map((c: any) => (
+                      <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0F172A' }}>{c.user?.name || '—'}<br/><span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{c.user?.email}</span></td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{c.course?.title_en || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: '#16A34A', fontWeight: 700 }}>{c.score_pct}%</td>
+                        <td style={{ padding: '10px 12px', color: '#64748B' }}>{new Date(c.issued_at).toLocaleDateString('en-IN')}</td>
+                        <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748B' }}>{c.cert_code}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       )}
     </div>
   );
