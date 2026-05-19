@@ -160,13 +160,17 @@ export default function DashboardPage() {
   const [weeklyActivity, setWeeklyActivity] = useState<number[] | undefined>(undefined);
 
   useEffect(() => {
-    const saved = localStorage.getItem('simulearning_locale') as Locale;
-    if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
-
     const user = getUser();
     if (user?.role === "super_admin") { router.push("/super-admin"); return; }
     if (user?.role === "admin") { router.push("/admin"); return; }
     if (!user) return;
+    const saved = localStorage.getItem('simulearning_locale') as Locale;
+    const fromProfile = (user as any)?.language_pref as Locale;
+    const lang = (saved && ['en','hi','mr'].includes(saved)) ? saved
+      : (fromProfile && ['en','hi','mr'].includes(fromProfile)) ? fromProfile
+      : 'en';
+    setLocale(lang);
+    localStorage.setItem('simulearning_locale', lang);
 
     apiFetch(`/api/enrollments/user/${user.id}`)
       .then(r => r.json())
@@ -186,7 +190,14 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('simulearning_locale', l); };
+  const switchLocale = (l: Locale) => {
+    setLocale(l);
+    localStorage.setItem('simulearning_locale', l);
+    const user = getUser();
+    if (user?.id) {
+      apiFetch(`/api/users/${user.id}`, { method: 'PATCH', body: JSON.stringify({ language_pref: l }) }).catch(() => {});
+    }
+  };
 
   const handleSearch = async (q: string) => {
     setSearchQuery(q);
