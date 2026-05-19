@@ -847,7 +847,7 @@ export default function SchoolDetailPage() {
               </button>
             </div>
           </div>
-        </div>}
+        </div>
       )}
     </div>
   );
