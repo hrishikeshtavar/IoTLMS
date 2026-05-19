@@ -42,16 +42,23 @@ export class AuthService {
     return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name);
   }
 
-  async login(dto: LoginDto, tenantId: string) {
-    // Try email with tenant, then email globally, then username with tenant, then username globally
-    let user = await this.prisma.user.findFirst({
-      where: { email: dto.email, tenant_id: tenantId },
-    });
-    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
+  async login(dto: LoginDto, tenantId: string, requiredRole?: string) {
+    // Scoped search: tenant-specific first
+    let user = await this.prisma.user.findFirst({ where: { email: dto.email, tenant_id: tenantId } });
     if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, tenant_id: tenantId } });
-    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email } });
+    // Allow super_admin to login from any portal
+    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email, role: 'super_admin' } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, role: 'super_admin' } });
     if (!user || !user.password_hash)
       throw new UnauthorizedException('Invalid credentials');
+
+    // Enforce role isolation: prevent students logging in via admin portal and vice versa
+    if (requiredRole && user.role !== 'super_admin') {
+      if (requiredRole === 'admin' && user.role !== 'admin')
+        throw new UnauthorizedException('Invalid credentials');
+      if (requiredRole === 'student' && user.role !== 'student')
+        throw new UnauthorizedException('Invalid credentials');
+    }
 
     const valid = await bcrypt.compare(dto.password, user.password_hash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');

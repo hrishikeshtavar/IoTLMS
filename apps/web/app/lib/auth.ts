@@ -72,11 +72,11 @@ async function tryRefresh(refreshToken: string): Promise<boolean> {
   }
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, role?: string) {
   const res = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, ...(role ? { role } : {}) }),
   });
   const data = await res.json();
   if (data.accessToken) {

@@ -18,7 +18,8 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   login(@Body() dto: LoginDto, @Req() req: any) {
-    return this.authService.login(dto, req.tenantId);
+    const role = (dto as any).role as string | undefined;
+    return this.authService.login(dto, req.tenantId, role);
   }
 
   @Public()

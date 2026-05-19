@@ -43,7 +43,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { ok, data } = await login(email, password);
+      const { ok, data } = await login(email, password, role);
       if (!ok) {
         setError(data.message || 'Invalid credentials');
       } else {
@@ -209,8 +209,7 @@ export default function LoginPage() {
               {role === 'student' ? (
                 <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#4A7A96', margin: 0, lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: '#0D1A2A' }}>Don't have access?</span><br />
-                  Students are added by their school. Contact your school admin or{' '}
-                  <Link href="/admin/schools/new" style={{ color: '#0078BF', fontWeight: 700, textDecoration: 'none' }}>onboard your school →</Link>
+                  Students are added by their school. Contact your school admin for access.
                 </p>
               ) : (
                 <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#4A7A96', margin: 0, lineHeight: 1.6 }}>
