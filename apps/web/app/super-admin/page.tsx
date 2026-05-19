@@ -94,6 +94,16 @@ export default function SuperAdminPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [editing, setEditing] = useState<Tenant | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function deleteSchool(tenant: Tenant) {
+    if (!confirm(`DELETE "${tenant.name}"?\n\nThis permanently deletes ALL students, courses and data for this school. Cannot be undone.`)) return;
+    setDeletingId(tenant.id);
+    const res = await apiFetch(`/api/tenants/${tenant.id}`, { method: 'DELETE' });
+    setDeletingId(null);
+    if (res.ok) setTenants(prev => prev.filter(t => t.id !== tenant.id));
+    else alert('Failed to delete school. Please try again.');
+  }
   const [superUser, setSuperUser] = useState<any>(null);
   const [showSuperAdmins, setShowSuperAdmins] = useState(false);
   const [superAdmins, setSuperAdmins] = useState<any[]>([]);
@@ -305,10 +315,16 @@ export default function SuperAdminPage() {
                       <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
                         Since {new Date(tenant.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
                       </span>
-                      <button onClick={() => setEditing(tenant)}
-                        style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
-                        ✏️ Edit
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => setEditing(tenant)}
+                          style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+                          ✏️ Edit
+                        </button>
+                        <button onClick={() => deleteSchool(tenant)} disabled={deletingId === tenant.id}
+                          style={{ padding: '6px 14px', borderRadius: 8, background: '#FFF5F5', color: '#DC2626', border: 'none', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', opacity: deletingId === tenant.id ? 0.6 : 1 }}>
+                          {deletingId === tenant.id ? '...' : '🗑️ Delete'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
