@@ -5,7 +5,7 @@ import { register } from '../lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', language_pref: 'en' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', language_pref: 'en', class_grade: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +22,8 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const { ok, data } = await register(form);
+      const payload = { ...form, class_grade: form.class_grade ? parseInt(form.class_grade) : undefined };
+      const { ok, data } = await register(payload);
       if (!ok) {
         setError(data.message || 'Registration failed');
       } else {
@@ -71,6 +72,14 @@ export default function RegisterPage() {
               required
               style={styles.input}
             />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Class / Standard</label>
+            <select value={form.class_grade} onChange={e => update('class_grade', e.target.value)} style={styles.input}>
+              <option value="">Select your class</option>
+              {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Class {g}</option>)}
+            </select>
           </div>
 
           <div style={styles.field}>

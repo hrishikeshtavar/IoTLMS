@@ -128,11 +128,26 @@ export default function CoursesPage() {
   const t = T[locale];
   const isDevanagari = locale !== 'en';
 
+  const studentGrade = user?.class_grade ? parseInt(String(user.class_grade)) : null;
+
+  function matchesGrade(targetGrade: string | undefined): boolean {
+    if (!targetGrade || !studentGrade) return true;
+    if (targetGrade.includes('-')) {
+      const [min, max] = targetGrade.split('-').map(Number);
+      return studentGrade >= min && studentGrade <= max;
+    }
+    if (targetGrade.includes(',')) {
+      return targetGrade.split(',').map(Number).includes(studentGrade);
+    }
+    return parseInt(targetGrade) === studentGrade;
+  }
+
   const filtered = courses.filter(c => {
     const title = ((locale === 'hi' ? c.title_hi : locale === 'mr' ? c.title_mr : null) || c.title || c.title_en || '').toLowerCase();
     const matchSearch = title.includes(search.toLowerCase());
     const matchCat = !activeCategory || (c.category || 'General') === activeCategory;
-    return matchSearch && matchCat;
+    const matchGrade = matchesGrade((c as any).target_grade);
+    return matchSearch && matchCat && matchGrade;
   });
 
   const handleEnroll = async (courseId: string) => {
