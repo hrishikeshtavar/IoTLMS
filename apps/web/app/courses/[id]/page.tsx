@@ -28,19 +28,6 @@ const TYPE_META: Record<string, { emoji: string; color: string; label: string }>
   quiz:   { emoji: '📝', color: '#FF6B35', label: 'Quiz' },
 };
 
-function toEmbedUrl(url: string): string {
-  try {
-    // youtu.be/ID
-    const short = url.match(/youtu\.be\/([^?&]+)/);
-    if (short) return `https://www.youtube.com/embed/${short[1]}`;
-    // youtube.com/watch?v=ID
-    const watch = url.match(/[?&]v=([^?&]+)/);
-    if (watch) return `https://www.youtube.com/embed/${watch[1]}`;
-    // youtube.com/embed/... already
-    if (url.includes('youtube.com/embed/')) return url;
-  } catch {}
-  return url;
-}
 
 function toEmbedUrl(url: string): string {
   if (url.includes('youtu.be/')) return 'https://www.youtube.com/embed/' + url.split('youtu.be/')[1].split('?')[0];

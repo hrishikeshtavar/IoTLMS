@@ -347,11 +347,6 @@ export default function SchoolDetailPage() {
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
                   {editing ? (
                     <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
-                      style={{ display: 'block', width: '100%', marginTop: 6, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
-                      <option value="free">Free</option>
-                      <option value="starter">Starter</option>
-                      <option value="pro">Pro</option>
-                    </select>
 
                 </div>
                 <div>
