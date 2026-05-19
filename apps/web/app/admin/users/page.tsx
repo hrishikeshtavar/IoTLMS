@@ -45,6 +45,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
   const [tab, setTab] = useState<'info' | 'password'>('info');
   const [form, setForm] = useState({
     name: user.name || '',
+    email: user.email || '',
     phone: user.phone || '',
     language_pref: user.language_pref || 'en',
     class_grade: user.class_grade?.toString() || '',
@@ -57,7 +58,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
 
   async function saveInfo() {
     setSaving(true); setErr(''); setMsg('');
-    const payload: any = { name: form.name, phone: form.phone, language_pref: form.language_pref, division: form.division };
+    const payload: any = { name: form.name, email: form.email, phone: form.phone, language_pref: form.language_pref, division: form.division };
     if (form.class_grade) payload.class_grade = parseInt(form.class_grade);
     const res = await apiFetch(`/api/users/${user.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
     setSaving(false);
@@ -107,6 +108,7 @@ function EditModal({ user, onClose, onSaved }: { user: User; onClose: () => void
             <div style={{ display: 'grid', gap: '1rem' }}>
               {[
                 { label: 'Full Name', key: 'name', placeholder: 'Student name' },
+                { label: 'Email', key: 'email', placeholder: 'student@school.edu' },
                 { label: 'Phone', key: 'phone', placeholder: '+91 9876543210' },
                 { label: 'Division', key: 'division', placeholder: 'A, B, C...' },
               ].map(({ label, key, placeholder }) => (

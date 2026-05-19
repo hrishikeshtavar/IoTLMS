@@ -36,13 +36,22 @@ export class UsersService {
     name?: string;
     username?: string;
     phone?: string;
+    email?: string;
     language_pref?: string;
     class_grade?: number;
     division?: string;
   }) {
+    const { email, ...rest } = data;
+    const updateData: any = { ...rest };
+    if (email) {
+      const conflict = await this.prisma.user.findFirst({
+        where: { email, tenant_id: tenantId, NOT: { id } },
+      });
+      if (!conflict) updateData.email = email;
+    }
     return this.prisma.user.updateMany({
       where: { id, tenant_id: tenantId },
-      data,
+      data: updateData,
     });
   }
 
@@ -99,6 +108,7 @@ export class UsersService {
           username: row.username,
           class_grade: row.class_grade,
           division: row.division,
+          email_verified: true,
         };
         const pwd = row.password || 'Student@1234';
         data.password_hash = await bcrypt.hash(pwd, 12);
