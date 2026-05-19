@@ -343,12 +343,7 @@ export default function SchoolDetailPage() {
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Slug / Domain</label>
                   <p style={{ margin: '6px 0 0', fontWeight: 600, color: '#0F172A', fontFamily: 'monospace', fontSize: '0.875rem' }}>{tenant.slug}.simulearning.in</p>
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
-                  {editing ? (
-                    <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
 
-                </div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
                   {editing ? (
