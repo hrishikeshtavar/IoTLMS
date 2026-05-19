@@ -76,4 +76,41 @@ export class AssessmentsService {
       results,
     };
   }
+
+  async getTenantStats(tenantId: string) {
+    const assessments = await this.prisma.assessment.findMany({
+      where: { lesson: { course: { tenant_id: tenantId } } },
+      include: {
+        questions: { select: { id: true } },
+        lesson: { select: { id: true, title: true, course: { select: { id: true, title_en: true } } } },
+        submissions: {
+          select: { id: true, score: true, passed: true, graded_at: true },
+          orderBy: { graded_at: 'desc' },
+        },
+      },
+    });
+
+    return assessments.map(a => {
+      const total = (a as any).submissions.length;
+      const passedCount = (a as any).submissions.filter((s: any) => s.passed).length;
+      const avgScore = total > 0
+        ? Math.round((a as any).submissions.reduce((sum: number, s: any) =>
+            sum + (a.max_score > 0 ? (s.score / a.max_score) * 100 : 0), 0) / total)
+        : 0;
+      return {
+        id: a.id,
+        lessonTitle: (a as any).lesson?.title,
+        courseTitle: (a as any).lesson?.course?.title_en,
+        courseId: (a as any).lesson?.course?.id,
+        questionCount: (a as any).questions.length,
+        passScore: a.pass_score,
+        maxScore: a.max_score,
+        totalSubmissions: total,
+        passedCount,
+        passRate: total > 0 ? Math.round((passedCount / total) * 100) : 0,
+        avgScore,
+        lastSubmission: (a as any).submissions[0]?.graded_at ?? null,
+      };
+    });
+  }
 }

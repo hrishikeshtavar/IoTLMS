@@ -433,7 +433,7 @@ export default function AnalyticsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {[
               { icon: '📢', title: 'Boost Enrollments', desc: 'Send reminder to students not enrolled in any course', action: () => router.push('/admin/users'), btn: 'View Students' },
-              { icon: '📝', title: 'Review Assessments', desc: `Pass rate is ${data.passRate}% — check quiz difficulty`, action: () => router.push('/admin'), btn: 'Manage Courses' },
+              { icon: '📝', title: 'Review Assessments', desc: `Pass rate is ${data.passRate}% — check quiz difficulty`, action: () => router.push('/admin/assessments'), btn: 'Review Quizzes' },
               { icon: '🏅', title: 'Award Certificates', desc: `${data.coursePerformance.reduce((s,c) => s+c.completed, 0)} completions eligible for certificates`, action: () => router.push('/admin/users'), btn: 'View Students' },
             ].map((a, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -37,5 +37,11 @@ export class AssessmentsController {
   @Post('submit')
   submitAnswers(@Body() dto: SubmitAnswersDto) {
     return this.assessmentsService.submitAnswers(dto);
+  }
+
+  @Get('tenant/stats')
+  @Roles('admin', 'super_admin')
+  getTenantStats(@Req() req: any) {
+    return this.assessmentsService.getTenantStats(req.tenantId);
   }
 }
