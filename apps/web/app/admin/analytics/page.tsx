@@ -318,9 +318,9 @@ export default function AnalyticsPage() {
               <h3 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#0F172A' }}>🏆 Top Performers</h3>
               <p style={{ margin: '0 0 1.25rem', fontSize: '0.78rem', color: '#94A3B8' }}>Students with highest completions & avg progress</p>
               {(() => {
-                const byStudent: Record<string, { userId: string; total: number; completed: number; avgProgress: number }> = {};
+                const byStudent: Record<string, { userId: string; name: string; total: number; completed: number; avgProgress: number }> = {};
                 enrollments.forEach(e => {
-                  if (!byStudent[e.user_id]) byStudent[e.user_id] = { userId: e.user_id, total: 0, completed: 0, avgProgress: 0 };
+                  if (!byStudent[e.user_id]) byStudent[e.user_id] = { userId: e.user_id, name: e.user?.name || e.user_id.slice(0, 12), total: 0, completed: 0, avgProgress: 0 };
                   byStudent[e.user_id].total++;
                   if (e.completed_at) byStudent[e.user_id].completed++;
                   byStudent[e.user_id].avgProgress += e.progress_pct;
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
                     <span style={{ fontSize: '1.1rem' }}>{medals[i]}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0F172A' }}>
-                        {s.userId.startsWith('student-fixed') ? `Student ${s.userId.split('-')[3]}` : s.userId.slice(0, 12)}
+                        {s.name || s.userId.slice(0, 12)}
                       </div>
                       <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{s.total} courses · {s.completed} completed</div>
                     </div>
@@ -359,7 +359,7 @@ export default function AnalyticsPage() {
                 const atRisk = enrollments
                   .filter(e => e.progress_pct <= 25 && !e.completed_at)
                   .reduce((acc: Record<string, any>, e) => {
-                    if (!acc[e.user_id]) acc[e.user_id] = { userId: e.user_id, courses: [] };
+                    if (!acc[e.user_id]) acc[e.user_id] = { userId: e.user_id, name: e.user?.name || e.user_id.slice(0, 12), courses: [] };
                     acc[e.user_id].courses.push({ title: e.course?.title_en, progress: e.progress_pct });
                     return acc;
                   }, {});
@@ -370,7 +370,7 @@ export default function AnalyticsPage() {
                     <span style={{ fontSize: '1.1rem' }}>🔴</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0F172A' }}>
-                        {s.userId.startsWith('student-fixed') ? `Student ${s.userId.split('-')[3]}` : s.userId.slice(0, 14)}
+                        {s.name || s.userId.slice(0, 14)}
                       </div>
                       {s.courses.map((c: any, j: number) => (
                         <div key={j} style={{ fontSize: '0.68rem', color: '#DC2626', marginTop: 2 }}>

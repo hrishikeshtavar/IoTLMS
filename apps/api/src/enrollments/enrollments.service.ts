@@ -71,7 +71,8 @@ export class EnrollmentsService {
     return this.prisma.enrollment.findMany({
       where: { tenant_id: tenantId },
       include: {
-        course: { select: { title_en: true, category: true, tenant_id: true } },
+        course: { select: { id: true, title_en: true, category: true, tenant_id: true } },
+        user: { select: { id: true, name: true, email: true, username: true, class_grade: true, division: true } },
       },
       orderBy: { enrolled_at: 'desc' },
     });
