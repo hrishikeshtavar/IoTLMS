@@ -8,7 +8,7 @@ export class EmailService {
   private from = process.env.FROM_EMAIL || 'noreply@simulearning.in';
 
   async sendVerification(to: string, name: string, token: string, tenantSlug: string) {
-    const url = `http://localhost:3000/verify-email?token=${token}`;
+    const url = `${process.env.FRONTEND_URL || 'https://www.simulearning.ai'}/verify-email?token=${token}`;
     try {
       await this.resend.emails.send({
         from: this.from,
@@ -29,7 +29,7 @@ export class EmailService {
   }
 
   async sendPasswordReset(to: string, token: string) {
-    const url = `http://localhost:3000/reset-password?token=${token}`;
+    const url = `${process.env.FRONTEND_URL || 'https://www.simulearning.ai'}/reset-password?token=${token}`;
     try {
       await this.resend.emails.send({
         from: this.from,

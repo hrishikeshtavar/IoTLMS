@@ -118,7 +118,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string, tenantId: string) {
-    const user = await this.prisma.user.findFirst({ where: { email, tenant_id: tenantId } });
+    // Try tenant-scoped first, then fall back to any matching email (handles super-admin portal)
+    let user = await this.prisma.user.findFirst({ where: { email, tenant_id: tenantId } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { email } });
     if (!user) return { message: 'If that email exists, a reset link has been sent' };
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000);
