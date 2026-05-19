@@ -42,44 +42,63 @@ function toEmbedUrl(url: string): string {
   return url;
 }
 
-function renderContent(content: LessonContent['content_json'] | null) {
-  if (!content || !content.content) return null;
-  return content.content.map((node, i) => {
-    if (node.type === 'paragraph') {
-      return (
-        <p key={i} style={{ marginBottom: '1.1rem', color: 'var(--text2)', lineHeight: 1.75, fontSize: '1rem' }}>
-          {node.content?.map((c, j) => <span key={j}>{c.text}</span>)}
-        </p>
-      );
-    }
-    if (node.type === 'heading') {
-      return (
-        <h2 key={i} style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.75rem', marginTop: '1.75rem', fontFamily: "'Baloo 2'" }}>
-          {node.content?.map(c => c.text).join('')}
-        </h2>
-      );
-    }
-    if (node.type === 'bulletList') {
-      return (
-        <ul key={i} style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>
-          {node.content?.map((item, j) => (
-            <li key={j} style={{ color: 'var(--text2)', marginBottom: '0.35rem', lineHeight: 1.65 }}>
-              {(item as any).content?.map((c: any) => c.content?.map((t: any) => t.text).join('')).join('')}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-    if (node.type === 'codeBlock') {
-      return (
-        <pre key={i} style={{ background: '#1A1A2E', color: '#00C896', borderRadius: '0.875rem', padding: '1.25rem', marginBottom: '1.25rem', overflowX: 'auto', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '0.875rem', lineHeight: 1.6 }}>
-          {node.content?.map(c => c.text).join('')}
-        </pre>
-      );
-    }
+function toEmbedUrl(url: string): string {
+  if (url.includes('youtu.be/')) return 'https://www.youtube.com/embed/' + url.split('youtu.be/')[1].split('?')[0];
+  if (url.includes('youtube.com/watch')) return 'https://www.youtube.com/embed/' + new URLSearchParams(url.split('?')[1]).get('v');
+  return url;
+}
+
+function renderTipTap(nodes: any[]): React.ReactNode {
+  return nodes.map((node: any, i: number) => {
+    if (node.type === 'paragraph') return <p key={i} style={{ margin: '0.5rem 0', lineHeight: 1.7 }}>{node.content?.map((c: any, j: number) => <span key={j}>{c.text}</span>)}</p>;
+    if (node.type === 'heading') return <h3 key={i} style={{ margin: '1rem 0 0.5rem', fontWeight: 700 }}>{node.content?.map((c: any) => c.text).join('')}</h3>;
+    if (node.type === 'bulletList') return <ul key={i} style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>{node.content?.map((item: any, j: number) => <li key={j} style={{ marginBottom: 4 }}>{item.content?.map((c: any) => c.content?.map((t: any) => t.text).join('')).join('')}</li>)}</ul>;
+    if (node.type === 'orderedList') return <ol key={i} style={{ paddingLeft: '1.5rem', margin: '0.5rem 0' }}>{node.content?.map((item: any, j: number) => <li key={j} style={{ marginBottom: 4 }}>{item.content?.map((c: any) => c.content?.map((t: any) => t.text).join('')).join('')}</li>)}</ol>;
+    if (node.type === 'codeBlock') return <pre key={i} style={{ background: '#1e293b', color: '#00C896', padding: '1rem', borderRadius: 8, overflowX: 'auto', fontSize: '0.82rem', margin: '0.75rem 0' }}>{node.content?.map((c: any) => c.text).join('')}</pre>;
+    if (node.type === 'blockquote') return <blockquote key={i} style={{ borderLeft: '3px solid var(--primary)', paddingLeft: '1rem', color: 'var(--text3)', fontStyle: 'italic', margin: '0.75rem 0' }}>{node.content?.map((c: any, j: number) => <span key={j}>{c.content?.map((t: any) => t.text).join('')}</span>)}</blockquote>;
+    if (node.type === 'hardBreak') return <br key={i} />;
     return null;
   });
 }
+
+function renderContent(content: LessonContent['content_json'] | null) {
+  if (!content) return null;
+
+  // blocks_v1 format (super-admin course editor)
+  if ((content as any).format === 'blocks_v1') {
+    const blocks: any[] = (content as any).blocks || [];
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {blocks.map((block: any, i: number) => {
+          if (block.type === 'text') {
+            const json = block.content_en;
+            if (!json || !json.content) return null;
+            return <div key={i}>{renderTipTap(json.content)}</div>;
+          }
+          if (block.type === 'video') {
+            const url = block.url;
+            if (!url) return null;
+            const isYT = url.includes('youtube.com') || url.includes('youtu.be');
+            return (
+              <div key={i} style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '16/9', background: '#000' }}>
+                {isYT
+                  ? <iframe src={toEmbedUrl(url)} style={{ width: '100%', height: '100%', border: 'none' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                  : <video src={url} controls style={{ width: '100%', height: '100%' }} />}
+              </div>
+            );
+          }
+          return null;
+        })}
+      </div>
+    );
+  }
+
+  // Legacy TipTap format
+  if (!content.content) return null;
+  return <div>{renderTipTap(content.content as any[])}</div>;
+}
+
+
 
 export default function CoursePage() {
   const { id } = useParams<{ id: string | string[] }>();
