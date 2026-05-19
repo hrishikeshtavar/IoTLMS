@@ -843,9 +843,6 @@ export default function SchoolDetailPage() {
 
       )}
     </div>
-  );
-}        {tab === 'certificates' && (
-          <div style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', border: '1px solid #E2E8F0' }}>
             <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
             {certs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No certificates issued yet</div>
@@ -876,3 +873,39 @@ export default function SchoolDetailPage() {
           </div>
         )}
 
+
+        {tab === 'certificates' && (
+          <div style={{ background: '#fff', borderRadius: 18, padding: '1.5rem', border: '1px solid #E2E8F0' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>🏆 Certificates Issued ({certs.length})</h3>
+            {certs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#94A3B8', fontSize: '0.875rem' }}>No certificates issued yet</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC' }}>
+                      {['Student','Course','Score','Issued','Certificate ID'].map(h => (
+                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#64748B', fontSize: '0.75rem', textTransform: 'uppercase', borderBottom: '2px solid #E2E8F0' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {certs.map((c: any) => (
+                      <tr key={c.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: '#0F172A' }}>{c.user?.name || '—'}<br/><span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{c.user?.email}</span></td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>{c.course?.title_en || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: '#16A34A', fontWeight: 700 }}>{c.score_pct}%</td>
+                        <td style={{ padding: '10px 12px', color: '#64748B' }}>{new Date(c.issued_at).toLocaleDateString('en-IN')}</td>
+                        <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748B' }}>{c.cert_code}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
