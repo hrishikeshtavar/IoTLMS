@@ -12,7 +12,14 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
     if (!requiredRoles) return true;
-    const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user?.role);
+    const req = context.switchToHttp().getRequest();
+    const { user } = req;
+    if (!requiredRoles.includes(user?.role)) return false;
+    // Admin users must always operate on their own school only
+    // Override req.tenantId with admin's JWT tenantId to prevent cross-school access
+    if (user?.role === 'admin' && user?.tenantId) {
+      req['tenantId'] = user.tenantId;
+    }
+    return true;
   }
 }
