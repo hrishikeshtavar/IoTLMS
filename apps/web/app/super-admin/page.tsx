@@ -60,15 +60,7 @@ function EditSchoolModal({ tenant, onClose, onSaved }: { tenant: Tenant; onClose
             <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
               style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }} />
           </div>
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
-            <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
-              style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #d1d5db', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
-              <option value="free">Free</option>
-              <option value="starter">Starter</option>
-              <option value="pro">Pro</option>
-            </select>
-          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
             <button onClick={() => setForm({ ...form, is_active: !form.is_active })}
@@ -287,7 +279,7 @@ export default function SuperAdminPage() {
                         <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0F172A', lineHeight: 1.3 }}>{tenant.name}</div>
                         <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontFamily: 'monospace', marginTop: 2 }}>{tenant.slug}.simulearning.in</div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: plan.bg, color: plan.color, fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span>
+
                           <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999, background: tenant.is_active ? '#DCFCE7' : '#F1F5F9', color: tenant.is_active ? '#15803D' : '#64748B', fontWeight: 700 }}>
                             {tenant.is_active ? '● Active' : '○ Inactive'}
                           </span>

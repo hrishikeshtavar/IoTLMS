@@ -60,15 +60,6 @@ export default function NewSchoolPage() {
             </div>
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
-            <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
-              style={{ display: 'block', width: '100%', marginTop: 4, padding: '0.7rem 1rem', borderRadius: 10, border: '1.5px solid #d1d5db', fontSize: '0.95rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
-              <option value="free">Free</option>
-              <option value="starter">Starter</option>
-              <option value="pro">Pro</option>
-            </select>
-          </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             <button onClick={() => router.push('/super-admin')}

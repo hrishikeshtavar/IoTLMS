@@ -43,7 +43,7 @@ export default function SchoolDetailPage() {
   const [tab, setTab] = useState<'overview' | 'students' | 'courses' | 'branding' | 'admins' | 'certificates'>('overview');
   const [certs, setCerts] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', plan_id: 'free', is_active: true });
+  const [form, setForm] = useState({ name: '', is_active: true });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -352,7 +352,7 @@ export default function SchoolDetailPage() {
                       <option value="starter">Starter</option>
                       <option value="pro">Pro</option>
                     </select>
-                  ) : <p style={{ margin: '6px 0 0' }}><span style={{ padding: '3px 12px', background: plan.bg, color: plan.color, borderRadius: 999, fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span></p>}
+
                 </div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
