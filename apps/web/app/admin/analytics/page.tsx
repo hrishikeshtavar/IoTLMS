@@ -432,7 +432,7 @@ export default function AnalyticsPage() {
           <h3 style={{ margin: '0 0 1.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>🚀 Recommended Actions</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {[
-              { icon: '📢', title: 'Boost Enrollments', desc: 'Send reminder to students not enrolled in any course', action: () => router.push('/admin/users'), btn: 'View Students' },
+              { icon: '📢', title: 'Boost Enrollments', desc: 'Send reminder to students not enrolled in any course', action: async () => { const r = await apiFetch('/api/enrollments/remind-unenrolled', { method: 'POST' }); const d = await r.json(); alert(d.message || 'Reminders sent!'); }, btn: 'Send Reminder 📧' },
               { icon: '📝', title: 'Review Assessments', desc: `Pass rate is ${data.passRate}% — check quiz difficulty`, action: () => router.push('/admin/assessments'), btn: 'Review Quizzes' },
               { icon: '🏅', title: 'Award Certificates', desc: `${data.coursePerformance.reduce((s,c) => s+c.completed, 0)} completions eligible for certificates`, action: () => router.push('/admin/users'), btn: 'View Students' },
             ].map((a, i) => (

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, Req } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Req, HttpCode } from '@nestjs/common';
 import { Request } from 'express';
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
@@ -32,5 +32,12 @@ export class EnrollmentsController {
   ) {
     const tenantId = (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.updateProgress(body.user_id, courseId, body.progress_pct, tenantId);
+  }
+
+  @Post('remind-unenrolled')
+  @HttpCode(200)
+  remindUnenrolled(@Req() req: Request) {
+    const tenantId = (req as any)['tenantId'] ?? '';
+    return this.enrollmentsService.sendEnrollmentReminders(tenantId);
   }
 }

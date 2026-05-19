@@ -47,4 +47,24 @@ export class EmailService {
       this.logger.error('Failed to send password reset email', err);
     }
   }
+
+  async sendEnrollmentReminder(to: string, name: string) {
+    const url = `${process.env.FRONTEND_URL || 'https://www.simulearning.ai'}/courses`;
+    try {
+      await this.resend.emails.send({
+        from: this.from,
+        to,
+        subject: 'Start learning on SimuLearning 🚀',
+        html: `<h2>Hi ${name}!</h2>
+               <p>You haven't enrolled in any courses yet. Your school has courses waiting for you!</p>
+               <a href="${url}" style="background:#1A73E8;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin:16px 0">
+                 Explore Courses
+               </a>
+               <p>Start your AI & IoT learning journey today.</p>`,
+      });
+      this.logger.log('Enrollment reminder sent to ' + to);
+    } catch (err) {
+      this.logger.error('Failed to send enrollment reminder', err);
+    }
+  }
 }

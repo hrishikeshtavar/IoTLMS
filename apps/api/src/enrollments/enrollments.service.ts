@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { EmailService } from '../auth/email.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 
 @Injectable()
 export class EnrollmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private emailService: EmailService) {}
 
   async enroll(dto: CreateEnrollmentDto) {
     const existing = await this.prisma.enrollment.findFirst({
@@ -76,5 +77,30 @@ export class EnrollmentsService {
       },
       orderBy: { enrolled_at: 'desc' },
     });
+  }
+
+  async sendEnrollmentReminders(tenantId: string) {
+    // Find all students with no enrollments
+    const allStudents = await this.prisma.user.findMany({
+      where: { tenant_id: tenantId, role: 'student', is_active: true },
+      select: { id: true, name: true, email: true },
+    });
+
+    const enrolledUserIds = await this.prisma.enrollment.findMany({
+      where: { tenant_id: tenantId },
+      select: { user_id: true },
+      distinct: ['user_id'],
+    }).then(e => new Set(e.map(x => x.user_id)));
+
+    const unenrolled = allStudents.filter(s => !enrolledUserIds.has(s.id) && s.email);
+
+    let sent = 0;
+    for (const student of unenrolled) {
+      if (!student.email) continue;
+      await this.emailService.sendEnrollmentReminder(student.email, student.name).catch(() => {});
+      sent++;
+    }
+
+    return { sent, total: unenrolled.length, message: `Reminder sent to ${sent} unenrolled students` };
   }
 }
