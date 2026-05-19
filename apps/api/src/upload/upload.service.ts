@@ -16,6 +16,8 @@ const MIME_TO_BUCKET: Record<string, string> = {
   'image/jpeg': 'images',
   'image/png': 'images',
   'image/webp': 'images',
+  'image/gif': 'images',
+  'image/svg+xml': 'images',
 };
 
 @Injectable()

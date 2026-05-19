@@ -24,19 +24,43 @@ export class MinioService implements OnModuleInit {
 
   private async initBuckets() {
     if (!this.client) return;
+    const publicBuckets = ['images', 'brand-assets'];
     for (const bucket of this.buckets) {
       const exists = await this.client.bucketExists(bucket);
       if (!exists) {
         await this.client.makeBucket(bucket);
         this.logger.log(`Created bucket: ${bucket}`);
       }
+      // Make image/brand buckets publicly readable so URLs don't expire
+      if (publicBuckets.includes(bucket)) {
+        const policy = JSON.stringify({
+          Version: '2012-10-17',
+          Statement: [{ Effect: 'Allow', Principal: { AWS: ['*'] }, Action: ['s3:GetObject'], Resource: [`arn:aws:s3:::${bucket}/*`] }],
+        });
+        await this.client.setBucketPolicy(bucket, policy).catch(() => {});
+      }
     }
+  }
+
+  getPublicUrl(bucket: string, key: string): string {
+    const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
+    const port = process.env.MINIO_PORT || '9000';
+    const useSSL = process.env.MINIO_USE_SSL === 'true';
+    const publicUrl = process.env.MINIO_PUBLIC_URL;
+    if (publicUrl) return `${publicUrl}/${bucket}/${key}`;
+    const proto = useSSL ? 'https' : 'http';
+    return `${proto}://${endpoint}:${port}/${bucket}/${key}`;
   }
 
   async uploadFile(bucket: string, key: string, buffer: Buffer, mimetype: string): Promise<string> {
     if (!this.client) throw new Error('MinIO client not initialized');
     await this.client.putObject(bucket, key, buffer, buffer.length, { 'Content-Type': mimetype });
-    return this.client.presignedGetObject(bucket, key, 60 * 60 * 24);
+    // Return permanent URL for public buckets (images), signed URL for private (videos, pdfs)
+    const publicBuckets = ['images', 'brand-assets'];
+    if (publicBuckets.includes(bucket)) {
+      return this.getPublicUrl(bucket, key);
+    }
+    return this.client.presignedGetObject(bucket, key, 60 * 60 * 24 * 7); // 7 days for private
   }
 
   async getSignedUrl(bucket: string, key: string, expiry = 900): Promise<string> {
