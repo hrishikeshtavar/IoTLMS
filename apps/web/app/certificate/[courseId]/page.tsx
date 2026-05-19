@@ -104,7 +104,7 @@ export default function CertificatePage() {
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '10px 24px', borderRadius: 50, background: 'linear-gradient(135deg,#FF6B35,#f97316)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,107,53,0.4)' }}>
           🖨️ Print / Save PDF
         </button>
-        <button onClick={() => router.back()}
+        <button onClick={() => router.push('/courses')}
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '10px 20px', borderRadius: 50, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.2)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>
           ← Back to Courses
         </button>

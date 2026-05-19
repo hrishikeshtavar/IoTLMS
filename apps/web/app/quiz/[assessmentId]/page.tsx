@@ -250,7 +250,7 @@ export default function QuizPage() {
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Baloo 2'" }}>← Back</button>
+        <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Baloo 2'" }}>← Back</button>
         <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>📝 SimuLearning Quiz</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isOffline && <span style={{ padding: '0.25rem 0.65rem', background: 'rgba(255,107,53,0.12)', color: 'var(--primary)', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700 }}>📡 Offline</span>}
@@ -340,7 +340,7 @@ export default function QuizPage() {
 
                 {/* CTA buttons */}
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button onClick={() => router.back()}
+                  <button onClick={() => router.push('/dashboard')}
                     className="btn-secondary"
                     style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}>
                     ← Back to Lesson
@@ -353,7 +353,7 @@ export default function QuizPage() {
                     </button>
                   )}
                   {result.passed && (
-                    <button onClick={() => router.back()}
+                    <button onClick={() => router.push('/dashboard')}
                       style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem', borderRadius: '999px', background: 'linear-gradient(135deg,#FFD93D,#f59e0b)', color: '#1A1A2E', fontWeight: 700, fontFamily: "'Baloo 2'", border: 'none', cursor: 'pointer' }}>
                       🏆 Continue →
                     </button>

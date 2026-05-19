@@ -243,7 +243,7 @@ export default function LabPage() {
 
       {/* ── TOP BAR ── */}
       <div style={{ height: '48px', background: '#1e293b', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem', flexShrink: 0, zIndex: 10 }}>
-        <button onClick={() => router.back()}
+        <button onClick={() => router.push('/dashboard')}
           style={{ background: 'none', border: 'none', color: '#94a3b8', fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
           ← Back
         </button>
