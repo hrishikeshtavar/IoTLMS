@@ -128,7 +128,7 @@ export default function CoursesPage() {
   const t = T[locale];
   const isDevanagari = locale !== 'en';
 
-  const studentGrade = user?.class_grade ? parseInt(String(user.class_grade)) : null;
+  const studentGrade = currentUser?.class_grade ? parseInt(String(currentUser.class_grade)) : null;
 
   function matchesGrade(targetGrade: string | undefined): boolean {
     if (!targetGrade || !studentGrade) return true;
