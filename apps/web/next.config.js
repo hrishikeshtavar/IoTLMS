@@ -21,7 +21,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}`,
+              "connect-src 'self' https://api.simulearning.ai http://145.223.18.127:3001",
               "frame-src https://wokwi.com https://www.youtube.com https://youtube.com",
             ].join('; '),
           },
