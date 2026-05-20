@@ -9,8 +9,14 @@ export const metadata: Metadata = {
 
 async function getBrandKit(slug: string) {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 3000); const res = await fetch(`${apiUrl}/api/branding/${slug}`, { next: { revalidate: 3600 }, signal: controller.signal }); clearTimeout(timeout);
+    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`${apiUrl}/api/branding/${slug}`, {
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     const text = await res.text();
     if (!text) return null;
@@ -19,10 +25,15 @@ async function getBrandKit(slug: string) {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const headersList = await headers();
-  const host = headersList.get('host') || '';
-  const slug = host.split('.')[0].replace('localhost:3000', 'demo');
-  const brand = await getBrandKit(slug);
+  let brand = null;
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const slug = host.split('.')[0].replace('localhost:3000', 'demo');
+    if (slug && slug !== 'www' && slug !== 'io-tlms-web') {
+      brand = await getBrandKit(slug);
+    }
+  } catch { brand = null; }
 
   const cssVars = brand?.colors_json ? `
     :root {
