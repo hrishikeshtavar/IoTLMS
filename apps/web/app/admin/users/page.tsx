@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, getUser, logout } from '../../../app/lib/auth';
@@ -312,7 +312,7 @@ function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => v
 }
 
 // ── Main Page ────────────────────────────────────────────────
-export default function AdminUsersPage() {
+function AdminUsersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tenantIdParam = searchParams.get('tenantId');
@@ -486,5 +486,13 @@ export default function AdminUsersPage() {
       {viewing && !editing && <StudentDrawer user={viewing} onClose={() => setViewing(null)} onEdit={() => { setEditing(viewing); setViewing(null); }} />}
       {editing && <EditModal user={editing} onClose={() => setEditing(null)} onSaved={u => { handleSaved(u); setEditing(null); }} />}
     </div>
+  );
+}
+
+export default function UsersPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{padding:'2rem'}}>Loading...</div>}>
+      <AdminUsersPage />
+    </Suspense>
   );
 }
