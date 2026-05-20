@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -25,7 +25,7 @@ const SimuSoftLogo = ({ height = 32 }: { height?: number }) => (
   </svg>
 );
 
-export default function LoginPage() {
+function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -238,5 +238,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{padding:'2rem'}}>Loading...</div>}>
+      <LoginPage />
+    </Suspense>
   );
 }

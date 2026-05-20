@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -10,7 +10,7 @@ import { apiFetch } from '../../../../../lib/auth';
 const LESSON_TYPES = ['video', 'text', 'quiz', 'lab'];
 const LOCALES = [{ code: 'en', label: 'English' }, { code: 'hi', label: 'हिंदी' }, { code: 'mr', label: 'मराठी' }];
 
-export default function NewLessonPage() {
+function NewLessonPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -140,5 +140,13 @@ export default function NewLessonPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function NewLessonPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{padding:'2rem'}}>Loading...</div>}>
+      <NewLessonPage />
+    </Suspense>
   );
 }

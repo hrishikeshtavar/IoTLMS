@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -35,7 +35,7 @@ function VerifyForm() {
   );
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailPage() {
   return <Suspense><VerifyForm /></Suspense>;
 }
 
@@ -47,3 +47,11 @@ const styles: Record<string, React.CSSProperties> = {
   subtitle: { color: 'var(--text3)', marginBottom: '1rem' },
   link: { color: 'var(--primary)', fontWeight: 600 },
 };
+
+export default function VerifyEmailPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{padding:'2rem'}}>Loading...</div>}>
+      <VerifyEmailPage />
+    </Suspense>
+  );
+}

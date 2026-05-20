@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -53,7 +53,7 @@ function ResetForm() {
   );
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordPage() {
   return <Suspense><ResetForm /></Suspense>;
 }
 
@@ -67,3 +67,11 @@ const styles: Record<string, React.CSSProperties> = {
   form: { display: 'flex', flexDirection: 'column', gap: '1rem' },
   input: { padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1.5px solid var(--border)', fontSize: '1rem', fontFamily: 'inherit', background: 'var(--bg)', color: 'var(--text)', outline: 'none' },
 };
+
+export default function ResetPasswordPageWrapper() {
+  return (
+    <Suspense fallback={<div style={{padding:'2rem'}}>Loading...</div>}>
+      <ResetPasswordPage />
+    </Suspense>
+  );
+}
