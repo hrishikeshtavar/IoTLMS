@@ -27,6 +27,7 @@ async function bootstrap() {
       return ok ? callback(null, true) : callback(new Error(`CORS blocked: ${origin}`), false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
     credentials: true,
   });
 

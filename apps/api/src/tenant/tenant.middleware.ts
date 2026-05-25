@@ -10,27 +10,37 @@ export class TenantMiddleware implements NestMiddleware {
     const host = req.hostname;
     const slug = host.split('.')[0];
 
-    if (slug === 'localhost' || slug === '127' || /^\d+$/.test(slug) || slug === 'demo' || slug === 'api' || host.includes('trycloudflare.com') || host.includes('vercel.app') || req.path === '/api/health') {
-      // In dev, fall back to a named slug or the first active tenant
-      const devSlug = process.env.DEV_TENANT_SLUG ?? 'greenfield';
-      const devTenant =
-        (await this.prisma.tenant.findUnique({ where: { slug: devSlug } })) ??
-        (await this.prisma.tenant.findFirst({ where: { is_active: true } }));
-      req['tenantId'] = devTenant?.id ?? null;
-      req['tenant'] = devTenant ?? null;
+    const isBypassHost =
+      slug === 'localhost' || slug === '127' || /^\d+$/.test(slug) ||
+      slug === 'demo' || slug === 'api' || host.includes('trycloudflare.com') ||
+      host.includes('vercel.app') || req.path === '/api/health';
+
+    if (!isBypassHost) {
+      const tenant = await this.prisma.tenant.findUnique({ where: { slug } });
+      if (!tenant || !tenant.is_active) throw new NotFoundException('School not found or inactive');
+      req['tenant'] = tenant;
+      req['tenantId'] = tenant.id;
       return next();
     }
 
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { slug },
-    });
-
-    if (!tenant || !tenant.is_active) {
-      throw new NotFoundException('School not found or inactive');
+    // Single-domain: check explicit tenant header first
+    const tenantIdHeader = req.headers['x-tenant-id'] as string | undefined;
+    if (tenantIdHeader) {
+      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantIdHeader } });
+      if (tenant && tenant.is_active) {
+        req['tenant'] = tenant;
+        req['tenantId'] = tenant.id;
+        return next();
+      }
     }
 
-    req['tenant'] = tenant;
-    req['tenantId'] = tenant.id;
-    next();
+    // Dev fallback
+    const devSlug = process.env.DEV_TENANT_SLUG ?? 'greenfield';
+    const devTenant =
+      (await this.prisma.tenant.findUnique({ where: { slug: devSlug } })) ??
+      (await this.prisma.tenant.findFirst({ where: { is_active: true } }));
+    req['tenantId'] = devTenant?.id ?? null;
+    req['tenant'] = devTenant ?? null;
+    return next();
   }
 }

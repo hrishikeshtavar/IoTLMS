@@ -49,6 +49,9 @@ export class AuthService {
     // Allow super_admin to login from any portal
     if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email, role: 'super_admin' } });
     if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, role: 'super_admin' } });
+    // Fallback: single-domain deployment — search globally
+    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email } });
     if (!user || !user.password_hash)
       throw new UnauthorizedException('Invalid credentials');
 
