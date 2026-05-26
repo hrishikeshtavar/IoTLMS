@@ -48,7 +48,7 @@ export default function NewCoursePage() {
         level: form.level,
         price: Number(form.price) || 0,
         stream: form.stream,
-        status: 'draft',
+        status: 'published',
       };
       if (form.title_hi) payload.title_hi = form.title_hi;
       if (form.title_mr) payload.title_mr = form.title_mr;

@@ -6,8 +6,15 @@ export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string) {
+    // Return school's own courses + published courses from other tenants (global catalog)
+    const where = tenantId ? {
+      OR: [
+        { tenant_id: tenantId },
+        { status: 'published' as const },
+      ],
+    } : undefined;
     return this.prisma.course.findMany({
-      where: tenantId ? { tenant_id: tenantId } : undefined,
+      where,
       orderBy: { created_at: 'desc' },
       include: {
         _count: { select: { enrollments: true, lessons: true } },
