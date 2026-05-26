@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { login } from '../lib/auth';
+import { login, getUser } from '../lib/auth';
 
 const SimuSoftLogo = ({ height = 32 }: { height?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" height={height}
@@ -32,6 +32,15 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [role, setRole] = useState<'admin' | 'super'>('admin');
+
+  useEffect(() => {
+    const user = getUser();
+    if (user) {
+      if (user.role === 'super_admin') router.push('/super-admin');
+      else if (user.role === 'admin') router.push('/admin');
+      else router.push('/dashboard');
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
