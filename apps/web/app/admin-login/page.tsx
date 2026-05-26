@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { ok, data } = await login(email, password);
+      const { ok, data } = await login(email, password, role === 'super' ? 'super_admin' : 'admin');
       if (!ok) {
         setError(data.message || 'Invalid credentials');
       } else {

@@ -55,11 +55,13 @@ export class AuthService {
     if (!user || !user.password_hash)
       throw new UnauthorizedException('Invalid credentials');
 
-    // Enforce role isolation: prevent students logging in via admin portal and vice versa
-    if (requiredRole && user.role !== 'super_admin') {
-      if (requiredRole === 'admin' && user.role !== 'admin')
-        throw new UnauthorizedException('Invalid credentials');
+    // Enforce strict role isolation per portal
+    if (requiredRole) {
       if (requiredRole === 'student' && user.role !== 'student')
+        throw new UnauthorizedException('Invalid credentials');
+      if (requiredRole === 'admin' && user.role !== 'admin' && user.role !== 'super_admin')
+        throw new UnauthorizedException('Invalid credentials');
+      if (requiredRole === 'super_admin' && user.role !== 'super_admin')
         throw new UnauthorizedException('Invalid credentials');
     }
 
