@@ -31,7 +31,7 @@ function Avatar({ name, size = 36 }: { name: string; size?: number }) {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
-  const colors = ['#FF6B35', '#1A73E8', '#A855F7', '#00C896', '#FFD93D', '#ff4d6d', '#06d6a0'];
+  const colors = ['#1A73E8', '#1A73E8', '#A855F7', '#00C896', '#00C896', '#ff4d6d', '#06d6a0'];
   const bg = colors[hash % colors.length];
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: `${size * 0.38}px`, flexShrink: 0 }}>
@@ -242,7 +242,7 @@ function StudentDrawer({ user, onClose, onEdit }: { user: User; onClose: () => v
           {[
             { label: 'Enrolled', value: enrollments.length, emoji: '📚', color: '#1A73E8' },
             { label: 'Completed', value: completed.length, emoji: '✅', color: '#00C896' },
-            { label: 'Avg Progress', value: `${enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + e.progress_pct, 0) / enrollments.length) : 0}%`, emoji: '📈', color: '#FF6B35' },
+            { label: 'Avg Progress', value: `${enrollments.length > 0 ? Math.round(enrollments.reduce((s, e) => s + e.progress_pct, 0) / enrollments.length) : 0}%`, emoji: '📈', color: '#1A73E8' },
           ].map(s => (
             <div key={s.label} style={{ background: '#f9fafb', borderRadius: 10, padding: '0.875rem', textAlign: 'center' }}>
               <div style={{ fontSize: '1.2rem', marginBottom: 2 }}>{s.emoji}</div>
@@ -349,7 +349,7 @@ function AdminUsersPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: ''DM Sans', sans-serif' }}>
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>

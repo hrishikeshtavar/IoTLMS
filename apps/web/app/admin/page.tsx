@@ -6,7 +6,7 @@ import { apiFetch, getUser, logout } from '../../app/lib/auth';
 
 const STREAM_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   'Artificial Intelligence': { bg: '#EFF6FF', text: '#1D4ED8', bar: '#1A73E8' },
-  'ESP32':                   { bg: '#FFF7ED', text: '#C2410C', bar: '#FF6B35' },
+  'ESP32':                   { bg: '#FFF7ED', text: '#C2410C', bar: '#1A73E8' },
   'Arduino':                 { bg: '#F0FDF4', text: '#15803D', bar: '#00C896' },
   'IoT':                     { bg: '#F5F3FF', text: '#6D28D9', bar: '#A855F7' },
   'General':                 { bg: '#F9FAFB', text: '#374151', bar: '#6B7280' },
@@ -34,7 +34,7 @@ export default function AdminPage() {
   const maxEnrollments = Math.max(...courses.map(c => c._count?.enrollments || 0), 1);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: ''DM Sans', sans-serif' }}>
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>

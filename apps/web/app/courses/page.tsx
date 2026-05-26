@@ -57,10 +57,10 @@ const categoryColors: Record<string, string> = {
   Arduino:       '#00C896',
   'Raspberry Pi':'#A855F7',
   ARM:           '#1A73E8',
-  'RISC-V':      '#FF6B35',
-  ESP32:         '#FFD93D',
+  'RISC-V':      '#1A73E8',
+  ESP32:         '#00C896',
   Sensors:       '#00C896',
-  Electronics:   '#FF6B35',
+  Electronics:   '#1A73E8',
   IoT:           '#1A73E8',
   General:       '#718096',
 };

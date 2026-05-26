@@ -93,7 +93,7 @@ type Enrollment = {
 
 const CATEGORY_COLORS: Record<string, string> = {
   Arduino: '#00C896', 'Raspberry Pi': '#A855F7', ARM: '#1A73E8',
-  'RISC-V': '#FF6B35', ESP32: '#FFD93D', IoT: '#1A73E8', General: '#718096',
+  'RISC-V': 'var(--primary)', ESP32: '#FFD93D', IoT: '#1A73E8', General: '#718096',
 };
 
 const ACHIEVEMENTS = [
@@ -105,7 +105,7 @@ const ACHIEVEMENTS = [
   { id: 'three_courses', emoji: '📚', label: 'Bookworm',        desc: 'Enroll in 3 courses',          threshold: 3,  type: 'courses' },
 ];
 
-function ProgressRing({ percent, size = 56, color = '#FF6B35' }: { percent: number; size?: number; color?: string }) {
+function ProgressRing({ percent, size = 56, color = 'var(--primary)' }: { percent: number; size?: number; color?: string }) {
   const r = (size - 7) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
@@ -221,7 +221,7 @@ export default function DashboardPage() {
 
   const statsData = [
     { label: t.lessons_done,    value: totalLessons,    emoji: '📖', color: '#1A73E8' },
-    { label: t.quizzes_passed,  value: passedQuizzes,   emoji: '🧠', color: '#FF6B35' },
+    { label: t.quizzes_passed,  value: passedQuizzes,   emoji: '🧠', color: 'var(--primary)' },
     { label: t.labs_completed,  value: labsDone,        emoji: '🔬', color: '#A855F7' },
     { label: t.certificates,    value: completedCourses, emoji: '🏆', color: '#00C896' },
   ];
@@ -242,7 +242,7 @@ export default function DashboardPage() {
   const greetingKey = hour < 12 ? 'greeting_morning' : hour < 17 ? 'greeting_afternoon' : 'greeting_evening';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
           {/* STREAK CARD */}
           <div className="animate-popIn" style={{ background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(10px)', borderRadius: '1.25rem', padding: '1.25rem 1.75rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.12)', minWidth: '140px' }}>
             <div className="animate-float" style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>🔥</div>
-            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#FFD93D', lineHeight: 1 }}>{streak}</div>
+            <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--secondary)', lineHeight: 1 }}>{streak}</div>
             <div className={isDevanagari ? 'lang-hi' : ''} style={{ fontSize: '0.78rem', color: '#aaa', marginTop: '0.25rem', fontWeight: 600 }}>{t.streak}</div>
           </div>
         </div>
@@ -402,7 +402,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <Link href={`/courses/${enrollment.course_id}`}
-                      style={{ flexShrink: 0, padding: '0.35rem 0.85rem', borderRadius: '999px', background: isDone ? 'rgba(0,200,150,0.1)' : 'rgba(255,107,53,0.1)', color: isDone ? 'var(--accent)' : 'var(--primary)', fontSize: '0.72rem', fontWeight: 700, border: '1px solid', borderColor: isDone ? 'rgba(0,200,150,0.25)' : 'rgba(255,107,53,0.2)', transition: 'all 0.15s' }}>
+                      style={{ flexShrink: 0, padding: '0.35rem 0.85rem', borderRadius: '999px', background: isDone ? 'rgba(0,200,150,0.1)' : 'rgba(26,115,232,0.1)', color: isDone ? 'var(--accent)' : 'var(--primary)', fontSize: '0.72rem', fontWeight: 700, border: '1px solid', borderColor: isDone ? 'rgba(0,200,150,0.25)' : 'rgba(26,115,232,0.2)', transition: 'all 0.15s' }}>
                       {isDone ? '📜' : t.continue}
                     </Link>
                   </div>
@@ -440,7 +440,7 @@ export default function DashboardPage() {
                 const meta = ACTIVITY_META[a.activity_type] ?? { emoji: '⚡', label: a.activity_type };
                 return (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,107,53,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>{meta.emoji}</div>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(26,115,232,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>{meta.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)' }}>{meta.label}</div>
                     </div>
@@ -466,13 +466,13 @@ export default function DashboardPage() {
               const unlocked = earnedBadgeCodes.has(a.id) || current >= a.threshold;
               return (
                 <div key={a.id} className={unlocked ? 'card-hover' : ''}
-                  style={{ borderRadius: '1rem', padding: '1rem', textAlign: 'center', border: '1.5px solid', borderColor: unlocked ? 'rgba(255,211,61,0.3)' : 'var(--border)', background: unlocked ? 'rgba(255,211,61,0.06)' : 'var(--bg)', transition: 'all 0.2s', opacity: unlocked ? 1 : 0.45 }}>
+                  style={{ borderRadius: '1rem', padding: '1rem', textAlign: 'center', border: '1.5px solid', borderColor: unlocked ? 'rgba(26,115,232,0.3)' : 'var(--border)', background: unlocked ? 'rgba(26,115,232,0.06)' : 'var(--bg)', transition: 'all 0.2s', opacity: unlocked ? 1 : 0.45 }}>
                   <div style={{ fontSize: '2rem', marginBottom: '0.4rem', filter: unlocked ? 'none' : 'grayscale(1)' }}
                     className={unlocked ? 'animate-float' : ''}>{a.emoji}</div>
                   <div style={{ fontWeight: 700, fontSize: '0.78rem', color: unlocked ? 'var(--text)' : 'var(--text3)', marginBottom: '0.2rem' }}>{a.label}</div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text3)', lineHeight: 1.4 }}>{a.desc}</div>
                   {unlocked && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.65rem', fontWeight: 700, color: '#FFD93D' }}>✨ Unlocked!</div>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.65rem', fontWeight: 700, color: 'var(--secondary)' }}>✨ Unlocked!</div>
                   )}
                 </div>
               );

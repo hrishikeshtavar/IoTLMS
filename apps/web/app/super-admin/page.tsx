@@ -21,7 +21,7 @@ function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffff;
-  const colors = ['#1A73E8', '#A855F7', '#00C896', '#FF6B35', '#D97706'];
+  const colors = ['#1A73E8', '#A855F7', '#00C896', '#1A73E8', '#D97706'];
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: colors[hash % colors.length], color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: size * 0.35, flexShrink: 0 }}>
       {initials}
@@ -161,7 +161,7 @@ export default function SuperAdminPage() {
   });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: ''DM Sans', sans-serif' }}>
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#0F172A', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.3)' }}>
@@ -171,7 +171,7 @@ export default function SuperAdminPage() {
             <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>SimuLearning</span>
           </Link>
           <span style={{ color: '#334155' }}>|</span>
-          <span style={{ padding: '3px 10px', background: 'rgba(255,107,53,0.2)', color: '#FF6B35', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Super Admin</span>
+          <span style={{ padding: '3px 10px', background: 'rgba(26,115,232,0.2)', color: '#1A73E8', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Super Admin</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button onClick={() => router.push('/super-admin/profile')}
@@ -190,7 +190,7 @@ export default function SuperAdminPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg,#FF6B35,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#fff', border: '3px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg,#1A73E8,#A855F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, color: '#fff', border: '3px solid rgba(255,255,255,0.2)' }}>
                 {superUser?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'SA'}
               </div>
               <div>
