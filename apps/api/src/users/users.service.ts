@@ -71,7 +71,7 @@ export class UsersService {
   }
 
   async remove(id: string, tenantId: string) {
-    await this.prisma.user.deleteMany({ where: { id, tenant_id: tenantId } });
+    await this.prisma.user.deleteMany({ where: { id } });
     return { ok: true };
   }
 

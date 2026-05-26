@@ -28,6 +28,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -165,7 +166,7 @@ export default function AdminLoginPage() {
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text2)' }}>Password</label>
                   <Link href="/forgot-password" style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Forgot?</Link>
                 </div>
-                <input className="al-input" type="password" value={password} onChange={e => setPassword(e.target.value)}
+                <input className="al-input" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
                   onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)}
                   placeholder="••••••••" required
                   style={{ width: '100%', padding: '12px 16px', borderRadius: 11, border: `1.5px solid ${focusedField === 'password' ? 'var(--primary)' : 'var(--border)'}`, fontSize: '0.95rem', fontFamily: 'inherit', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box', transition: 'all 0.2s' }}

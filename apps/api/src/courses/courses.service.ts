@@ -10,9 +10,9 @@ export class CoursesService {
     const where = tenantId ? {
       OR: [
         { tenant_id: tenantId },
-        { status: 'published' as const },
+        { status: 'published' as const, NOT: { tenant_id: tenantId } },
       ],
-    } : undefined;
+    } : { status: 'published' as const };
     return this.prisma.course.findMany({
       where,
       orderBy: { created_at: 'desc' },
