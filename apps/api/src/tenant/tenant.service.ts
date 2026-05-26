@@ -66,4 +66,7 @@ export class TenantService {
     await this.prisma.brandKit.deleteMany({ where: { tenant_id: id } });
     return this.prisma.tenant.delete({ where: { id } });
   }
+  async findById(id: string) {
+    return this.prisma.tenant.findUnique({ where: { id } });
+  }
 }

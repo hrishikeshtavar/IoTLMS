@@ -11,6 +11,9 @@ export class TenantController {
   @Get()
   findAll() { return this.svc.findAll(); }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) { return this.svc.findById(id); }
+
   @Roles('super_admin')
   @Get('stats')
   getStats() { return this.svc.getAggregateStats(); }

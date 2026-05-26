@@ -20,9 +20,16 @@ export default function AdminPage() {
   const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [schoolName, setSchoolName] = useState<string>('');
 
   useEffect(() => {
-    setAdminUser(getUser());
+    const u = getUser();
+    setAdminUser(u);
+    if (u?.tenantId) {
+      apiFetch('/api/tenants/' + u.tenantId).then(r => r.json()).then((t: any) => {
+        if (t?.name) setSchoolName(t.name);
+      }).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -67,7 +74,7 @@ export default function AdminPage() {
               <div>
                 <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 4 }}>School Admin</div>
                 <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 800, lineHeight: 1.1 }}>{adminUser?.name || 'Admin'}</div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginTop: 4 }}>🏫 Greenfield IoT Academy</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginTop: 4 }}>🏫 {schoolName || 'Loading...'}</div>
               </div>
             </div>
 
