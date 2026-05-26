@@ -11,6 +11,7 @@ export class TenantController {
   @Get()
   findAll() { return this.svc.findAll(); }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) { return this.svc.findById(id); }
 
