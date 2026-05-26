@@ -34,7 +34,7 @@ export default function AdminPage() {
   const maxEnrollments = Math.max(...courses.map(c => c._count?.enrollments || 0), 1);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: ''DM Sans', sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif' }}>
 
       {/* NAVBAR */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
