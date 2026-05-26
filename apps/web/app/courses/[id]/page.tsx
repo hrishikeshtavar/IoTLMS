@@ -122,9 +122,8 @@ export default function CoursePage() {
         setLessons(data);
         if (data.length > 0) setActiveLesson(data[0] ?? null);
         setLoading(false);
-        const quizLessons = data.filter((l) => l.type === 'quiz');
         const map: Record<string, string> = {};
-        await Promise.all(quizLessons.map(async (l) => {
+        await Promise.all(data.map(async (l) => {
           try { const r = await apiFetch('/api/assessments/by-lesson/' + l.id); const a = await r.json(); if (a && a.id) map[l.id] = a.id; } catch {}
         }));
         setAssessmentMap(map);
@@ -401,7 +400,7 @@ export default function CoursePage() {
                   )}
 
                   {/* QUIZ */}
-                  {activeLesson.type === 'quiz' && (
+                  {assessmentMap[activeLesson.id] && (
                     <div className="animate-popIn" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(255,107,53,0.2)', padding: '3rem', marginBottom: '1.75rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
                       <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="animate-float">📝</div>
                       <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Knowledge Quiz</h3>

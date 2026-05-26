@@ -112,7 +112,32 @@ export class UsersService {
         };
         const pwd = row.password || 'Student@1234';
         data.password_hash = await bcrypt.hash(pwd, 12);
-        return this.prisma.user.create({ data });
+        const user = await this.prisma.user.create({ data });
+
+        // Auto-enroll student in published courses matching their grade
+        if (user.role === 'student' && tenantId) {
+          const gradeStr = row.class_grade ? String(row.class_grade) : null;
+          const courses = await this.prisma.course.findMany({
+            where: {
+              tenant_id: tenantId,
+              status: 'published',
+              ...(gradeStr ? { target_grade: gradeStr } : {}),
+            },
+            select: { id: true },
+          });
+          if (courses.length > 0) {
+            await this.prisma.enrollment.createMany({
+              data: courses.map(c => ({
+                user_id: user.id,
+                course_id: c.id,
+                tenant_id: tenantId,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        return user;
       })
     );
     const succeeded = results.filter(r => r.status === 'fulfilled').length;
