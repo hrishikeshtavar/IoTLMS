@@ -54,6 +54,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const adminUser = getUser();
+  const [schoolName, setSchoolName] = useState<string>('');
 
   const [enrollments, setEnrollments] = useState<any[]>([]);
 
@@ -61,6 +62,7 @@ export default function AnalyticsPage() {
     Promise.all([
       apiFetch('/api/analytics/dashboard').then(r => r.json()),
       apiFetch('/api/enrollments/tenant/all').then(r => r.json()),
+      adminUser?.tenantId ? apiFetch('/api/tenants/' + adminUser.tenantId).then(r => r.json()).then((t:any) => { if(t?.name) setSchoolName(t.name); }).catch(()=>{}) : null,
     ]).then(([d, e]) => {
       setData(d);
       setEnrollments(Array.isArray(e) ? e.filter((x:any) => x.course?.tenant_id) : []);
@@ -110,7 +112,7 @@ export default function AnalyticsPage() {
       <div style={{ background: 'linear-gradient(135deg, #0F172A, #1E3A5F, #0E7490)', padding: '2.5rem 2rem' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: 8 }}>
-            <span style={{ background: 'rgba(255,255,255,0.1)', color: '#94D2E8', padding: '3px 12px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>🏫 Greenfield IoT Academy</span>
+            <span style={{ background: 'rgba(255,255,255,0.1)', color: '#94D2E8', padding: '3px 12px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>🏫 {schoolName || adminUser?.name || 'My School'}</span>
           </div>
           <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.2rem)', fontWeight: 900, color: '#fff', margin: '0 0 6px' }}>📊 School Analytics</h1>
           <p style={{ color: '#94A3B8', fontSize: '0.9rem', margin: 0 }}>Performance insights · Student progress · Course engagement</p>
