@@ -59,6 +59,10 @@ export default function SchoolDetailPage() {
   const [brandKit, setBrandKit] = useState<any>(null);
   const [brandMsg, setBrandMsg] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
+  const [principalSigUploading, setPrincipalSigUploading] = useState(false);
+  const [platformSigUploading, setPlatformSigUploading] = useState(false);
+  const [principalNameInput, setPrincipalNameInput] = useState('');
+  const [platformDirectorInput, setPlatformDirectorInput] = useState('');
   const [certUploading, setCertUploading] = useState(false);
   const [admins, setAdmins] = useState<User[]>([]);
   const [adminForm, setAdminForm] = useState({ name: '', email: '', password: '' });
@@ -88,7 +92,7 @@ export default function SchoolDetailPage() {
       setAdmins(Array.isArray(allUsers) ? allUsers.filter((u: User) => u.role === 'admin') : []);
       setCourses(Array.isArray(allCourses) ? allCourses : []);
       setLoading(false);
-      apiFetch(`/api/branding/tenant/${schoolId}`).then(r=>r.json()).then(d=>{if(d?.id)setBrandKit(d);}).catch(()=>{});
+      apiFetch(`/api/branding/tenant/${schoolId}`).then(r=>r.json()).then(d=>{if(d?.id){setBrandKit(d);setPrincipalNameInput(d.principal_name||'');setPlatformDirectorInput(d.platform_director_name||'');}}).catch(()=>{});
     }).catch(() => setLoading(false));
   }, [schoolId]);
 
@@ -198,6 +202,26 @@ export default function SchoolDetailPage() {
     const url=await uploadAsset(file);
     if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,logo_url:url})});setBrandKit((p:any)=>({...(p||{}),logo_url:url}));setBrandMsg('Logo uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
     setLogoUploading(false);
+  }
+  async function uploadPrincipalSignature(file: File) {
+    setPrincipalSigUploading(true);
+    const url=await uploadAsset(file);
+    if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,principal_signature_url:url})});setBrandKit((p:any)=>({...(p||{}),principal_signature_url:url}));setBrandMsg('Principal signature uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
+    setPrincipalSigUploading(false);
+  }
+  async function uploadPlatformSignature(file: File) {
+    setPlatformSigUploading(true);
+    const url=await uploadAsset(file);
+    if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,platform_director_signature_url:url})});setBrandKit((p:any)=>({...(p||{}),platform_director_signature_url:url}));setBrandMsg('Platform director signature uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
+    setPlatformSigUploading(false);
+  }
+  async function savePrincipalName() {
+    await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,principal_name:principalNameInput})});
+    setBrandKit((p:any)=>({...(p||{}),principal_name:principalNameInput}));setBrandMsg('Principal name saved!');setTimeout(()=>setBrandMsg(''),2500);
+  }
+  async function savePlatformDirectorName() {
+    await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,platform_director_name:platformDirectorInput})});
+    setBrandKit((p:any)=>({...(p||{}),platform_director_name:platformDirectorInput}));setBrandMsg('Platform director name saved!');setTimeout(()=>setBrandMsg(''),2500);
   }
   async function uploadCertTemplate(file: File) {
     setCertUploading(true);
@@ -678,6 +702,48 @@ export default function SchoolDetailPage() {
                   {certUploading?'⏳ Uploading…':'📄 Upload Certificate Template'}
                   <input id='cert-upload' type='file' accept='image/png,image/jpeg' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadCertTemplate(f);}}/>
                 </label>
+              </div>
+            </div>
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>🎓 School Principal</div>
+              <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
+                <div>
+                  <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Principal Name</label>
+                  <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
+                    <input value={principalNameInput} onChange={e=>setPrincipalNameInput(e.target.value)} placeholder='Dr. Ramesh Sharma' style={{flex:1,padding:'0.6rem 0.875rem',borderRadius:8,border:'1.5px solid #d1d5db',fontSize:'0.875rem',fontFamily:'inherit'}}/>
+                    <button onClick={savePrincipalName} style={{padding:'8px 16px',borderRadius:8,background:'#1A73E8',color:'#fff',border:'none',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',whiteSpace:'nowrap'}}>💾 Save</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Principal Signature</label>
+                  {brandKit?.principal_signature_url&&<img src={brandKit.principal_signature_url} alt='Principal Sig' style={{height:48,objectFit:'contain',marginBottom:8,opacity:0.85,display:'block'}}/>}
+                  <label htmlFor='principal-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:principalSigUploading?'#9ca3af':'#0D9488',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
+                    {principalSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
+                    <input id='principal-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPrincipalSignature(f);}}/>
+                  </label>
+                  <p style={{color:'#9ca3af',fontSize:'0.75rem',marginTop:6}}>PNG with transparent background recommended. Max 600×200px.</p>
+                </div>
+              </div>
+            </div>
+            <div style={{background:'#fff',borderRadius:16,border:'1px solid #e5e7eb',overflow:'hidden',boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+              <div style={{padding:'1rem 1.5rem',borderBottom:'1px solid #e5e7eb',fontWeight:700,color:'#111827'}}>🏢 Platform Director</div>
+              <div style={{padding:'1.5rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
+                <div>
+                  <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Platform Director Name</label>
+                  <div style={{display:'flex',gap:'0.75rem',alignItems:'center'}}>
+                    <input value={platformDirectorInput} onChange={e=>setPlatformDirectorInput(e.target.value)} placeholder='SimuLearning Director' style={{flex:1,padding:'0.6rem 0.875rem',borderRadius:8,border:'1.5px solid #d1d5db',fontSize:'0.875rem',fontFamily:'inherit'}}/>
+                    <button onClick={savePlatformDirectorName} style={{padding:'8px 16px',borderRadius:8,background:'#1A73E8',color:'#fff',border:'none',fontWeight:700,fontSize:'0.85rem',cursor:'pointer',whiteSpace:'nowrap'}}>💾 Save</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Platform Director Signature</label>
+                  {brandKit?.platform_director_signature_url&&<img src={brandKit.platform_director_signature_url} alt='Director Sig' style={{height:48,objectFit:'contain',marginBottom:8,opacity:0.85,display:'block'}}/>}
+                  <label htmlFor='platform-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:platformSigUploading?'#9ca3af':'#7C3AED',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
+                    {platformSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
+                    <input id='platform-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPlatformSignature(f);}}/>
+                  </label>
+                  <p style={{color:'#9ca3af',fontSize:'0.75rem',marginTop:6}}>PNG with transparent background recommended. Max 600×200px.</p>
+                </div>
               </div>
             </div>
           </div>
