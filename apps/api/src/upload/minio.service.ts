@@ -42,6 +42,10 @@ export class MinioService implements OnModuleInit {
     }
   }
 
+  async getObjectStream(bucket: string, key: string): Promise<NodeJS.ReadableStream> {
+    if (!this.client) throw new Error('MinIO client not initialized');
+    return this.client.getObject(bucket, key);
+  }
   getPublicUrl(bucket: string, key: string): string {
     const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
     const port = process.env.MINIO_PORT || '9000';
