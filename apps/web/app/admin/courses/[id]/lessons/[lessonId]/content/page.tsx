@@ -89,8 +89,8 @@ function QuizBuilder({ lessonId }: { lessonId: string }) {
       body: JSON.stringify({
         assessment_id: assessment.id,
         question_text: newQ.question_text,
-        options: newQ.options,
-        correct_index: newQ.correct_index,
+        options_json: newQ.options,
+        correct_answer: String(newQ.correct_index),
         points: newQ.points,
       }),
     });

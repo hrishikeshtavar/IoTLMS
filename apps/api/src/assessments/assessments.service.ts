@@ -21,21 +21,39 @@ export class AssessmentsService {
     });
   }
 
+
+  private transformQuestions(assessment: any) {
+    if (!assessment) return assessment;
+    return {
+      ...assessment,
+      questions: (assessment.questions || []).map((q: any) => ({
+        ...q,
+        options_json: Array.isArray(q.options_json)
+          ? q.options_json.map((opt: any, i: number) =>
+              typeof opt === 'string' ? { value: String(i), label: opt } : opt
+            )
+          : q.options_json,
+      })),
+    };
+  }
+
   async getAssessmentByLesson(lessonId: string) {
-    return this.prisma.assessment.findFirst({ where: { lesson_id: lessonId }, include: { questions: true } });
+    const a = await this.prisma.assessment.findFirst({ where: { lesson_id: lessonId }, include: { questions: true } });
+    return this.transformQuestions(a);
+  }
   }
 
   async getAssessmentWithQuestions(id: string) {
-    return this.prisma.assessment.findUnique({
+    const a = await this.prisma.assessment.findUnique({ where: { id }, include: { questions: true } });
+    return this.transformQuestions(a);
+  }
       where: { id },
-      include: { questions: true },
     });
   }
 
   async submitAnswers(dto: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: dto.assessment_id },
-      include: { questions: true },
     });
 
     if (!assessment) throw new Error('Assessment not found');
