@@ -65,7 +65,11 @@ export class AssessmentsService {
         points_earned: correct ? question?.points ?? 0 : 0,
       };
     });
-    const passed = score >= assessment.pass_score;
+    const dynamicMaxScore = assessment.questions.reduce((sum, q) => sum + (q.points ?? 0), 0);
+    const passThreshold = assessment.max_score > 0
+      ? Math.round((assessment.pass_score / assessment.max_score) * dynamicMaxScore)
+      : assessment.pass_score;
+    const passed = score >= passThreshold;
     const submission = await this.prisma.submission.create({
       data: {
         user_id: dto.user_id,
@@ -78,10 +82,10 @@ export class AssessmentsService {
     return {
       submission_id: submission.id,
       score,
-      max_score: assessment.max_score,
-      pass_score: assessment.pass_score,
+      max_score: dynamicMaxScore,
+      pass_score: passThreshold,
       passed,
-      percentage: Math.round((score / assessment.max_score) * 100),
+      percentage: dynamicMaxScore > 0 ? Math.round((score / dynamicMaxScore) * 100) : 0,
       results,
     };
   }
