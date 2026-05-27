@@ -21,8 +21,8 @@ export class UploadController {
   }
 
   @Public()
-  @Get('assets/:bucket/:key')
-  async serveAsset(@Param('bucket') bucket: string, @Param('key') key: string, @Res() res: Response) {
+  @Get('assets/:bucket/*')
+  async serveAsset(@Param('bucket') bucket: string, @Param('0') key: string, @Res() res: Response) {
     try {
       const stream = await this.minioService.getObjectStream(bucket, key);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
