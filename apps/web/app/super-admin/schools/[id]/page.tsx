@@ -61,6 +61,8 @@ export default function SchoolDetailPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [principalSigUploading, setPrincipalSigUploading] = useState(false);
   const [platformSigUploading, setPlatformSigUploading] = useState(false);
+  const [principalSigProgress, setPrincipalSigProgress] = useState(0);
+  const [platformSigProgress, setPlatformSigProgress] = useState(0);
   const [principalNameInput, setPrincipalNameInput] = useState('');
   const [platformDirectorInput, setPlatformDirectorInput] = useState('');
   const [certUploading, setCertUploading] = useState(false);
@@ -204,16 +206,20 @@ export default function SchoolDetailPage() {
     setLogoUploading(false);
   }
   async function uploadPrincipalSignature(file: File) {
-    setPrincipalSigUploading(true);
+    setPrincipalSigUploading(true); setPrincipalSigProgress(0);
+    const interval = setInterval(()=>setPrincipalSigProgress(p=>p<85?p+12:p),200);
     const url=await uploadAsset(file);
+    clearInterval(interval); setPrincipalSigProgress(100);
     if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,principal_signature_url:url})});setBrandKit((p:any)=>({...(p||{}),principal_signature_url:url}));setBrandMsg('Principal signature uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
-    setPrincipalSigUploading(false);
+    setTimeout(()=>{setPrincipalSigUploading(false);setPrincipalSigProgress(0);},600);
   }
   async function uploadPlatformSignature(file: File) {
-    setPlatformSigUploading(true);
+    setPlatformSigUploading(true); setPlatformSigProgress(0);
+    const interval = setInterval(()=>setPlatformSigProgress(p=>p<85?p+12:p),200);
     const url=await uploadAsset(file);
+    clearInterval(interval); setPlatformSigProgress(100);
     if(url){await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,platform_director_signature_url:url})});setBrandKit((p:any)=>({...(p||{}),platform_director_signature_url:url}));setBrandMsg('Platform director signature uploaded!');setTimeout(()=>setBrandMsg(''),2500);}
-    setPlatformSigUploading(false);
+    setTimeout(()=>{setPlatformSigUploading(false);setPlatformSigProgress(0);},600);
   }
   async function savePrincipalName() {
     await apiFetch('/api/branding',{method:'POST',body:JSON.stringify({tenantId:schoolId,principal_name:principalNameInput})});
@@ -716,11 +722,29 @@ export default function SchoolDetailPage() {
                 </div>
                 <div>
                   <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Principal Signature</label>
-                  {brandKit?.principal_signature_url&&<img src={brandKit.principal_signature_url} alt='Principal Sig' style={{height:48,objectFit:'contain',marginBottom:8,opacity:0.85,display:'block'}}/>}
-                  <label htmlFor='principal-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:principalSigUploading?'#9ca3af':'#0D9488',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
-                    {principalSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
-                    <input id='principal-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPrincipalSignature(f);}}/>
-                  </label>
+                  {brandKit?.principal_signature_url&&(
+                    <div style={{marginBottom:10,padding:'0.75rem',background:'#f9fafb',borderRadius:10,border:'1px solid #e5e7eb',display:'inline-block'}}>
+                      <div style={{fontSize:'0.65rem',color:'#9ca3af',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Current Signature</div>
+                      <img src={brandKit.principal_signature_url} alt='Principal Sig' style={{height:52,objectFit:'contain',display:'block'}}/>
+                    </div>
+                  )}
+                  <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
+                    <label htmlFor='principal-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:principalSigUploading?'#0d7a6a':'#0D9488',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:principalSigUploading?'not-allowed':'pointer',transition:'background 0.2s'}}>
+                      {principalSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
+                      <input id='principal-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} disabled={principalSigUploading} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPrincipalSignature(f);}}/>
+                    </label>
+                  </div>
+                  {principalSigUploading&&(
+                    <div style={{marginTop:10,maxWidth:320}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                        <span style={{fontSize:'0.72rem',color:'#0D9488',fontWeight:700}}>Uploading…</span>
+                        <span style={{fontSize:'0.72rem',color:'#0D9488',fontWeight:700}}>{principalSigProgress}%</span>
+                      </div>
+                      <div style={{height:6,background:'#e5e7eb',borderRadius:999,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${principalSigProgress}%`,background:'linear-gradient(90deg,#0D9488,#06b6d4)',borderRadius:999,transition:'width 0.2s ease'}}/>
+                      </div>
+                    </div>
+                  )}
                   <p style={{color:'#9ca3af',fontSize:'0.75rem',marginTop:6}}>PNG with transparent background recommended. Max 600×200px.</p>
                 </div>
               </div>
@@ -737,11 +761,29 @@ export default function SchoolDetailPage() {
                 </div>
                 <div>
                   <label style={{display:'block',fontSize:'0.7rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Platform Director Signature</label>
-                  {brandKit?.platform_director_signature_url&&<img src={brandKit.platform_director_signature_url} alt='Director Sig' style={{height:48,objectFit:'contain',marginBottom:8,opacity:0.85,display:'block'}}/>}
-                  <label htmlFor='platform-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:platformSigUploading?'#9ca3af':'#7C3AED',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:'pointer'}}>
-                    {platformSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
-                    <input id='platform-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPlatformSignature(f);}}/>
-                  </label>
+                  {brandKit?.platform_director_signature_url&&(
+                    <div style={{marginBottom:10,padding:'0.75rem',background:'#f9fafb',borderRadius:10,border:'1px solid #e5e7eb',display:'inline-block'}}>
+                      <div style={{fontSize:'0.65rem',color:'#9ca3af',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:6}}>Current Signature</div>
+                      <img src={brandKit.platform_director_signature_url} alt='Director Sig' style={{height:52,objectFit:'contain',display:'block'}}/>
+                    </div>
+                  )}
+                  <div style={{display:'flex',alignItems:'center',gap:'0.75rem',flexWrap:'wrap'}}>
+                    <label htmlFor='platform-sig-upload' style={{display:'inline-flex',alignItems:'center',gap:'0.5rem',padding:'8px 18px',borderRadius:8,background:platformSigUploading?'#6d28d9':'#7C3AED',color:'#fff',fontWeight:700,fontSize:'0.875rem',cursor:platformSigUploading?'not-allowed':'pointer',transition:'background 0.2s'}}>
+                      {platformSigUploading?'⏳ Uploading…':'✍️ Upload Signature'}
+                      <input id='platform-sig-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} disabled={platformSigUploading} onChange={e=>{const f=e.target.files?.[0];if(f)uploadPlatformSignature(f);}}/>
+                    </label>
+                  </div>
+                  {platformSigUploading&&(
+                    <div style={{marginTop:10,maxWidth:320}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                        <span style={{fontSize:'0.72rem',color:'#7C3AED',fontWeight:700}}>Uploading…</span>
+                        <span style={{fontSize:'0.72rem',color:'#7C3AED',fontWeight:700}}>{platformSigProgress}%</span>
+                      </div>
+                      <div style={{height:6,background:'#e5e7eb',borderRadius:999,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${platformSigProgress}%`,background:'linear-gradient(90deg,#7C3AED,#a78bfa)',borderRadius:999,transition:'width 0.2s ease'}}/>
+                      </div>
+                    </div>
+                  )}
                   <p style={{color:'#9ca3af',fontSize:'0.75rem',marginTop:6}}>PNG with transparent background recommended. Max 600×200px.</p>
                 </div>
               </div>
