@@ -39,32 +39,8 @@ export class TenantService {
     });
   }
 
-  async update(id: string, dto: { name?: string; is_active?: boolean; plan_id?: string }) {
+  async update(id: string, dto: { name?: string; is_active?: boolean }) {
     return this.prisma.tenant.update({ where: { id }, data: dto });
-  }
-
-  async delete(id: string) {
-    // Get all course IDs for this tenant first
-    const courses = await this.prisma.course.findMany({ where: { tenant_id: id }, select: { id: true } });
-    const courseIds = courses.map(c => c.id);
-    // Get all lesson IDs for cascade
-    const lessons = await this.prisma.lesson.findMany({ where: { course_id: { in: courseIds } }, select: { id: true } });
-    const lessonIds = lessons.map(l => l.id);
-    // Cascade delete in correct order
-    await this.prisma.submission.deleteMany({ where: { assessment: { lesson_id: { in: lessonIds } } } });
-    await this.prisma.assessment.deleteMany({ where: { lesson_id: { in: lessonIds } } });
-    await this.prisma.lessonContent.deleteMany({ where: { lesson_id: { in: lessonIds } } });
-    await this.prisma.labSession.deleteMany({ where: { lesson_id: { in: lessonIds } } });
-    await this.prisma.lesson.deleteMany({ where: { course_id: { in: courseIds } } });
-    await this.prisma.enrollment.deleteMany({ where: { course_id: { in: courseIds } } });
-    await this.prisma.certificate.deleteMany({ where: { tenant_id: id } });
-    await this.prisma.course.deleteMany({ where: { tenant_id: id } });
-    await this.prisma.userActivity.deleteMany({ where: { user: { tenant_id: id } } });
-    await this.prisma.userBadge.deleteMany({ where: { user: { tenant_id: id } } });
-    await this.prisma.refreshToken.deleteMany({ where: { user: { tenant_id: id } } });
-    await this.prisma.user.deleteMany({ where: { tenant_id: id } });
-    await this.prisma.brandKit.deleteMany({ where: { tenant_id: id } });
-    return this.prisma.tenant.delete({ where: { id } });
   }
   async findById(id: string) {
     return this.prisma.tenant.findUnique({ where: { id } });

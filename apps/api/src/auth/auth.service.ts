@@ -43,12 +43,13 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, tenantId: string, requiredRole?: string) {
-    // Scoped search: tenant-specific first
-    let user = await this.prisma.user.findFirst({ where: { email: dto.email, tenant_id: tenantId } });
+    // Try email with tenant, then email globally, then username with tenant, then username globally
+    let user = await this.prisma.user.findFirst({
+      where: { email: dto.email, tenant_id: tenantId },
+    });
+    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
     if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, tenant_id: tenantId } });
-    // Allow super_admin to login from any portal
-    if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email, role: 'super_admin' } });
-    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email, role: 'super_admin' } });
+    if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email } });
     // Fallback: single-domain deployment — search globally
     if (!user) user = await this.prisma.user.findFirst({ where: { email: dto.email } });
     if (!user) user = await this.prisma.user.findFirst({ where: { username: dto.email } });
@@ -123,9 +124,7 @@ export class AuthService {
   }
 
   async forgotPassword(email: string, tenantId: string) {
-    // Try tenant-scoped first, then fall back to any matching email (handles super-admin portal)
-    let user = await this.prisma.user.findFirst({ where: { email, tenant_id: tenantId } });
-    if (!user) user = await this.prisma.user.findFirst({ where: { email } });
+    const user = await this.prisma.user.findFirst({ where: { email, tenant_id: tenantId } });
     if (!user) return { message: 'If that email exists, a reset link has been sent' };
     const token = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 60 * 60 * 1000);

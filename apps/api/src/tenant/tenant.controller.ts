@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -29,12 +29,5 @@ export class TenantController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: any) {
     return this.svc.update(id, dto);
-  }
-
-  @Roles('super_admin')
-  @Delete(':id')
-  @HttpCode(200)
-  remove(@Param('id') id: string) {
-    return this.svc.delete(id);
   }
 }

@@ -36,29 +36,21 @@ export class UsersService {
     name?: string;
     username?: string;
     phone?: string;
-    email?: string;
     language_pref?: string;
     class_grade?: number;
     division?: string;
   }) {
-    const { email, ...rest } = data;
-    const updateData: any = { ...rest };
-    if (email) {
-      const conflict = await this.prisma.user.findFirst({
-        where: { email, tenant_id: tenantId, NOT: { id } },
-      });
-      if (!conflict) updateData.email = email;
-    }
     return this.prisma.user.updateMany({
       where: { id, tenant_id: tenantId },
-      data: updateData,
+      data,
     });
   }
 
   async changePassword(id: string, tenantId: string, password: string) {
     const password_hash = await bcrypt.hash(password, 12);
-    return this.prisma.user.updateMany({
-      where: { id, tenant_id: tenantId },
+    // Use update (not updateMany) so super_admin can reset any user's password cross-tenant
+    return this.prisma.user.update({
+      where: { id },
       data: { password_hash },
     });
   }
@@ -108,7 +100,6 @@ export class UsersService {
           username: row.username,
           class_grade: row.class_grade,
           division: row.division,
-          email_verified: true,
         };
         const pwd = row.password || 'Student@1234';
         data.password_hash = await bcrypt.hash(pwd, 12);

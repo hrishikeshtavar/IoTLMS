@@ -11,33 +11,33 @@ export class UsersController {
   @Get()
   findAll(@Req() req: Request, @Query('tenantId') queryTenantId?: string) {
     const user = (req as any)['user'];
-    const reqTenantId = (req as any)['tenantId'] ?? 'default';
+    const reqTenantId = (req as any)['tenantId'] ?? user?.tenantId ?? null;
     const tenantId = (user?.role === 'super_admin' && queryTenantId) ? queryTenantId : reqTenantId;
     return this.svc.findAll(tenantId);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? 'default';
+    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
     return this.svc.update(id, tenantId, body);
   }
 
   @Patch(':id/password')
   changePassword(@Param('id') id: string, @Body('password') password: string, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? 'default';
+    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
     return this.svc.changePassword(id, tenantId, password);
   }
 
   @Patch(':id/deactivate')
   deactivate(@Param('id') id: string, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? 'default';
+    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
     return this.svc.deactivate(id, tenantId);
   }
 
   @Delete(':id')
   @HttpCode(200)
   remove(@Param('id') id: string, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? 'default';
+    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
     return this.svc.remove(id, tenantId);
   }
 
@@ -69,7 +69,7 @@ export class UsersController {
   @Post('bulk-import')
   bulkImport(@Req() req: Request, @Body() body: { tenantId?: string; rows: { name: string; email?: string; role?: string; language?: string }[] }) {
     const user = (req as any)['user'];
-    const reqTenantId = (req as any)['tenantId'] ?? 'default';
+    const reqTenantId = (req as any)['tenantId'] ?? user?.tenantId ?? null;
     const tenantId = (user?.role === 'super_admin' && body.tenantId) ? body.tenantId : reqTenantId;
     return this.svc.bulkImport(tenantId, body.rows);
   }
