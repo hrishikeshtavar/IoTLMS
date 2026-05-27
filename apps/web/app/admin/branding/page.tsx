@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { apiFetch } from '@/lib/auth';
+import { apiFetch, getUser } from '@/lib/auth';
 
 type BrandKit = {
   primaryColor: string;
