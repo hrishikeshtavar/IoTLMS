@@ -1,13 +1,16 @@
+import { Controller, Get, Post, Param, Res, UseInterceptors, UploadedFile, BadRequestException, Req } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { Res, Param, Controller, Post, UseInterceptors, UploadedFile, BadRequestException, Req } from '@nestjs/common';
-import { Response } from 'express';
-import { Res, Param, FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
-import { Res, Param, UploadService } from './upload.service';
+import { UploadService } from './upload.service';
+import { MinioService } from './minio.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(
+    private readonly uploadService: UploadService,
+    private readonly minioService: MinioService,
+  ) {}
 
   @Post('file')
   @UseInterceptors(FileInterceptor('file'))
@@ -16,13 +19,14 @@ export class UploadController {
     const tenantId = req.tenantId ?? 'default';
     return this.uploadService.uploadFile(file, tenantId);
   }
+
   @Public()
   @Get('assets/:bucket/:key')
   async serveAsset(@Param('bucket') bucket: string, @Param('key') key: string, @Res() res: Response) {
     try {
       const stream = await this.minioService.getObjectStream(bucket, key);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
-      stream.pipe(res as any);
+      (stream as any).pipe(res);
     } catch {
       res.status(404).json({ message: 'Asset not found' });
     }
