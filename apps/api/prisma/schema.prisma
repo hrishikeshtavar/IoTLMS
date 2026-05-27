@@ -45,8 +45,12 @@ model BrandKit {
   colors_json Json?
   fonts_json  Json?
   domain      String?
-  favicon_url String?
-  created_at  DateTime @default(now())
+  favicon_url                     String?
+  principal_name                  String?
+  principal_signature_url         String?
+  platform_director_name          String?
+  platform_director_signature_url String?
+  created_at                      DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 }
