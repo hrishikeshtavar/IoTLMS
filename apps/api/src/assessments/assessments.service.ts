@@ -21,7 +21,6 @@ export class AssessmentsService {
     });
   }
 
-
   private transformQuestions(assessment: any) {
     if (!assessment) return assessment;
     return {
@@ -41,23 +40,18 @@ export class AssessmentsService {
     const a = await this.prisma.assessment.findFirst({ where: { lesson_id: lessonId }, include: { questions: true } });
     return this.transformQuestions(a);
   }
-  }
 
   async getAssessmentWithQuestions(id: string) {
     const a = await this.prisma.assessment.findUnique({ where: { id }, include: { questions: true } });
     return this.transformQuestions(a);
   }
-      where: { id },
-    });
-  }
 
   async submitAnswers(dto: any) {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: dto.assessment_id },
+      include: { questions: true },
     });
-
     if (!assessment) throw new Error('Assessment not found');
-
     let score = 0;
     const results = dto.answers.map((answer: any) => {
       const question = assessment.questions.find(q => q.id === answer.question_id);
@@ -71,9 +65,7 @@ export class AssessmentsService {
         points_earned: correct ? question?.points ?? 0 : 0,
       };
     });
-
     const passed = score >= assessment.pass_score;
-
     const submission = await this.prisma.submission.create({
       data: {
         user_id: dto.user_id,
@@ -83,7 +75,6 @@ export class AssessmentsService {
         passed,
       },
     });
-
     return {
       submission_id: submission.id,
       score,
@@ -107,7 +98,6 @@ export class AssessmentsService {
         },
       },
     });
-
     return assessments.map(a => {
       const total = (a as any).submissions.length;
       const passedCount = (a as any).submissions.filter((s: any) => s.passed).length;
