@@ -26,7 +26,9 @@ export class TenantMiddleware implements NestMiddleware {
     // Single-domain: check explicit tenant header first
     const tenantIdHeader = req.headers['x-tenant-id'] as string | undefined;
     if (tenantIdHeader) {
-      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantIdHeader } });
+      const tenant = await this.prisma.tenant.findFirst({
+        where: { OR: [{ id: tenantIdHeader }, { slug: tenantIdHeader }] },
+      });
       if (tenant && tenant.is_active) {
         req['tenant'] = tenant;
         req['tenantId'] = tenant.id;

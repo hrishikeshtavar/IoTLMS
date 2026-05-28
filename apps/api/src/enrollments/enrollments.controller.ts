@@ -9,7 +9,7 @@ export class EnrollmentsController {
 
   @Post()
   enroll(@Body() dto: CreateEnrollmentDto, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? '';
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.enroll({ ...dto, tenant_id: tenantId });
   }
 
@@ -20,7 +20,7 @@ export class EnrollmentsController {
 
   @Get('tenant/all')
   getAllByTenant(@Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? '';
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.getAllByTenant(tenantId);
   }
 
@@ -30,14 +30,14 @@ export class EnrollmentsController {
     @Body() body: { user_id: string; progress_pct: number },
     @Req() req: Request,
   ) {
-    const tenantId = (req as any)['tenantId'] ?? '';
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.updateProgress(body.user_id, courseId, body.progress_pct, tenantId);
   }
 
   @Post('remind-unenrolled')
   @HttpCode(200)
   remindUnenrolled(@Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? '';
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? '';
     return this.enrollmentsService.sendEnrollmentReminders(tenantId);
   }
 }
