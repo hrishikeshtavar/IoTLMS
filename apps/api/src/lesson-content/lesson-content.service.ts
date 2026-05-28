@@ -21,12 +21,13 @@ export class LessonContentService {
       await this.prisma.question.deleteMany({ where: { assessment_id: assessment.id } });
     }
     for (const q of questions) {
-      const correctAnswer = Array.isArray(q.options) ? q.options[q.correct] : q.options?.[0] ?? '';
+      const effectiveOptions = q.qtype === 'truefalse' ? ['True', 'False'] : (q.options || []);
+      const correctAnswer = String(q.correct ?? 0);
       await this.prisma.question.create({
         data: {
           assessment_id: assessment.id,
           question_text: q.text,
-          options_json: q.options,
+          options_json: effectiveOptions,
           correct_answer: correctAnswer,
           points: q.points ?? 10,
         },
