@@ -25,7 +25,7 @@ export class LessonContentService {
       await this.prisma.question.create({
         data: {
           assessment_id: assessment.id,
-          text: q.text,
+          question_text: q.text,
           options_json: q.options,
           correct_answer: correctAnswer,
           points: q.points ?? 10,
