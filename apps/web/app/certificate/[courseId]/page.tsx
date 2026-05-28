@@ -16,6 +16,10 @@ type CertData = {
   primaryColor: string;
   logoUrl: string | null;
   certTemplateUrl?: string | null;
+  principalName?: string | null;
+  principalSignatureUrl?: string | null;
+  platformDirectorName?: string | null;
+  platformDirectorSignatureUrl?: string | null;
 };
 
 export default function CertificatePage() {
@@ -49,6 +53,10 @@ export default function CertificatePage() {
           primaryColor: analytics.primaryColor ?? '#FF6B35',
           logoUrl: analytics.logoUrl ?? null,
           certTemplateUrl: analytics.certTemplateUrl ?? null,
+          principalName: analytics.principalName ?? null,
+          principalSignatureUrl: analytics.principalSignatureUrl ?? null,
+          platformDirectorName: analytics.platformDirectorName ?? 'SimuLearning',
+          platformDirectorSignatureUrl: analytics.platformDirectorSignatureUrl ?? null,
         });
       } catch { setError('Failed to load certificate'); }
       finally { setLoading(false); }
@@ -200,7 +208,10 @@ export default function CertificatePage() {
             {/* Footer: signatures + cert ID */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', alignItems: 'end' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Georgia,serif', color: '#334155', marginBottom: 6 }}>SimuLearning</div>
+                {cert.platformDirectorSignatureUrl && (
+                  <img src={cert.platformDirectorSignatureUrl} alt="Director Signature" style={{ height: 40, objectFit: 'contain', marginBottom: 4, opacity: 0.85, display: 'block', margin: '0 auto 4px' }} />
+                )}
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Georgia,serif', color: '#334155', marginBottom: 6 }}>{cert.platformDirectorName ?? 'SimuLearning'}</div>
                 <div style={{ width: '80%', height: 1, background: '#cbd5e1', margin: '0 auto 6px' }} />
                 <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform Director</div>
               </div>
@@ -212,7 +223,10 @@ export default function CertificatePage() {
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Georgia,serif', color: '#334155', marginBottom: 6 }}>{cert.school}</div>
+                {cert.principalSignatureUrl && (
+                  <img src={cert.principalSignatureUrl} alt="Principal Signature" style={{ height: 40, objectFit: 'contain', marginBottom: 4, opacity: 0.85, display: 'block', margin: '0 auto 4px' }} />
+                )}
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, fontFamily: 'Georgia,serif', color: '#334155', marginBottom: 6 }}>{cert.principalName ?? cert.school}</div>
                 <div style={{ width: '80%', height: 1, background: '#cbd5e1', margin: '0 auto 6px' }} />
                 <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>School Principal</div>
               </div>
