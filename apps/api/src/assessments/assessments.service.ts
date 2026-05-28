@@ -66,8 +66,9 @@ export class AssessmentsService {
       };
     });
     const dynamicMaxScore = assessment.questions.reduce((sum, q) => sum + (q.points ?? 0), 0);
-    const passThreshold = assessment.max_score > 0
-      ? Math.round((assessment.pass_score / assessment.max_score) * dynamicMaxScore)
+    // treat pass_score as a percentage (e.g. 60 = 60%)
+    const passThreshold = dynamicMaxScore > 0
+      ? Math.round((Math.min(assessment.pass_score, 100) / 100) * dynamicMaxScore)
       : assessment.pass_score;
     const passed = score >= passThreshold;
     const submission = await this.prisma.submission.create({
