@@ -194,7 +194,7 @@ export default function AnalyticsPage() {
             <div style={{ marginTop: '1rem', padding: '0.875rem', background: '#F8FAFC', borderRadius: 10 }}>
               <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
                 ✅ Total completions: <strong style={{ color: '#0F172A' }}>{data.coursePerformance.reduce((s, c) => s + c.completed, 0)}</strong> ·
-                Top course: <strong style={{ color: '#00C896' }}>{data.coursePerformance.reduce((a, b) => a.completed > b.completed ? a : b).title}</strong> with {Math.max(...data.coursePerformance.map(c => c.completed))} completions
+                Top course: <strong style={{ color: '#00C896' }}>{data.coursePerformance.length ? data.coursePerformance.reduce((a, b) => a.completed > b.completed ? a : b).title : "N/A"}</strong> with {Math.max(...data.coursePerformance.map(c => c.completed))} completions
               </div>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function AnalyticsPage() {
                   bg: '#F0FDF4',
                   color: '#15803D',
                   text: `${Math.round((data.totalEnrollments / data.totalStudents) * 10) / 10} avg courses per student — good engagement`
-                },,
+                },
                 {
                   icon: '📊',
                   bg: '#EFF6FF',
