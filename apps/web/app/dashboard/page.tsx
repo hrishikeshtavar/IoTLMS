@@ -444,7 +444,7 @@ export default function DashboardPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)' }}>{meta.label}</div>
                     </div>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text3)', whiteSpace: 'nowrap' }}>{timeAgo(a.created_at)}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text3)', whiteSpace: 'nowrap' }}>{timeAgo(a.timestamp)}</span>
                   </div>
                 );
               })}
