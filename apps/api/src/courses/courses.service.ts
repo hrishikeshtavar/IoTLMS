@@ -5,16 +5,20 @@ import { PrismaService } from '../prisma.service';
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string) {
+  async findAll(tenantId: string, grade?: number) {
     // Return school's own courses + published courses from other tenants (global catalog)
+    const gradeFilter = grade ? { OR: [{ target_grade: null }, { target_grade: String(grade) }] } : {};
     const where = tenantId ? {
-      OR: [
-        { tenant_id: tenantId },
-        { status: 'published' as const, NOT: { tenant_id: tenantId } },
+      AND: [
+        gradeFilter,
+        { OR: [
+          { tenant_id: tenantId },
+          { status: 'published' as const, NOT: { tenant_id: tenantId } },
+        ]},
       ],
-    } : { status: 'published' as const };
+    } : { AND: [gradeFilter, { status: 'published' as const }] };
     return this.prisma.course.findMany({
-      where,
+      where: grade ? where : (tenantId ? { OR: [{ tenant_id: tenantId }, { status: 'published' as const, NOT: { tenant_id: tenantId } }] } : { status: 'published' as const }),
       orderBy: { created_at: 'desc' },
       include: {
         _count: { select: { enrollments: true, lessons: true } },

@@ -39,7 +39,7 @@ export class AuthService {
     if (dto.email) {
       this.emailService.sendVerification(dto.email, dto.name, verifyToken, tenant?.slug || 'demo');
     }
-    return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name);
+    return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name, user.class_grade ?? undefined);
   }
 
   async login(dto: LoginDto, tenantId: string, requiredRole?: string) {
@@ -74,7 +74,7 @@ export class AuthService {
       data: { last_login: new Date() },
     });
 
-    return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name);
+    return this.signTokens(user.id, user.email!, user.role, user.tenant_id, user.name, user.class_grade ?? undefined);
   }
 
   async refresh(token: string) {
@@ -101,8 +101,8 @@ export class AuthService {
     );
   }
 
-  private async signTokens(userId: string, email: string, role: string, tenantId: string, name?: string) {
-    const payload = { sub: userId, email, role, tenantId };
+  private async signTokens(userId: string, email: string, role: string, tenantId: string, name?: string, classGrade?: number) {
+    const payload = { sub: userId, email, role, tenantId, classGrade };
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET || 'dev_secret_change_me',

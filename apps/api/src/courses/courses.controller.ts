@@ -12,7 +12,8 @@ export class CoursesController {
   findAll(@Req() req: any, @Query('tenantId') queryTenantId?: string) {
     const isSuperAdmin = req.user?.role === 'super_admin';
     const tenantId = (isSuperAdmin && queryTenantId) ? queryTenantId : req.tenantId;
-    return this.coursesService.findAll(tenantId);
+    const grade = req.user?.role === 'student' ? req.user?.classGrade : undefined;
+    return this.coursesService.findAll(tenantId, grade);
   }
 
   @Get(':id')
