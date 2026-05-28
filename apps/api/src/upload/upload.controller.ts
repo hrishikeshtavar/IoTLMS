@@ -22,12 +22,15 @@ export class UploadController {
 
   @Public()
   @Get('assets/:bucket/*')
-  async serveAsset(@Param('bucket') bucket: string, @Param('0') key: string, @Res() res: Response) {
+  async serveAsset(@Param('bucket') bucket: string, @Req() req: any, @Res() res: Response) {
+    const key = req.params[0];
+    console.log('[AssetProxy] bucket:', bucket, 'key:', key);
     try {
       const stream = await this.minioService.getObjectStream(bucket, key);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       (stream as any).pipe(res);
-    } catch {
+    } catch (err: any) {
+      console.error('[AssetProxy] error:', err?.message, 'bucket:', bucket, 'key:', key);
       res.status(404).json({ message: 'Asset not found' });
     }
   }
