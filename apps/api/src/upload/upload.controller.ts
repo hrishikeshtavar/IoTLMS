@@ -21,10 +21,14 @@ export class UploadController {
   }
 
   @Public()
-  @Get('assets/:bucket/*')
-  async serveAsset(@Param('bucket') bucket: string, @Req() req: any, @Res() res: Response) {
-    const key = req.params[0];
-    console.log('[AssetProxy] bucket:', bucket, 'key:', key);
+  @Get('assets/:bucket/:tenantId/:filename')
+  async serveAsset(
+    @Param('bucket') bucket: string,
+    @Param('tenantId') tenantId: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    const key = `${tenantId}/${filename}`;
     try {
       const stream = await this.minioService.getObjectStream(bucket, key);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
