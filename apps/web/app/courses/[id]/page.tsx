@@ -74,6 +74,19 @@ function renderContent(content: LessonContent['content_json'] | null) {
               </div>
             );
           }
+          if (block.type === 'lab' && block.wokwi_url) {
+            return (
+              <div key={i} style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(168,85,247,0.2)', padding: '2.5rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(168,85,247,0.1)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🔬</div>
+                <h3 style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Hands-on Lab</h3>
+                {block.instructions && <p style={{ color: 'var(--text3)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>{block.instructions}</p>}
+                <a href={block.wokwi_url} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg,#A855F7,#7c3aed)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(168,85,247,0.35)' }}>
+                  🚀 Open Wokwi Simulator
+                </a>
+              </div>
+            );
+          }
           return null;
         })}
       </div>

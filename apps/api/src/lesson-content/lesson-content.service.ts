@@ -5,6 +5,35 @@ import { PrismaService } from '../prisma.service';
 export class LessonContentService {
   constructor(private prisma: PrismaService) {}
 
+  private async syncQuizToAssessment(lessonId: string, quizBlock: any) {
+    const questions: any[] = quizBlock.questions || [];
+    const maxScore = questions.reduce((s: number, q: any) => s + (q.points ?? 10), 0);
+    let assessment = await this.prisma.assessment.findFirst({ where: { lesson_id: lessonId } });
+    if (!assessment) {
+      assessment = await this.prisma.assessment.create({
+        data: { lesson_id: lessonId, pass_score: quizBlock.pass_score ?? 60, max_score: maxScore },
+      });
+    } else {
+      await this.prisma.assessment.update({
+        where: { id: assessment.id },
+        data: { pass_score: quizBlock.pass_score ?? 60, max_score: maxScore },
+      });
+      await this.prisma.question.deleteMany({ where: { assessment_id: assessment.id } });
+    }
+    for (const q of questions) {
+      const correctAnswer = Array.isArray(q.options) ? q.options[q.correct] : q.options?.[0] ?? '';
+      await this.prisma.question.create({
+        data: {
+          assessment_id: assessment.id,
+          text: q.text,
+          options_json: q.options,
+          correct_answer: correctAnswer,
+          points: q.points ?? 10,
+        },
+      }).catch(() => {});
+    }
+  }
+
   async upsert(dto: { lesson_id: string; locale: string; content_json: any; note?: string }) {
     const existing = await this.prisma.lessonContent.findUnique({
       where: { lesson_id_locale: { lesson_id: dto.lesson_id, locale: dto.locale } },
@@ -15,7 +44,7 @@ export class LessonContentService {
         data: { content_id: existing.id, locale: existing.locale, version_no: existing.version, content_json: existing.content_json, note: dto.note },
       });
     }
-    return this.prisma.lessonContent.upsert({
+    const result = await this.prisma.lessonContent.upsert({
       where: { lesson_id_locale: { lesson_id: dto.lesson_id, locale: dto.locale } },
       create: { lesson_id: dto.lesson_id, locale: dto.locale, content_json: dto.content_json as any, version: 1, status: 'draft' },
       update: { content_json: dto.content_json as any, version: nextVersion, status: 'draft' },

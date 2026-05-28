@@ -116,7 +116,7 @@ export default function CourseEditorPage(){
   const [createdId,setCreatedId]=useState<string|null>(null);
   const activeCourseId=createdId||(isNew?null:courseId);
 
-  const [form,setForm]=useState({title_en:'',title_hi:'',title_mr:'',description_en:'',slug:'',category:'General',level:'beginner',status:'draft',tenant_id:''});
+  const [form,setForm]=useState({title_en:'',title_hi:'',title_mr:'',description_en:'',slug:'',category:'General',level:'beginner',status:'draft',tenant_id:'',target_grade:''});
   const [fSaving,setFSaving]=useState(false);
   const [fMsg,setFMsg]=useState('');
   const [fErr,setFErr]=useState('');
@@ -166,7 +166,7 @@ export default function CourseEditorPage(){
   useEffect(()=>{
     apiFetch('/api/tenants').then(r=>r.json()).then(d=>{const l=Array.isArray(d)?d:[];setTenants(l);if(isNew&&l.length>0)setForm(f=>({...f,tenant_id:l[0].id}));}).catch(()=>{});
     if(!isNew){
-      apiFetch(`/api/courses/${courseId}`).then(r=>r.json()).then(d=>{if(d?.id)setForm({title_en:d.title_en||'',title_hi:d.title_hi||'',title_mr:d.title_mr||'',description_en:d.description_en||'',slug:d.slug||'',category:d.category||'General',level:d.level||'beginner',status:d.status||'draft',tenant_id:d.tenant_id||''}); }).catch(()=>{});
+      apiFetch(`/api/courses/${courseId}`).then(r=>r.json()).then(d=>{if(d?.id)setForm({title_en:d.title_en||'',title_hi:d.title_hi||'',title_mr:d.title_mr||'',description_en:d.description_en||'',slug:d.slug||'',category:d.category||'General',level:d.level||'beginner',status:d.status||'draft',tenant_id:d.tenant_id||'',target_grade:d.target_grade||''}); }).catch(()=>{});
       loadLessons(courseId);
     }
   },[courseId]);
@@ -178,7 +178,7 @@ export default function CourseEditorPage(){
   async function saveCourse(){
     if(!form.title_en.trim()){setFErr('Title required.');return;}
     setFSaving(true);setFErr('');setFMsg('');
-    const p={title_en:form.title_en,title_hi:form.title_hi||undefined,title_mr:form.title_mr||undefined,description_en:form.description_en||undefined,slug:form.slug||slugify(form.title_en),category:form.category,level:form.level,status:form.status};
+    const p={title_en:form.title_en,title_hi:form.title_hi||undefined,title_mr:form.title_mr||undefined,description_en:form.description_en||undefined,slug:form.slug||slugify(form.title_en),category:form.category,level:form.level,status:form.status,target_grade:form.target_grade||undefined};
     try{
       if(isNew&&!createdId){const r=await apiFetch('/api/courses',{method:'POST',body:JSON.stringify(p)});if(r.ok){const d=await r.json();setCreatedId(d.id);setFMsg('Course created!');}else{const e=await r.json();setFErr(e.message||'Failed.');}}
       else{const r=await apiFetch(`/api/courses/${activeCourseId}`,{method:'PATCH',body:JSON.stringify(p)});if(r.ok)setFMsg('Saved!');else{const e=await r.json();setFErr(e.message||'Failed.');}}
@@ -373,6 +373,7 @@ export default function CourseEditorPage(){
               {fErr&&<div style={{background:'#FEE2E2',color:'#DC2626',padding:'0.3rem 0.55rem',borderRadius:5,fontSize:'0.72rem',fontWeight:600,marginBottom:6}}>❌ {fErr}</div>}
               <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 {isNew&&<div><label style={L}>School</label><select value={form.tenant_id} onChange={e=>setForm(f=>({...f,tenant_id:e.target.value}))} style={I}>{tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>}
+                <div><label style={L}>Grade / Class</label><select value={form.target_grade} onChange={e=>setForm(f=>({...f,target_grade:e.target.value}))} style={I}><option value=''>All Grades</option>{[1,2,3,4,5,6,7,8,9,10,11,12].map(g=><option key={g} value={String(g)}>Grade {g}</option>)}</select></div>
                 <div><label style={L}>Title (English) *</label><input value={form.title_en} onChange={e=>setForm(f=>({...f,title_en:e.target.value,slug:slugify(e.target.value)}))} placeholder="Course title" style={I}/></div>
                 <div><label style={L}>हिंदी Title</label><input value={form.title_hi} onChange={e=>setForm(f=>({...f,title_hi:e.target.value}))} placeholder="हिंदी शीर्षक" style={{...I,fontFamily:'Noto Sans Devanagari'}}/></div>
                 <div><label style={L}>मराठी Title</label><input value={form.title_mr} onChange={e=>setForm(f=>({...f,title_mr:e.target.value}))} placeholder="मराठी शीर्षक" style={{...I,fontFamily:'Noto Sans Devanagari'}}/></div>
