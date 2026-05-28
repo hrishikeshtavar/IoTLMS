@@ -30,7 +30,7 @@ export class LessonContentService {
           correct_answer: correctAnswer,
           points: q.points ?? 10,
         },
-      }).catch(() => {});
+      }).catch((e: any) => console.error('[QuizSync] question create failed:', e?.message));
     }
   }
 
@@ -49,6 +49,12 @@ export class LessonContentService {
       create: { lesson_id: dto.lesson_id, locale: dto.locale, content_json: dto.content_json as any, version: 1, status: 'draft' },
       update: { content_json: dto.content_json as any, version: nextVersion, status: 'draft' },
     });
+    const blocks: any[] = (dto.content_json as any)?.blocks ?? [];
+    const quizBlock = blocks.find((b: any) => b.type === 'quiz');
+    if (quizBlock && dto.locale === 'en') {
+      await this.syncQuizToAssessment(dto.lesson_id, quizBlock).catch((e) => console.error('[QuizSync] failed:', e));
+    }
+    return result;
   }
 
   async findByLesson(lessonId: string) {
