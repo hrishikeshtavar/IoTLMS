@@ -32,6 +32,8 @@ export class UploadController {
     try {
       const stream = await this.minioService.getObjectStream(bucket, key);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Access-Control-Allow-Origin', '*');
       (stream as any).pipe(res);
     } catch (err: any) {
       console.error('[AssetProxy] error:', err?.message, 'bucket:', bucket, 'key:', key);
