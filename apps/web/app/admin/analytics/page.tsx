@@ -177,38 +177,34 @@ export default function AnalyticsPage() {
             <h3 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#0F172A' }}>✅ Course Completions</h3>
             <p style={{ margin: '0 0 1.25rem', fontSize: '0.78rem', color: '#94A3B8' }}>Number of students who completed each course</p>
             {/* Legend */}
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: '#BFDBFE', border: '1px solid #93C5FD' }} /> Enrolled
+            <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#BFDBFE' }} /> Enrolled
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: '#1A73E8' }} /> Completed
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#1A73E8' }} /> Completed
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, paddingBottom: 12, borderBottom: '2px solid #F1F5F9', overflowX: 'auto', minHeight: 180 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, height: 160, paddingBottom: 8, borderBottom: '2px solid #E2E8F0', overflowX: 'auto' }}>
               {data.coursePerformance.map((c, i) => {
                 const maxVal = Math.max(...data.coursePerformance.map(x => x.enrolled), 1);
-                const enrolledH = Math.max(12, Math.round((c.enrolled / maxVal) * 120));
-                const completedH = c.enrolled > 0 ? Math.max(6, Math.round((c.completed / c.enrolled) * enrolledH)) : 0;
+                const enrolledH = Math.max(8, Math.round((c.enrolled / maxVal) * 120));
+                const completedH = Math.max(4, Math.round((c.completed / maxVal) * 120));
                 const colors = ['#1A73E8','#00C896','#A855F7','#FF6B35','#D97706','#0EA5E9','#10B981','#8B5CF6'];
                 const color = colors[i % colors.length];
                 const rate = c.enrolled > 0 ? Math.round((c.completed / c.enrolled) * 100) : 0;
-                const rateColor = rate === 100 ? '#15803D' : rate >= 50 ? '#D97706' : '#DC2626';
-                const rateBg = rate === 100 ? '#DCFCE7' : rate >= 50 ? '#FEF9C3' : '#FEE2E2';
                 return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 80, flex: 1 }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: rateColor, background: rateBg, padding: '2px 8px', borderRadius: 999, whiteSpace: 'nowrap' }}>{rate}% done</span>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B' }}>{c.enrolled}</span>
-                        <div title={`${c.enrolled} enrolled`} style={{ width: 26, height: enrolledH, background: `${color}30`, border: `2px solid ${color}60`, borderRadius: '6px 6px 0 0', transition: 'height 0.8s ease' }} />
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 64, flex: 1 }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: rate === 100 ? '#15803D' : '#D97706', background: rate === 100 ? '#DCFCE7' : '#FEF9C3', padding: '1px 6px', borderRadius: 999 }}>{rate}%</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120 }}>
+                      <div title={`${c.enrolled} enrolled`} style={{ width: 20, height: enrolledH, background: `${color}44`, border: `1.5px solid ${color}88`, borderRadius: '4px 4px 0 0', transition: 'height 0.8s ease', cursor: 'default', position: 'relative' }}>
+                        <span style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: '0.65rem', fontWeight: 800, color: '#475569' }}>{c.enrolled}</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color }}>{c.completed}</span>
-                        <div title={`${c.completed} completed`} style={{ width: 26, height: completedH, background: `linear-gradient(180deg, ${color}ee, ${color}88)`, borderRadius: '6px 6px 0 0', transition: 'height 0.8s ease', boxShadow: `0 4px 12px ${color}33` }} />
+                      <div title={`${c.completed} completed`} style={{ width: 20, height: completedH, background: `linear-gradient(180deg, ${color}, ${color}99)`, borderRadius: '4px 4px 0 0', transition: 'height 0.8s ease', boxShadow: `0 2px 8px ${color}44`, cursor: 'default', position: 'relative' }}>
+                        <span style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: '0.65rem', fontWeight: 800, color }}>{c.completed}</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 700, textAlign: 'center', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>{c.title}</div>
+                    <div style={{ fontSize: '0.62rem', color: '#64748B', fontWeight: 700, textAlign: 'center', lineHeight: 1.2, maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>{c.title}</div>
                   </div>
                 );
               })}
