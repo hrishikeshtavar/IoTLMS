@@ -446,27 +446,6 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
-
-        {/* Bottom: Action recommendations */}
-        <div style={{ background: 'linear-gradient(135deg,#0F172A,#1E3A5F)', borderRadius: 18, padding: '1.75rem', border: '1px solid #1E3A5F' }}>
-          <h3 style={{ margin: '0 0 1.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>🚀 Recommended Actions</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-            {[
-              { icon: '📢', title: 'Boost Enrollments', desc: 'Send reminder to students not enrolled in any course', action: async () => { const r = await apiFetch('/api/enrollments/remind-unenrolled', { method: 'POST' }); const d = await r.json(); alert(d.message || 'Reminders sent!'); }, btn: 'Send Reminder 📧' },
-              { icon: '📝', title: 'Review Assessments', desc: `Pass rate is ${data.passRate}% — check quiz difficulty`, action: () => router.push('/admin/assessments'), btn: 'Review Quizzes' },
-              { icon: '🏅', title: 'Award Certificates', desc: `${data.coursePerformance.reduce((s,c) => s+c.completed, 0)} completions eligible for certificates`, action: () => router.push('/admin/users'), btn: 'View Students' },
-            ].map((a, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 12, padding: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>{a.icon}</div>
-                <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.875rem', marginBottom: 4 }}>{a.title}</div>
-                <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: 12, lineHeight: 1.4 }}>{a.desc}</div>
-                <button onClick={a.action} style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>{a.btn} →</button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 }
