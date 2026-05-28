@@ -48,7 +48,7 @@ function renderTipTap(nodes: any[]): React.ReactNode {
   });
 }
 
-function renderContent(content: LessonContent['content_json'] | null) {
+function renderContent(content: LessonContent['content_json'] | null, quizHref?: string) {
   if (!content) return null;
 
   // blocks_v1 format (super-admin course editor)
@@ -84,6 +84,16 @@ function renderContent(content: LessonContent['content_json'] | null) {
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg,#A855F7,#7c3aed)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none', boxShadow: '0 4px 14px rgba(168,85,247,0.35)' }}>
                   🚀 Open Wokwi Simulator
                 </a>
+              </div>
+            );
+          }
+          if (block.type === 'quiz' && quizHref) {
+            return (
+              <div key={i} style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(255,107,53,0.2)', padding: '3rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+                <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>📝</div>
+                <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Knowledge Quiz</h3>
+                <p style={{ color: 'var(--text3)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>Test what you've learned in this lesson</p>
+                <a href={quizHref} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, var(--primary), #ff8c5a)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(255,107,53,0.35)', textDecoration: 'none' }}>▶ Start Quiz</a>
               </div>
             );
           }
@@ -383,7 +393,7 @@ export default function CoursePage() {
                           <div>Loading content...</div>
                         </div>
                       ) : lessonContent ? (
-                        <div>{renderContent(lessonContent.content_json)}</div>
+                        <div>{renderContent(lessonContent.content_json, assessmentMap[activeLesson.id] ? `/quiz/${assessmentMap[activeLesson.id]}` : undefined)}</div>
                       ) : (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>
                           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
@@ -413,7 +423,7 @@ export default function CoursePage() {
                   )}
 
                   {/* QUIZ */}
-                  {assessmentMap[activeLesson.id] && (
+                  {assessmentMap[activeLesson.id] && !((lessonContent?.content_json as any)?.blocks ?? []).some((b:any) => b.type === 'quiz') && (
                     <div className="animate-popIn" style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(255,107,53,0.2)', padding: '3rem', marginBottom: '1.75rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
                       <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }} className="animate-float">📝</div>
                       <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text)', marginBottom: '0.5rem' }}>Knowledge Quiz</h3>
