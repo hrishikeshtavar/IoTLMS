@@ -57,7 +57,7 @@ export class AnalyticsService {
   async getCertificateData(courseId: string, userId: string, tenantId: string) {
     const [enrollment, course, user, brandKit, tenant, submissions] = await Promise.all([
       this.prisma.enrollment.findFirst({ where: { course_id: courseId, user_id: userId } }),
-      this.prisma.course.findFirst({ where: { id: courseId, tenant_id: tenantId } }),
+      this.prisma.course.findFirst({ where: { id: courseId } }),
       this.prisma.user.findFirst({ where: { id: userId } }),
       this.prisma.brandKit.findFirst({ where: tenantId ? { tenant_id: tenantId } : undefined }),
       this.prisma.tenant.findUnique({ where: { id: tenantId } }),
