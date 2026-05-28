@@ -8,7 +8,7 @@ export class AnalyticsController {
 
   @Get('dashboard')
   getDashboard(@Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? (req as any).user?.tenantId ?? null;
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? null;
     if (!tenantId) return { totalStudents: 0, totalCourses: 0, totalEnrollments: 0, completionRate: 0, passRate: 0, enrollmentTrend: [], coursePerformance: [] };
     return this.svc.getDashboardStats(tenantId);
   }
@@ -19,7 +19,7 @@ export class AnalyticsController {
     @Param('userId') userId: string,
     @Req() req: Request,
   ) {
-    const tenantId = (req as any)['tenantId'] ?? (req as any).user?.tenantId ?? null;
+    const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? null;
     if (!tenantId) return { totalStudents: 0, totalCourses: 0, totalEnrollments: 0, completionRate: 0, passRate: 0, enrollmentTrend: [], coursePerformance: [] };
     return this.svc.getCertificateData(courseId, userId, tenantId);
   }
