@@ -342,7 +342,7 @@ export default function CourseEditorPage(){
         {/* TOPBAR */}
         <nav style={{background:'#1e1e3f',padding:'0 1.25rem',height:50,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
           <div style={{display:'flex',alignItems:'center',gap:'0.5rem',minWidth:0}}>
-            <Link href="/" style={{display:'flex',alignItems:'center',gap:'0.3rem',textDecoration:'none',flexShrink:0}}>
+            <Link href="/super-admin" style={{display:'flex',alignItems:'center',gap:'0.3rem',textDecoration:'none',flexShrink:0}}>
               <div style={{width:24,height:24,background:'linear-gradient(135deg,#1A73E8,#00C896)',borderRadius:5,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'0.75rem'}}>🚀</div>
               <span style={{fontWeight:800,fontSize:'0.9rem',color:'#fff'}}>SimuLearning</span>
             </Link>
