@@ -179,7 +179,7 @@ export default function CoursesPage() {
       <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
-          <Link href="/" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>{t.back_home}</Link>
+          <Link href="/dashboard" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>{t.back_home}</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {(['en','hi','mr'] as Locale[]).map(l => (
