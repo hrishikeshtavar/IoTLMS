@@ -53,7 +53,39 @@ export class GamificationService {
       }),
     ]);
 
-    return { lessons, quizzes, labs, certs, courses, streak, badges };
+    // Weekly minutes: last 7 days, Mon-Sun, 15 mins per activity
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun,1=Mon,...,6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(monday.getDate() - mondayOffset);
+    const weekActivities = await this.prisma.userActivity.findMany({
+      where: { user_id: userId, created_at: { gte: monday } },
+      select: { created_at: true },
+    });
+    const weeklyMinutes = new Array(7).fill(0);
+    weekActivities.forEach(a => {
+      const d = new Date(a.created_at);
+      const dow = d.getDay();
+      const idx = dow === 0 ? 6 : dow - 1; // Mon=0...Sun=6
+      weeklyMinutes[idx] += 15;
+    });
+
+    // Recent activity: last 5 events
+    const recent = await this.prisma.userActivity.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      select: { activity_type: true, created_at: true, entity_id: true },
+    });
+    const recentActivity = recent.map(a => ({
+      activity_type: a.activity_type,
+      entity_id: a.entity_id,
+      timestamp: a.created_at,
+    }));
+
+    return { lessons, quizzes, labs, certs, courses, streak, badges, weeklyMinutes, recentActivity };
   }
 
   async checkAndAwardBadges(userId: string, tenantId: string) {
