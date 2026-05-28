@@ -6,18 +6,18 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
   async getDashboardStats(tenantId: string) {
-    const [totalStudents, totalCourses, enrollments, submissions] = await Promise.all([
+    const [totalStudents, enrollments, submissions] = await Promise.all([
       this.prisma.user.count({ where: { tenant_id: tenantId, role: 'student' } }),
-      this.prisma.course.count({ where: { tenant_id: tenantId } }),
       this.prisma.enrollment.findMany({
         where: { tenant_id: tenantId },
         include: { course: true },
       }),
       this.prisma.submission.findMany({
-        where: { assessment: { lesson: { course: { tenant_id: tenantId } } } },
+        where: { user: { tenant_id: tenantId } },
         include: { assessment: true },
       }),
     ]);
+    const totalCourses = new Set(enrollments.map(e => e.course_id)).size;
 
     const completedEnrollments = enrollments.filter(e => e.completed_at).length;
     const completionRate = enrollments.length > 0
