@@ -18,7 +18,8 @@ type VideoBlock = { id: string; type: 'video'; url: string; title: string; sourc
 type QuizQ      = { id: string; qtype: 'mcq'|'truefalse'; text: string; options: string[]; correct: number; points: number };
 type QuizBlock  = { id: string; type: 'quiz';  title: string; questions: QuizQ[]; pass_score: number };
 type LabBlock   = { id: string; type: 'lab';   wokwi_url: string; instructions: string };
-type Block = TextBlock | VideoBlock | QuizBlock | LabBlock;
+type ImageBlock = { id: string; type: 'image'; url: string; caption: string };
+type Block = TextBlock | VideoBlock | QuizBlock | LabBlock | ImageBlock;
 
 const CATS = ['Arduino','Raspberry Pi','ARM','RISC-V','ESP32','Sensors','Electronics','IoT','Artificial Intelligence','General'];
 const LVLS = ['beginner','intermediate','advanced'];
@@ -32,6 +33,7 @@ const BLOCK_ADD = [
   {type:'video', emoji:'🎬', label:'Video Block',      color:'#1A73E8'},
   {type:'quiz',  emoji:'📝', label:'Quiz Block',       color:'#FF6B35'},
   {type:'lab',   emoji:'🔬', label:'Lab Simulation',   color:'#A855F7'},
+  {type:'image', emoji:'🖼️', label:'Image Block',       color:'#EC4899'},
 ];
 
 const L:React.CSSProperties={display:'block',fontSize:'0.68rem',fontWeight:700,color:'#6b7280',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:4};
@@ -43,6 +45,7 @@ function emptyText():TextBlock{return{id:uid(),type:'text',content_en:null,conte
 function emptyVideo():VideoBlock{return{id:uid(),type:'video',url:'',title:'',source:'youtube'};}
 function emptyQuiz():QuizBlock{return{id:uid(),type:'quiz',title:'Knowledge Check',questions:[],pass_score:60};}
 function emptyLab():LabBlock{return{id:uid(),type:'lab',wokwi_url:'',instructions:''};}
+function emptyImage():ImageBlock{return{id:uid(),type:'image',url:'',caption:''};}
 function extractText(node:any):string{if(!node)return '';if(node.type==='text')return node.text||'';if(node.content&&Array.isArray(node.content))return node.content.map(extractText).join(' ');return '';}
 
 // ── Sortable chapter row ───────────────────────────────────
@@ -92,7 +95,7 @@ function Toolbar({editor}:{editor:any}){
 
 // ── Block card wrapper ─────────────────────────────────────
 function BlockCard({block,isEditing,onEdit,onDelete,children}:{block:Block;isEditing:boolean;onEdit:()=>void;onDelete:()=>void;children:React.ReactNode}){
-  const meta={text:{emoji:'📖',color:'#00C896',label:'Text'},video:{emoji:'🎬',color:'#1A73E8',label:'Video'},quiz:{emoji:'📝',color:'#FF6B35',label:'Quiz'},lab:{emoji:'🔬',color:'#A855F7',label:'Lab'}}[block.type]||{emoji:'📄',color:'#718096',label:block.type};
+  const meta={text:{emoji:'📖',color:'#00C896',label:'Text'},video:{emoji:'🎬',color:'#1A73E8',label:'Video'},quiz:{emoji:'📝',color:'#FF6B35',label:'Quiz'},lab:{emoji:'🔬',color:'#A855F7',label:'Lab'},image:{emoji:'🖼️',color:'#EC4899',label:'Image'}}[block.type]||{emoji:'📄',color:'#718096',label:block.type};
   return(
     <div style={{background:'#fff',borderRadius:12,border:`1.5px solid ${isEditing?meta.color:'#e2e8f0'}`,overflow:'hidden',marginBottom:'1rem',boxShadow:isEditing?`0 0 0 3px ${meta.color}22`:'0 1px 4px rgba(0,0,0,0.04)'}}>
       <div style={{padding:'0.65rem 1rem',borderBottom:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'space-between',background:isEditing?meta.color+'0a':'#fafafa'}}>
@@ -121,6 +124,7 @@ export default function CourseEditorPage(){
   const [fSaving,setFSaving]=useState(false);
   const [thumbnailUploading,setThumbnailUploading]=useState(false);
   const [thumbnailPreview,setThumbnailPreview]=useState('');
+  const [imageUploading,setImageUploading]=useState<string|null>(null);
   const [fMsg,setFMsg]=useState('');
   const [fErr,setFErr]=useState('');
 
@@ -178,6 +182,14 @@ export default function CourseEditorPage(){
     apiFetch(`/api/lessons/course/${cid}`).then(r=>r.json()).then(d=>setLessons((Array.isArray(d)?d:[]).sort((a:Lesson,b:Lesson)=>a.order_index-b.order_index))).catch(()=>{});
   }
 
+  async function uploadImage(blockId:string,file:File){
+    setImageUploading(blockId);
+    const fd=new FormData(); fd.append('file',file);
+    const token=getToken();
+    const res=await fetch(`${process.env.NEXT_PUBLIC_API_URL||'http://localhost:3001'}/api/upload/file`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+    if(res.ok){const d=await res.json();updateBlock(blockId,{url:d.url||''} as Partial<ImageBlock>);}
+    setImageUploading(null);
+  }
   async function saveCourse(){
     if(!form.title_en.trim()){setFErr('Title required.');return;}
     setFSaving(true);setFErr('');setFMsg('');
@@ -258,6 +270,7 @@ export default function CourseEditorPage(){
     if(type==='text')b=emptyText();
     else if(type==='video')b=emptyVideo();
     else if(type==='quiz')b=emptyQuiz();
+    else if(type==='image') b=emptyImage();
     else b=emptyLab();
     setBlocks(p=>[...p,b]);
     setTimeout(()=>openBlock(b.id),50);
@@ -533,6 +546,35 @@ export default function CourseEditorPage(){
                               <iframe src={(block as VideoBlock).url} style={{width:'100%',height:'100%',border:'none'}} allowFullScreen/>
                             )}
                           </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── IMAGE BLOCK ── */}
+                    {block.type==='image'&&(
+                      <div style={{padding:'1.1rem'}}>
+                        {editingBlockId===block.id&&(
+                          <div>
+                            <div style={{marginBottom:'0.75rem'}}>
+                              <label style={L}>Caption (optional)</label>
+                              <input value={(block as ImageBlock).caption} onChange={e=>updateBlock(block.id,{caption:e.target.value} as Partial<ImageBlock>)} placeholder='Image caption…' style={I}/>
+                            </div>
+                            <label htmlFor={`iup_${block.id}`} style={{display:'block',border:'2px dashed #f9a8d4',borderRadius:8,padding:'1.5rem',textAlign:'center',background:'#fdf2f8',cursor:'pointer'}}>
+                              {imageUploading===block.id
+                                ?<span style={{color:'#EC4899',fontWeight:600,fontSize:'0.85rem'}}>⏳ Uploading…</span>
+                                :<span style={{color:'#94a3b8',fontSize:'0.85rem'}}>🖼️ Click to upload image (PNG / JPG / WebP · max 10MB)</span>}
+                              <input id={`iup_${block.id}`} type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)uploadImage(block.id,f);}}/>
+                            </label>
+                          </div>
+                        )}
+                        {(block as ImageBlock).url&&(
+                          <div style={{marginTop:'0.75rem',borderRadius:8,overflow:'hidden',border:'1px solid #e2e8f0'}}>
+                            <img src={(block as ImageBlock).url} style={{width:'100%',maxHeight:400,objectFit:'contain',display:'block',background:'#f8fafc'}} alt={(block as ImageBlock).caption||'Image'}/>
+                            {(block as ImageBlock).caption&&<div style={{padding:'0.5rem 0.875rem',fontSize:'0.78rem',color:'#6b7280',fontStyle:'italic',borderTop:'1px solid #f1f5f9'}}>{(block as ImageBlock).caption}</div>}
+                          </div>
+                        )}
+                        {!(block as ImageBlock).url&&editingBlockId!==block.id&&(
+                          <div style={{padding:'0.875rem 1.25rem',color:'#94a3b8',fontSize:'0.82rem'}}>No image — click Edit to upload one</div>
                         )}
                       </div>
                     )}
