@@ -166,8 +166,11 @@ export default function QuizPage() {
   const { assessmentId } = useParams();
   const assessmentIdParam = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const courseId = searchParams?.get('courseId');
+  const [courseId, setCourseId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setCourseId(params.get('courseId'));
+  }, []);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
