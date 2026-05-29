@@ -607,13 +607,13 @@ export default function SchoolDetailPage() {
                 )}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 120px', padding: '0.6rem 1.5rem', background: '#F8FAFC', fontSize: '0.68rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 180px', padding: '0.6rem 1.5rem', background: '#F8FAFC', fontSize: '0.68rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               <div>Name</div><div>Username</div><div>Class / Div</div><div>Status</div><div>Joined</div><div></div>
             </div>
             {filteredUsers.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem', color: '#94A3B8' }}>No students found</div>
             ) : filteredUsers.map((user, i) => (
-              <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 120px', padding: '0.875rem 1.5rem', borderBottom: '1px solid #F8FAFC', alignItems: 'center' }}
+              <div key={user.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 180px', padding: '0.875rem 1.5rem', borderBottom: '1px solid #F8FAFC', alignItems: 'center' }}
                 onMouseEnter={e => (e.currentTarget.style.background = '#FAFAFA')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
