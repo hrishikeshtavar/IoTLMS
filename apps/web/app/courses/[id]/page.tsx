@@ -401,7 +401,7 @@ export default function CoursePage() {
                           <div>Loading content...</div>
                         </div>
                       ) : lessonContent ? (
-                        <div>{renderContent(lessonContent.content_json, assessmentMap[activeLesson.id] ? `/quiz/${assessmentMap[activeLesson.id]}` : undefined)}</div>
+                        <div>{renderContent(lessonContent.content_json, assessmentMap[activeLesson.id] ? `/quiz/${assessmentMap[activeLesson.id]}?courseId=${courseId}` : undefined)}</div>
                       ) : (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>
                           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
@@ -438,7 +438,7 @@ export default function CoursePage() {
                       <p style={{ color: 'var(--text3)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
                         Test what you've learned in this lesson
                       </p>
-                      <Link href={`/quiz/${assessmentMap[activeLesson.id] ?? activeLesson.id}`}
+                      <Link href={`/quiz/${assessmentMap[activeLesson.id] ?? activeLesson.id}?courseId=${courseId}`}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, var(--primary), #ff8c5a)', color: '#fff', borderRadius: '999px', fontWeight: 700, fontSize: '0.95rem', boxShadow: '0 4px 14px rgba(255,107,53,0.35)' }}>
                         ▶ Start Quiz
                       </Link>

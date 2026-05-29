@@ -166,6 +166,8 @@ export default function QuizPage() {
   const { assessmentId } = useParams();
   const assessmentIdParam = Array.isArray(assessmentId) ? assessmentId[0] : assessmentId;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const courseId = searchParams?.get('courseId');
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -340,7 +342,7 @@ export default function QuizPage() {
 
                 {/* CTA buttons */}
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button onClick={() => router.push('/dashboard')}
+                  <button onClick={() => router.push(courseId ? `/courses/${courseId}` : '/dashboard')}
                     className="btn-secondary"
                     style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem' }}>
                     ← Back to Lesson
@@ -353,7 +355,7 @@ export default function QuizPage() {
                     </button>
                   )}
                   {result.passed && (
-                    <button onClick={() => router.push('/dashboard')}
+                    <button onClick={() => router.push(courseId ? `/courses/${courseId}` : '/dashboard')}
                       style={{ padding: '0.65rem 1.5rem', fontSize: '0.9rem', borderRadius: '999px', background: 'linear-gradient(135deg,#FFD93D,#f59e0b)', color: '#1A1A2E', fontWeight: 700, fontFamily: "'Baloo 2'", border: 'none', cursor: 'pointer' }}>
                       🏆 Continue →
                     </button>
