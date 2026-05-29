@@ -272,7 +272,8 @@ export default function DashboardPage() {
                   <Link key={c.id} href={`/courses/${c.id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => router.push(`/courses/${enrollment.course_id}`)}>
                     <span style={{ fontSize: '1.2rem' }}>📚</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}
@@ -285,7 +286,8 @@ export default function DashboardPage() {
                   <Link key={l.id} href={`/courses/${l.course_id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => router.push(`/courses/${enrollment.course_id}`)}>
                     <span style={{ fontSize: '1.2rem' }}>📖</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
@@ -390,7 +392,8 @@ export default function DashboardPage() {
                   <div key={enrollment.id}
                     style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.875rem', transition: 'background 0.15s', cursor: 'pointer' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    onClick={() => router.push(`/courses/${enrollment.course_id}`)}>
                     <ProgressRing percent={pct} size={48} color={isDone ? '#00C896' : color} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className={isDevanagari ? 'lang-hi' : ''} style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
@@ -401,7 +404,8 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <Link href={`/courses/${enrollment.course_id}`}
+                    <Link href={isDone ? `/certificate/${enrollment.course_id}` : `/courses/${enrollment.course_id}`}
+                      onClick={e => e.stopPropagation()}
                       style={{ flexShrink: 0, padding: '0.35rem 0.85rem', borderRadius: '999px', background: isDone ? 'rgba(0,200,150,0.1)' : 'rgba(26,115,232,0.1)', color: isDone ? 'var(--accent)' : 'var(--primary)', fontSize: '0.72rem', fontWeight: 700, border: '1px solid', borderColor: isDone ? 'rgba(0,200,150,0.25)' : 'rgba(26,115,232,0.2)', transition: 'all 0.15s' }}>
                       {isDone ? '📜' : t.continue}
                     </Link>
