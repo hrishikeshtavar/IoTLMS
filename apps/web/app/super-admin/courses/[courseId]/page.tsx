@@ -43,6 +43,7 @@ function emptyText():TextBlock{return{id:uid(),type:'text',content_en:null,conte
 function emptyVideo():VideoBlock{return{id:uid(),type:'video',url:'',title:'',source:'youtube'};}
 function emptyQuiz():QuizBlock{return{id:uid(),type:'quiz',title:'Knowledge Check',questions:[],pass_score:60};}
 function emptyLab():LabBlock{return{id:uid(),type:'lab',wokwi_url:'',instructions:''};}
+function extractText(node:any):string{if(!node)return '';if(node.type==='text')return node.text||'';if(node.content&&Array.isArray(node.content))return node.content.map(extractText).join(' ');return '';}
 
 // ── Sortable chapter row ───────────────────────────────────
 function SortableLesson({lesson,index,isActive,onSelect,onDelete}:{lesson:Lesson;index:number;isActive:boolean;onSelect:()=>void;onDelete:()=>void}){
@@ -487,7 +488,7 @@ export default function CourseEditorPage(){
                     )}
                     {block.type==='text'&&editingBlockId!==block.id&&(
                       <div style={{padding:'0.875rem 1.25rem',color:'#94a3b8',fontSize:'0.82rem'}}>
-                        {((block as TextBlock).content_en?.content?.length??0)>0?`${(block as TextBlock).content_en.content.length} content node(s) — click Edit to modify`:'Empty text block — click Edit to write content'}
+                        {((block as TextBlock).content_en?.content?.length??0)>0?(extractText((block as TextBlock).content_en).trim().slice(0,220)||'Click Edit to view content'):'Empty text block — click Edit to write content'}
                       </div>
                     )}
 
