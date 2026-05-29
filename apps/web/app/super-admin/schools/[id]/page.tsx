@@ -308,7 +308,11 @@ export default function SchoolDetailPage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <Avatar name={tenant.name} size={64} />
+              {brandKit?.logo_url ? (
+                <img src={brandKit.logo_url} alt={tenant.name} style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'contain', background: 'rgba(255,255,255,0.95)', border: '2px solid rgba(255,255,255,0.25)', padding: 4, boxSizing: 'border-box' }} />
+              ) : (
+                <Avatar name={tenant.name} size={64} />
+              )}
               <div>
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>School</div>
                 <div style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>{tenant.name}</div>
