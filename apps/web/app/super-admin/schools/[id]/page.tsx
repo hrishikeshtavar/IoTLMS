@@ -248,6 +248,15 @@ export default function SchoolDetailPage() {
     else setAdminErr('Failed to create admin.');
     setAdminSaving(false);setTimeout(()=>{setAdminMsg('');setAdminErr('');},3000);
   }
+  async function deleteStudent(id: string) {
+    if (!confirm('Permanently delete this student? This cannot be undone.')) return;
+    const res = await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      setUsers(prev => prev.filter(u => u.id !== id));
+      setMsg('Student deleted.');
+      setTimeout(() => setMsg(''), 3000);
+    } else setErr('Failed to delete student.');
+  }
   async function removeAdmin(id: string) {
     if(!confirm('Remove this admin?'))return;
     await apiFetch(`/api/users/${id}`,{method:'DELETE'});
@@ -628,6 +637,10 @@ export default function SchoolDetailPage() {
                   <button onClick={() => setEditingStudent(user)}
                     style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #E2E8F0', background: '#FFF7ED', color: '#EA580C', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
                     Edit
+                  </button>
+                  <button onClick={() => deleteStudent(user.id)}
+                    style={{ padding: '4px 10px', borderRadius: 6, border: '1.5px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>
+                    Delete
                   </button>
                 </div>
               </div>
