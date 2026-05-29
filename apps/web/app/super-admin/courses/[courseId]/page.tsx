@@ -116,8 +116,9 @@ export default function CourseEditorPage(){
   const [createdId,setCreatedId]=useState<string|null>(null);
   const activeCourseId=createdId||(isNew?null:courseId);
 
-  const [form,setForm]=useState({title_en:'',title_hi:'',title_mr:'',description_en:'',slug:'',category:'General',level:'beginner',status:'draft',tenant_id:'',target_grade:''});
+  const [form,setForm]=useState({title_en:'',title_hi:'',title_mr:'',description_en:'',slug:'',category:'General',level:'beginner',status:'draft',tenant_id:'',target_grade:'',thumbnail_url:''});
   const [fSaving,setFSaving]=useState(false);
+  const [thumbnailUploading,setThumbnailUploading]=useState(false);
   const [fMsg,setFMsg]=useState('');
   const [fErr,setFErr]=useState('');
 
@@ -166,7 +167,7 @@ export default function CourseEditorPage(){
   useEffect(()=>{
     apiFetch('/api/tenants').then(r=>r.json()).then(d=>{const l=Array.isArray(d)?d:[];setTenants(l);if(isNew&&l.length>0)setForm(f=>({...f,tenant_id:l[0].id}));}).catch(()=>{});
     if(!isNew){
-      apiFetch(`/api/courses/${courseId}`).then(r=>r.json()).then(d=>{if(d?.id)setForm({title_en:d.title_en||'',title_hi:d.title_hi||'',title_mr:d.title_mr||'',description_en:d.description_en||'',slug:d.slug||'',category:d.category||'General',level:d.level||'beginner',status:d.status||'draft',tenant_id:d.tenant_id||'',target_grade:d.target_grade||''}); }).catch(()=>{});
+      apiFetch(`/api/courses/${courseId}`).then(r=>r.json()).then(d=>{if(d?.id)setForm({title_en:d.title_en||'',title_hi:d.title_hi||'',title_mr:d.title_mr||'',description_en:d.description_en||'',slug:d.slug||'',category:d.category||'General',level:d.level||'beginner',status:d.status||'draft',tenant_id:d.tenant_id||'',target_grade:d.target_grade||'',thumbnail_url:d.thumbnail_url||''}); }).catch(()=>{});
       loadLessons(courseId);
     }
   },[courseId]);
@@ -178,7 +179,7 @@ export default function CourseEditorPage(){
   async function saveCourse(){
     if(!form.title_en.trim()){setFErr('Title required.');return;}
     setFSaving(true);setFErr('');setFMsg('');
-    const p={title_en:form.title_en,title_hi:form.title_hi||undefined,title_mr:form.title_mr||undefined,description_en:form.description_en||undefined,slug:form.slug||slugify(form.title_en),category:form.category,level:form.level,status:form.status,target_grade:form.target_grade||undefined};
+    const p={title_en:form.title_en,title_hi:form.title_hi||undefined,title_mr:form.title_mr||undefined,description_en:form.description_en||undefined,slug:form.slug||slugify(form.title_en),category:form.category,level:form.level,status:form.status,target_grade:form.target_grade||undefined,thumbnail_url:form.thumbnail_url||undefined};
     try{
       if(isNew&&!createdId){const r=await apiFetch('/api/courses',{method:'POST',body:JSON.stringify(p)});if(r.ok){const d=await r.json();setCreatedId(d.id);setFMsg('Course created!');}else{const e=await r.json();setFErr(e.message||'Failed.');}}
       else{const r=await apiFetch(`/api/courses/${activeCourseId}`,{method:'PATCH',body:JSON.stringify(p)});if(r.ok)setFMsg('Saved!');else{const e=await r.json();setFErr(e.message||'Failed.');}}
@@ -374,6 +375,27 @@ export default function CourseEditorPage(){
               <div style={{display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 {isNew&&<div><label style={L}>School</label><select value={form.tenant_id} onChange={e=>setForm(f=>({...f,tenant_id:e.target.value}))} style={I}>{tenants.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></div>}
                 <div><label style={L}>Grade / Class</label><select value={form.target_grade} onChange={e=>setForm(f=>({...f,target_grade:e.target.value}))} style={I}><option value=''>All Grades</option>{[1,2,3,4,5,6,7,8,9,10,11,12].map(g=><option key={g} value={String(g)}>Grade {g}</option>)}</select></div>
+                <div>
+                  <label style={L}>Course Thumbnail</label>
+                  {form.thumbnail_url && (
+                    <div style={{marginBottom:6,borderRadius:8,overflow:'hidden',border:'1px solid #e2e8f0',position:'relative'}}>
+                      <img src={form.thumbnail_url} style={{width:'100%',height:100,objectFit:'cover',display:'block'}} alt='Thumbnail'/>
+                      <button onClick={()=>setForm(f=>({...f,thumbnail_url:''}))} style={{position:'absolute',top:4,right:4,background:'rgba(0,0,0,0.6)',border:'none',color:'#fff',borderRadius:4,padding:'2px 6px',fontSize:'0.7rem',cursor:'pointer',fontWeight:700}}>✕</button>
+                    </div>
+                  )}
+                  <label htmlFor='thumbnail-upload' style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'7px 12px',borderRadius:7,background:thumbnailUploading?'#9ca3af':'#EFF6FF',color:thumbnailUploading?'#fff':'#1A73E8',border:'1.5px dashed #93c5fd',cursor:thumbnailUploading?'not-allowed':'pointer',fontSize:'0.78rem',fontWeight:700,justifyContent:'center'}}>
+                    {thumbnailUploading?'⏳ Uploading…':'🖼️ Upload Thumbnail'}
+                    <input id='thumbnail-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} disabled={thumbnailUploading} onChange={async e=>{
+                      const file=e.target.files?.[0]; if(!file)return;
+                      setThumbnailUploading(true);
+                      const fd=new FormData(); fd.append('file',file);
+                      const token=getToken();
+                      const res=await fetch(`${process.env.NEXT_PUBLIC_API_URL||'http://localhost:3001'}/api/upload/file`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
+                      if(res.ok){const d=await res.json();setForm(f=>({...f,thumbnail_url:d.url||''}));}
+                      setThumbnailUploading(false);
+                    }}/>
+                  </label>
+                </div>
                 <div><label style={L}>Title (English) *</label><input value={form.title_en} onChange={e=>setForm(f=>({...f,title_en:e.target.value,slug:slugify(e.target.value)}))} placeholder="Course title" style={I}/></div>
                 <div><label style={L}>हिंदी Title</label><input value={form.title_hi} onChange={e=>setForm(f=>({...f,title_hi:e.target.value}))} placeholder="हिंदी शीर्षक" style={{...I,fontFamily:'Noto Sans Devanagari'}}/></div>
                 <div><label style={L}>मराठी Title</label><input value={form.title_mr} onChange={e=>setForm(f=>({...f,title_mr:e.target.value}))} placeholder="मराठी शीर्षक" style={{...I,fontFamily:'Noto Sans Devanagari'}}/></div>

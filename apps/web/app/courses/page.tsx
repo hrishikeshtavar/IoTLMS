@@ -272,8 +272,14 @@ export default function CoursesPage() {
               return (
                 <div key={course.id} className={`card-hover animate-popIn delay-${Math.min((i % 5 + 1) * 100, 500)}`}
                   style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid var(--border)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-                  {/* Card top bar */}
-                  <div style={{ height: '5px', background: `linear-gradient(90deg, ${catColor}, ${catColor}88)` }} />
+                  {course.thumbnail_url ? (
+                    <div style={{ height: '160px', overflow: 'hidden', position: 'relative' }}>
+                      <img src={course.thumbnail_url} alt={displayTitle} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: `linear-gradient(90deg, ${catColor}, ${catColor}88)` }} />
+                    </div>
+                  ) : (
+                    <div style={{ height: '5px', background: `linear-gradient(90deg, ${catColor}, ${catColor}88)` }} />
+                  )}
                   <div style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                       <div>
