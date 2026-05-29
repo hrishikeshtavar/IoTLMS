@@ -88,7 +88,7 @@ export default function SchoolDetailPage() {
       const t = Array.isArray(tenants) ? tenants.find((x: any) => x.id === schoolId) : null;
       if (t) {
         setTenant(t);
-        setForm({ name: t.name, plan_id: t.plan_id || 'free', is_active: t.is_active });
+        setForm({ name: t.name, is_active: t.is_active });
       }
       setUsers(Array.isArray(allUsers) ? allUsers.filter((u: User) => u.role === 'student') : []);
       setAdmins(Array.isArray(allUsers) ? allUsers.filter((u: User) => u.role === 'admin') : []);
@@ -373,14 +373,7 @@ export default function SchoolDetailPage() {
                 </div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plan</label>
-                  {editing ? (
-                    <select value={form.plan_id} onChange={e => setForm({ ...form, plan_id: e.target.value })}
-                      style={{ display: 'block', width: '100%', marginTop: 6, padding: '0.65rem 0.875rem', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: '0.9rem', fontFamily: 'inherit', boxSizing: 'border-box' }}>
-                      <option value="free">Free</option>
-                      <option value="starter">Starter</option>
-                      <option value="pro">Pro</option>
-                    </select>
-                  ) : <p style={{ margin: '6px 0 0' }}><span style={{ padding: '3px 12px', background: plan.bg, color: plan.color, borderRadius: 999, fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span></p>}
+                  <p style={{ margin: '6px 0 0' }}><span style={{ padding: '3px 12px', background: plan.bg, color: plan.color, borderRadius: 999, fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase' }}>{tenant.plan_id || 'free'}</span></p>
                 </div>
                 <div>
                   <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status</label>
