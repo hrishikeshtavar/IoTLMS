@@ -39,8 +39,11 @@ export class TenantService {
     });
   }
 
-  async update(id: string, dto: { name?: string; is_active?: boolean }) {
-    return this.prisma.tenant.update({ where: { id }, data: dto });
+  async update(id: string, dto: any) {
+    const data: { name?: string; is_active?: boolean } = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.is_active !== undefined) data.is_active = dto.is_active;
+    return this.prisma.tenant.update({ where: { id }, data });
   }
   async findById(id: string) {
     return this.prisma.tenant.findUnique({ where: { id } });
