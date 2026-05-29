@@ -74,6 +74,14 @@ function renderContent(content: LessonContent['content_json'] | null, quizHref?:
               </div>
             );
           }
+          if (block.type === 'image' && block.url) {
+            return (
+              <div key={i} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <img src={block.url} alt={block.caption || 'Image'} style={{ width: '100%', maxHeight: 480, objectFit: 'contain', display: 'block', background: '#f8fafc' }} />
+                {block.caption && <div style={{ padding: '0.5rem 0.875rem', fontSize: '0.82rem', color: 'var(--text3)', fontStyle: 'italic', borderTop: '1px solid var(--border)' }}>{block.caption}</div>}
+              </div>
+            );
+          }
           if (block.type === 'lab' && block.wokwi_url) {
             return (
               <div key={i} style={{ background: 'var(--card)', borderRadius: '1.25rem', border: '1.5px solid rgba(168,85,247,0.2)', padding: '2.5rem', textAlign: 'center', boxShadow: '0 4px 20px rgba(168,85,247,0.1)' }}>
