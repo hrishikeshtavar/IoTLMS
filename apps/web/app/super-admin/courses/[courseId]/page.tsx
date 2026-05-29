@@ -119,6 +119,7 @@ export default function CourseEditorPage(){
   const [form,setForm]=useState({title_en:'',title_hi:'',title_mr:'',description_en:'',slug:'',category:'General',level:'beginner',status:'draft',tenant_id:'',target_grade:'',thumbnail_url:''});
   const [fSaving,setFSaving]=useState(false);
   const [thumbnailUploading,setThumbnailUploading]=useState(false);
+  const [thumbnailPreview,setThumbnailPreview]=useState('');
   const [fMsg,setFMsg]=useState('');
   const [fErr,setFErr]=useState('');
 
@@ -377,24 +378,28 @@ export default function CourseEditorPage(){
                 <div><label style={L}>Grade / Class</label><select value={form.target_grade} onChange={e=>setForm(f=>({...f,target_grade:e.target.value}))} style={I}><option value=''>All Grades</option>{[1,2,3,4,5,6,7,8,9,10,11,12].map(g=><option key={g} value={String(g)}>Grade {g}</option>)}</select></div>
                 <div>
                   <label style={L}>Course Thumbnail</label>
-                  {form.thumbnail_url && (
-                    <div style={{marginBottom:6,borderRadius:8,overflow:'hidden',border:'1px solid #e2e8f0',position:'relative'}}>
-                      <img src={form.thumbnail_url} style={{width:'100%',height:100,objectFit:'cover',display:'block'}} alt='Thumbnail'/>
-                      <button onClick={()=>setForm(f=>({...f,thumbnail_url:''}))} style={{position:'absolute',top:4,right:4,background:'rgba(0,0,0,0.6)',border:'none',color:'#fff',borderRadius:4,padding:'2px 6px',fontSize:'0.7rem',cursor:'pointer',fontWeight:700}}>✕</button>
-                    </div>
-                  )}
                   <label htmlFor='thumbnail-upload' style={{display:'flex',alignItems:'center',gap:'0.4rem',padding:'7px 12px',borderRadius:7,background:thumbnailUploading?'#9ca3af':'#EFF6FF',color:thumbnailUploading?'#fff':'#1A73E8',border:'1.5px dashed #93c5fd',cursor:thumbnailUploading?'not-allowed':'pointer',fontSize:'0.78rem',fontWeight:700,justifyContent:'center'}}>
                     {thumbnailUploading?'⏳ Uploading…':'🖼️ Upload Thumbnail'}
                     <input id='thumbnail-upload' type='file' accept='image/png,image/jpeg,image/webp' style={{display:'none'}} disabled={thumbnailUploading} onChange={async e=>{
                       const file=e.target.files?.[0]; if(!file)return;
+                      const localUrl=URL.createObjectURL(file);
+                      setThumbnailPreview(localUrl);
                       setThumbnailUploading(true);
                       const fd=new FormData(); fd.append('file',file);
                       const token=getToken();
                       const res=await fetch(`${process.env.NEXT_PUBLIC_API_URL||'http://localhost:3001'}/api/upload/file`,{method:'POST',headers:{Authorization:`Bearer ${token}`},body:fd});
-                      if(res.ok){const d=await res.json();setForm(f=>({...f,thumbnail_url:d.url||''}));}
+                      if(res.ok){const d=await res.json();setForm(f=>({...f,thumbnail_url:d.url||''}));URL.revokeObjectURL(localUrl);setThumbnailPreview('');}
                       setThumbnailUploading(false);
                     }}/>
                   </label>
+                  <div style={{fontSize:'0.65rem',color:'#9ca3af',marginTop:4,textAlign:'center'}}>Recommended: 1280×720px (16:9) · PNG / JPG / WebP</div>
+                  {(thumbnailPreview||form.thumbnail_url)&&(
+                    <div style={{marginTop:8,borderRadius:8,overflow:'hidden',border:'1px solid #e2e8f0',position:'relative'}}>
+                      <img src={thumbnailPreview||form.thumbnail_url} style={{width:'100%',height:110,objectFit:'cover',display:'block'}} alt='Thumbnail'/>
+                      {thumbnailUploading&&<div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'0.75rem',fontWeight:700}}>⏳ Uploading…</div>}
+                      {!thumbnailPreview&&<button onClick={()=>setForm(f=>({...f,thumbnail_url:''}))} style={{position:'absolute',top:4,right:4,background:'rgba(0,0,0,0.6)',border:'none',color:'#fff',borderRadius:4,padding:'2px 6px',fontSize:'0.7rem',cursor:'pointer',fontWeight:700}}>✕</button>}
+                    </div>
+                  )}
                 </div>
                 <div><label style={L}>Title (English) *</label><input value={form.title_en} onChange={e=>setForm(f=>({...f,title_en:e.target.value,slug:slugify(e.target.value)}))} placeholder="Course title" style={I}/></div>
                 <div><label style={L}>हिंदी Title</label><input value={form.title_hi} onChange={e=>setForm(f=>({...f,title_hi:e.target.value}))} placeholder="हिंदी शीर्षक" style={{...I,fontFamily:'Noto Sans Devanagari'}}/></div>
