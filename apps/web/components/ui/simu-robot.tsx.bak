@@ -1,0 +1,95 @@
+'use client'
+import { useState, useEffect, useRef } from 'react'
+
+export function SimuRobot() {
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [blink, setBlink] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!ref.current) return
+      const r = ref.current.getBoundingClientRect()
+      const cx = r.left + r.width * 0.5
+      const cy = r.top + r.height * 0.36
+      const dx = e.clientX - cx, dy = e.clientY - cy
+      const ang = Math.atan2(dy, dx)
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const mi = Math.min(dist / 300, 1)
+      setPos({ x: Math.cos(ang) * 5 * mi, y: Math.sin(ang) * 5 * mi })
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBlink(true)
+      setTimeout(() => setBlink(false), 130)
+    }, 3000 + Math.random() * 1500)
+    return () => clearInterval(id)
+  }, [])
+
+  const eyeH = blink ? 3 : 22
+
+  return (
+    <div ref={ref} style={{ width: '100%', maxWidth: 300, position: 'relative' }}>
+      <style>{`
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+        @keyframes wave  { 0%,100%{transform:rotate(-44deg)} 50%{transform:rotate(-22deg)} }
+        .sr-float { animation: float 3.2s ease-in-out infinite }
+        .sr-wave  { transform-origin: 92px 292px; animation: wave 1.3s ease-in-out infinite }
+      `}</style>
+      <svg viewBox="0 0 320 495" xmlns="http://www.w3.org/2000/svg"
+        style={{ width:'100%', height:'auto', filter:'drop-shadow(0 18px 48px rgba(0,188,212,0.24))' }}>
+        <defs>
+          <radialGradient id="rH" cx="38%" cy="28%" r="65%">
+            <stop offset="0%" stopColor="#F6F9FC"/><stop offset="100%" stopColor="#D2DDE8"/>
+          </radialGradient>
+          <radialGradient id="rBd" cx="36%" cy="26%" r="68%">
+            <stop offset="0%" stopColor="#EFF4F8"/><stop offset="100%" stopColor="#C6D2DE"/>
+          </radialGradient>
+          <radialGradient id="rAr" cx="34%" cy="28%" r="65%">
+            <stop offset="0%" stopColor="#E8EFF6"/><stop offset="100%" stopColor="#C0CCDA"/>
+          </radialGradient>
+          <radialGradient id="rEy" cx="50%" cy="22%" r="72%">
+            <stop offset="0%" stopColor="#A8EEF4"/><stop offset="55%" stopColor="#00BCD4"/><stop offset="100%" stopColor="#006878"/>
+          </radialGradient>
+          <filter id="fEy" x="-70%" y="-70%" width="240%" height="240%">
+            <feGaussianBlur stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <clipPath id="cHd"><ellipse cx="160" cy="148" rx="86" ry="82"/></clipPath>
+        </defs>
+        <ellipse cx="160" cy="486" rx="86" ry="9" fill="rgba(0,188,212,0.12)"/>
+        <ellipse cx="160" cy="475" rx="88" ry="18" fill="#D4DFE8" stroke="#C0CCD8" strokeWidth="1"/>
+        <ellipse cx="160" cy="471" rx="76" ry="11" fill="#E0EBF2"/>
+        <g className="sr-float">
+          <ellipse cx="160" cy="352" rx="106" ry="118" fill="url(#rBd)" stroke="#BEC8D6" strokeWidth="1.5"/>
+          <g transform="rotate(22, 254, 298)">
+            <ellipse cx="265" cy="298" rx="28" ry="66" fill="url(#rAr)" stroke="#B8C6D4" strokeWidth="1.5"/>
+          </g>
+          <circle cx="254" cy="300" r="14" fill="#DAE5EF" stroke="#B8C6D4" strokeWidth="1"/>
+          <ellipse cx="160" cy="230" rx="55" ry="16" fill="#3EC9C0"/>
+          <path d="M 112 232 Q 136 258 160 262 Q 184 258 208 232 Q 202 278 181 289 Q 171 295 160 296 Q 149 295 139 289 Q 118 278 112 232 Z" fill="#3EC9C0"/>
+          <ellipse cx="160" cy="148" rx="86" ry="82" fill="url(#rH)" stroke="#C0CCD8" strokeWidth="1.5"/>
+          <rect x="74" y="66" width="172" height="54" fill="#3EC9C0" clipPath="url(#cHd)"/>
+          <ellipse cx="160" cy="118" rx="76" ry="20" fill="#3EC9C0"/>
+          <ellipse cx="160" cy="157" rx="65" ry="57" fill="#0C1820"/>
+          <ellipse cx="160" cy="157" rx="65" ry="57" fill="none" stroke="#1E3040" strokeWidth="2"/>
+          <g transform={`translate(${pos.x}, ${pos.y})`}>
+            <rect x={108} y={143} width={38} height={eyeH} rx="12" fill="url(#rEy)" filter="url(#fEy)"/>
+            <rect x={174} y={143} width={38} height={eyeH} rx="12" fill="url(#rEy)" filter="url(#fEy)"/>
+          </g>
+          <g className="sr-wave">
+            <ellipse cx="76" cy="242" rx="28" ry="66" fill="url(#rAr)" stroke="#B8C6D4" strokeWidth="1.5"/>
+          </g>
+          <circle cx="92" cy="292" r="14" fill="#DAE5EF" stroke="#B8C6D4" strokeWidth="1"/>
+          <text x="160" y="370" textAnchor="middle" fill="#6A8A9E" fontSize="11"
+            fontFamily="sans-serif" fontWeight="600" letterSpacing="0.06em">SimuLearning</text>
+          <circle cx="160" cy="394" r="4" fill="#00BCD4" opacity="0.6"/>
+        </g>
+      </svg>
+    </div>
+  )
+}

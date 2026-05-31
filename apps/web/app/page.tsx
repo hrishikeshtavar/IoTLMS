@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { SimuRobot } from '@/components/ui/simu-robot';
 
 const T = {
   en: {
@@ -261,39 +262,39 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #0F172A 50%, #0D2137 100%)', padding: 'clamp(4rem,8vw,7rem) 2rem', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ background: 'linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #F0FDFE 100%)', padding: 'clamp(4rem,8vw,7rem) 2rem', position: 'relative', overflow: 'hidden' }}>
         {/* background grid */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(26,115,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(26,115,232,0.04) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(0,188,212,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0,188,212,0.07) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
         {/* glow orbs */}
         <div style={{ position: 'absolute', top: '-10%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,188,212,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '-10%', left: '5%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(0,200,150,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
-          <div>
-            <div className="animate-fadeUp" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,188,212,0.08)', border: '1px solid rgba(0,188,212,0.35)', borderRadius: 'var(--radius-full)', padding: '6px 16px', marginBottom: '1.5rem' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div className="animate-fadeUp" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,188,212,0.08)', border: '1px solid rgba(0,188,212,0.35)', borderRadius: 'var(--radius-full)', padding: '6px 16px', marginBottom: '1.5rem', display: 'inline-flex' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00BCD4', display: 'inline-block' }} />
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#67E8F9', fontFamily: 'DM Sans' }}>{t.tagline}</span>
             </div>
-            <h1 className={`animate-fadeUp delay-100 ${isDevanagari ? 'lang-hi' : ''}`} style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(2.2rem,5vw,3.5rem)', color: '#fff', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
+            <h1 className={`animate-fadeUp delay-100 ${isDevanagari ? 'lang-hi' : ''}`} style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(3rem,5.5vw,4.5rem)', color: '#1E3A5F', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>
               {t.hero1}
             </h1>
             <h1 className={`animate-fadeUp delay-200 ${isDevanagari ? 'lang-hi' : ''}`} style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(2.2rem,5vw,3.5rem)', background: 'linear-gradient(135deg, #00BCD4, #4DD0E1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '1.5rem' }}>
               {t.hero2}
             </h1>
-            <p className={`animate-fadeUp delay-300 ${isDevanagari ? 'lang-hi' : ''}`} style={{ fontSize: 'clamp(1rem,2vw,1.15rem)', color: 'rgba(255,255,255,0.65)', lineHeight: 1.7, marginBottom: '2rem', maxWidth: 480, fontFamily: 'DM Sans' }}>
+            <p className={`animate-fadeUp delay-300 ${isDevanagari ? 'lang-hi' : ''}`} style={{ fontSize: 'clamp(1rem,2vw,1.15rem)', color: 'rgba(13,27,46,0.6)', lineHeight: 1.7, marginBottom: '2rem', maxWidth: 580, fontFamily: 'DM Sans' }}>
               {t.heroSub}
             </p>
-            <div className="animate-fadeUp delay-400" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div className="animate-fadeUp delay-400" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
               <Link href="/courses" className="btn-primary" style={{ fontSize: '0.95rem', padding: '0.8rem 1.75rem' }}>{t.exploreCourses}</Link>
-              <Link href="/admin-login" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.8rem 1.75rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 'var(--radius-full)', fontFamily: 'DM Sans', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.15)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}>
+              <Link href="/admin-login" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.8rem 1.75rem', background: 'rgba(15,23,42,0.04)', color: '#0F172A', border: '1px solid rgba(15,23,42,0.12)', borderRadius: 'var(--radius-full)', fontFamily: 'DM Sans', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(15,23,42,0.08)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(15,23,42,0.04)'; }}>
                 {t.schoolLogin} →
               </Link>
             </div>
           </div>
-          <div className="animate-fadeUp delay-200" style={{ display: 'flex', justifyContent: 'center' }}>
-            <IoTHeroIllustration />
+          <div style={{ flexShrink: 0 }}>
+            <SimuRobot width={400} />
           </div>
         </div>
       </section>
