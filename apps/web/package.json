@@ -34,6 +34,7 @@
     "@tiptap/pm": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
+    "@types/three": "^0.184.1",
     "@vidstack/react": "^0.6.15",
     "framer-motion": "^12.40.0",
     "i18next": "^25.8.13",
@@ -46,7 +47,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.5.4",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

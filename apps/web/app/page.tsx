@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { SimuRobot } from '@/components/ui/simu-robot';
+import { DottedSurface } from '@/components/ui/dotted-surface';
 
 const T = {
   en: {
@@ -263,13 +264,12 @@ export default function HomePage() {
 
       {/* ── HERO ── */}
       <section style={{ background: 'linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 50%, #F0FDFE 100%)', padding: 'clamp(4rem,8vw,7rem) 2rem', position: 'relative', overflow: 'hidden' }}>
-        {/* background grid */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(0,188,212,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0,188,212,0.07) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
+        <DottedSurface />
         {/* glow orbs */}
-        <div style={{ position: 'absolute', top: '-10%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,188,212,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', left: '5%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(0,200,150,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '-10%', right: '10%', width: 400, height: 400, background: 'radial-gradient(circle, rgba(0,188,212,0.12) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
+        <div style={{ position: 'absolute', bottom: '-10%', left: '5%', width: 300, height: 300, background: 'radial-gradient(circle, rgba(0,200,150,0.1) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 1 }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '2rem' }}>
           <div style={{ flex: 1, minWidth: 280 }}>
             <div className="animate-fadeUp" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,188,212,0.08)', border: '1px solid rgba(0,188,212,0.35)', borderRadius: 'var(--radius-full)', padding: '6px 16px', marginBottom: '1.5rem', display: 'inline-flex' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00BCD4', display: 'inline-block' }} />
