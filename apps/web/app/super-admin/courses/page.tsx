@@ -276,7 +276,6 @@ export default function SuperAdminCoursesPage() {
             </div>
           ) : filtered.map(course=>{
             const cc = CAT_COLORS[course.category||'General']||'#718096';
-            const tenant = tenants.find(t=>t.id===course.tenant_id);
             return (
               <div key={course.id}
                 style={{ display:'grid', gridTemplateColumns:'2.5fr 1fr 1fr 1fr 140px', padding:'1rem 1.5rem', borderBottom:'1px solid #f3f4f6', alignItems:'center' }}
@@ -284,7 +283,7 @@ export default function SuperAdminCoursesPage() {
                 onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
                 <div>
                   <div style={{ fontWeight:700, fontSize:'0.9rem', color:'#111827', marginBottom:2 }}>{course.title_en}</div>
-                  <div style={{ fontSize:'0.72rem', color:'#9ca3af' }}>{tenant?.name||'Unknown'} · {course._count?.lessons||0} lessons · {course._count?.enrollments||0} enrolled</div>
+                  <div style={{ fontSize:'0.72rem', color:'#9ca3af' }}>{course._count?.lessons||0} lessons · {course._count?.enrollments||0} enrolled</div>
                 </div>
                 <div><span style={{ fontSize:'0.72rem', padding:'3px 8px', borderRadius:999, fontWeight:700, background:cc+'22', color:cc }}>{course.category||'General'}</span></div>
                 <div style={{ fontSize:'0.82rem', color:'#6b7280', textTransform:'capitalize' }}>{course.level||'beginner'}</div>
