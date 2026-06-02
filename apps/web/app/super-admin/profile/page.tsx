@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getUser, apiFetch, logout } from '../../lib/auth';
+import Logo from '@/components/ui/Logo';
 
 export default function SuperAdminProfilePage() {
   const router = useRouter();
@@ -61,18 +62,24 @@ export default function SuperAdminProfilePage() {
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#0F172A', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.3)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/super-admin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🚀</div>
-            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>SimuLearning</span>
+      <nav className="sl-nav" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.15)' }}>
+        <div className="sl-nav-inner" style={{ gap: 20 }}>
+          <Link href="/super-admin" className="sl-logo">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Logo width={72} />
+              <div style={{ width: 1, height: 42, background: 'rgba(0,0,0,0.06)', margin: '0 8px' }} />
+              <div>
+                <div className="sl-logo-name">SimuLearning</div>
+                <div className="sl-logo-sub">by SimuSoft Technologies</div>
+              </div>
+            </div>
           </Link>
-          <span style={{ color: '#334155' }}>|</span>
-          <button onClick={() => router.push('/super-admin')} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 500 }}>← Super Admin</button>
-        </div>
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
-          <span style={{ padding: '3px 10px', background: 'rgba(255,107,53,0.2)', color: '#FF6B35', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, alignSelf: 'center' }}>Super Admin</span>
-          <button onClick={logout} style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', color: '#F87171', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>Sign Out</button>
+          <button onClick={() => router.push('/super-admin')} className="sl-nav-link">← Super Admin</button>
+          <span style={{ padding: '3px 10px', background: 'rgba(26,115,232,0.12)', color: '#1A73E8', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Super Admin</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => router.push('/super-admin/profile')} className="sl-nav-link">My Profile</button>
+            <button onClick={logout} className="sl-nav-cta" style={{ border: 'none' }}>Sign Out</button>
+          </div>
         </div>
       </nav>
 
