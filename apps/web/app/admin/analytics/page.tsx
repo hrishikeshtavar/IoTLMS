@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch, getUser, logout } from '../../../app/lib/auth';
+import SectionNav from '@/components/ui/SectionNav';
 
 type DashboardData = {
   totalStudents: number;
@@ -87,26 +88,21 @@ export default function AnalyticsPage() {
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-            <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>🚀</div>
-            <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#1A73E8' }}>SimuLearning</span>
-          </Link>
-          <span style={{ color: '#CBD5E1' }}>|</span>
-          <button onClick={() => router.push('/admin')} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 500 }}>← Admin Panel</button>
-        </div>
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
-          <button onClick={() => router.push('/admin/profile')}
-            style={{ padding: '7px 16px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-            👤 {adminUser?.name?.split(' ')[0]}
-          </button>
-          <button onClick={logout}
-            style={{ padding: '7px 16px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <SectionNav
+        href="/admin"
+        badge="Analytics"
+        leftAction={<button onClick={() => router.push('/admin')} className="sl-nav-link">← Admin Panel</button>}
+        right={(
+          <>
+            <button onClick={() => router.push('/admin/profile')} className="sl-nav-link" style={{ padding: '7px 16px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+              👤 {adminUser?.name?.split(' ')[0]}
+            </button>
+            <button onClick={logout} className="sl-nav-cta" style={{ border: 'none', padding: '7px 16px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+              Sign Out
+            </button>
+          </>
+        )}
+      />
 
       {/* HEADER */}
       <div style={{ background: 'linear-gradient(135deg, #0F172A, #1E3A5F, #0E7490)', padding: '2.5rem 2rem' }}>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch, getUser, logout } from '../../app/lib/auth';
+import SectionNav from '@/components/ui/SectionNav';
 
 const STREAM_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   'Artificial Intelligence': { bg: '#EFF6FF', text: '#1D4ED8', bar: '#1A73E8' },
@@ -44,22 +45,20 @@ export default function AdminPage() {
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-        <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
-          <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>🚀</div>
-          <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#1A73E8', letterSpacing: '-0.3px' }}>SimuLearning</span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <button onClick={() => router.push('/admin/profile')}
-            style={{ padding: '7px 16px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-            👤 My Profile
-          </button>
-          <button onClick={logout}
-            style={{ padding: '7px 16px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <SectionNav
+        href="/admin"
+        badge="School Admin"
+        right={(
+          <>
+            <button onClick={() => router.push('/admin/profile')} className="sl-nav-link" style={{ padding: '7px 16px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+              👤 My Profile
+            </button>
+            <button onClick={logout} className="sl-nav-cta" style={{ border: 'none', padding: '7px 16px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+              Sign Out
+            </button>
+          </>
+        )}
+      />
 
       {/* HERO BANNER */}
       <div style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E3A5F 60%, #0E7490 100%)', padding: '2.5rem 2rem' }}>

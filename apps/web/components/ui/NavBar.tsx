@@ -26,7 +26,12 @@ export default function NavBar() {
     window.dispatchEvent(new CustomEvent('simu:locale-changed', { detail: l }))
   }
 
-  if (pathname && ['/dashboard', '/admin-login', '/super-admin', '/super-admin/profile'].includes(pathname)) return null
+  if (pathname && (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/super-admin') ||
+    pathname === '/admin-login'
+  )) return null
 
   return (
     <nav className="sl-nav">

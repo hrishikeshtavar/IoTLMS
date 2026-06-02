@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, getUser, logout } from '../../../app/lib/auth';
+import SectionNav from '@/components/ui/SectionNav';
 
 type User = {
   id: string;
@@ -352,27 +353,26 @@ function AdminUsersPage() {
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'DM Sans, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '0 1.5rem', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#1A73E8,#00C896)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🚀</div>
-            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#1A73E8' }}>SimuLearning</span>
+      <SectionNav
+        href="/admin"
+        badge="Students"
+        leftAction={(
+          <Link href={adminUser?.role === 'super_admin' ? '/super-admin' : '/admin'} className="sl-nav-link">
+            ← {adminUser?.role === 'super_admin' ? 'Super Admin' : 'Admin Panel'}
           </Link>
-          <span style={{ color: '#d1d5db' }}>|</span>
-          <Link href={adminUser?.role === 'super_admin' ? '/super-admin' : '/admin'} style={{ color: '#6b7280', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 500 }}>← {adminUser?.role === 'super_admin' ? 'Super Admin' : 'Admin Panel'}</Link>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>{users.length} students</span>
-          <button onClick={() => router.push(adminUser?.role === 'super_admin' ? '/super-admin/profile' : '/admin/profile')}
-            style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-            👤 {adminUser?.name?.split(' ')[0] || 'Profile'}
-          </button>
-          <button onClick={logout}
-            style={{ padding: '6px 14px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-            Sign Out
-          </button>
-        </div>
-      </nav>
+        )}
+        right={(
+          <>
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>{users.length} students</span>
+            <button onClick={() => router.push(adminUser?.role === 'super_admin' ? '/super-admin/profile' : '/admin/profile')} className="sl-nav-link" style={{ padding: '6px 14px', borderRadius: 8, background: '#EFF6FF', color: '#1A73E8', border: 'none', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+              👤 {adminUser?.name?.split(' ')[0] || 'Profile'}
+            </button>
+            <button onClick={logout} className="sl-nav-cta" style={{ border: 'none', padding: '6px 14px', borderRadius: 8, background: '#FEF2F2', color: '#DC2626', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+              Sign Out
+            </button>
+          </>
+        )}
+      />
 
       {/* HEADER */}
       <div style={{ background: 'linear-gradient(135deg,#1e1e3f,#2d2d5e)', padding: '2.5rem 2rem' }}>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch, getUser, logout } from '../lib/auth';
-import Logo from '@/components/ui/Logo';
+import SectionNav from '@/components/ui/SectionNav';
 
 type Tenant = {
   id: string; name: string; slug: string;
@@ -165,25 +165,16 @@ export default function SuperAdminPage() {
     <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'DM Sans, sans-serif' }}>
 
       {/* NAVBAR */}
-      <nav className="sl-nav" style={{ boxShadow: '0 1px 8px rgba(0,0,0,0.15)' }}>
-        <div className="sl-nav-inner" style={{ gap: 20 }}>
-          <Link href="/super-admin" className="sl-logo">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Logo width={72} />
-              <div style={{ width: 1, height: 42, background: 'rgba(0,0,0,0.06)', margin: '0 8px' }} />
-              <div>
-                <div className="sl-logo-name">SimuLearning</div>
-                <div className="sl-logo-sub">by SimuSoft Technologies</div>
-              </div>
-            </div>
-          </Link>
-          <span style={{ padding: '3px 10px', background: 'rgba(26,115,232,0.12)', color: '#1A73E8', borderRadius: 999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>Super Admin</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <SectionNav
+        href="/super-admin"
+        badge="Super Admin"
+        right={(
+          <>
             <button onClick={() => router.push('/super-admin/profile')} className="sl-nav-link">My Profile</button>
             <button onClick={logout} className="sl-nav-cta" style={{ border: 'none' }}>Sign Out</button>
-          </div>
-        </div>
-      </nav>
+          </>
+        )}
+      />
 
       {/* HERO */}
       <div style={{ background: 'linear-gradient(135deg,#0F172A 0%,#1E3A5F 60%,#0E7490 100%)', padding: '2.5rem 2rem' }}>
