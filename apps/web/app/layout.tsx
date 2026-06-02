@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import NavBar from '@/components/ui/NavBar';
 
 export const metadata: Metadata = {
   title: 'SimuLearning LMS',
@@ -10,7 +11,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head />
-      <body>{children}</body>
+      <body>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }

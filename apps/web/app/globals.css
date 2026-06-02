@@ -13,6 +13,8 @@
   --navy: #0F172A;
   --navy-light: #1E293B;
   --navy-muted: #334155;
+  --nav-bg: #FBFBFA; /* off-white navbar background */
+  --nav-text: #0F172A; /* nav foreground on light bg */
   --bg: #F0F4FA;
   --card: #FFFFFF;
   --surface: #F8FAFC;
@@ -88,17 +90,17 @@ a { color: inherit; text-decoration: none; }
 
 .sl-nav {
   position: sticky; top: 0; z-index: 100;
-  background: var(--navy); height: 64px;
+    background: var(--nav-bg); height: 64px;
   display: flex; align-items: center; padding: 0 2rem;
-  box-shadow: 0 1px 0 rgba(255,255,255,.06);
+  box-shadow: 0 1px 0 rgba(15,23,42,.06);
 }
 .sl-nav-inner { max-width: 1200px; width: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
 .sl-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .sl-logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-.sl-logo-name { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1rem; color: #fff; line-height: 1.1; letter-spacing: -.01em; }
-.sl-logo-sub { font-size: .6rem; color: rgba(255,255,255,.45); font-weight: 500; letter-spacing: .05em; }
-.sl-nav-link { font-size: .875rem; font-weight: 600; color: rgba(255,255,255,.65); padding: 6px 12px; border-radius: 8px; transition: all .15s; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; }
-.sl-nav-link:hover, .sl-nav-link.active { color: #fff; background: rgba(255,255,255,.1); }
+.sl-logo-name { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--nav-text); line-height: 1.1; letter-spacing: -.01em; }
+.sl-logo-sub { font-size: .72rem; color: rgba(15,23,42,.65); font-weight: 500; letter-spacing: .05em; }
+.sl-nav-link { font-size: .875rem; font-weight: 600; color: rgba(15,23,42,.85); padding: 6px 12px; border-radius: 8px; transition: all .15s; cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; }
+.sl-nav-link:hover, .sl-nav-link.active { color: var(--nav-text); background: rgba(15,23,42,.04); }
 .sl-nav-cta { background: var(--primary); color: #fff; font-size: .875rem; font-weight: 700; padding: 8px 18px; border-radius: var(--radius-full); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s, transform .15s; }
 .sl-nav-cta:hover { background: var(--primary-dark); transform: translateY(-1px); }
 
