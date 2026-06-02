@@ -176,37 +176,6 @@ export default function CoursesPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
-          <Link href="/dashboard" style={{ color: 'var(--text3)', fontSize: '0.85rem' }}>{t.back_home}</Link>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {(['en','hi','mr'] as Locale[]).map(l => (
-            <button key={l} onClick={() => switchLocale(l)}
-              style={{ padding: '0.3rem 0.7rem', borderRadius: '999px', border: '1.5px solid', borderColor: locale === l ? 'var(--primary)' : 'var(--border)', background: locale === l ? 'var(--primary)' : 'transparent', color: locale === l ? '#fff' : 'var(--text2)', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2', transition: 'all 0.2s' }}>
-              {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
-            </button>
-          ))}
-          {currentUser ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
-                  {currentUser.name?.[0]?.toUpperCase() ?? 'U'}
-                </span>
-                {currentUser.name?.split(' ')[0]}
-              </Link>
-              <button onClick={() => logout()} style={{ padding: '0.35rem 0.8rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text2)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <Link href="/login" style={{ padding: '0.4rem 1rem', borderRadius: '999px', border: '1.5px solid var(--primary)', color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none' }}>
-              Login
-            </Link>
-          )}
-        </div>
-      </nav>
 
       {/* HEADER */}
       <div style={{ background: 'linear-gradient(135deg, var(--text) 0%, #2d2d4e 100%)', padding: 'clamp(2.5rem,6vw,4rem) 2rem', position: 'relative', overflow: 'hidden' }}>

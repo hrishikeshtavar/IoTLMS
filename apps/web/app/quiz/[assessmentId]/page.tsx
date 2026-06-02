@@ -254,14 +254,14 @@ export default function QuizPage() {
       <ConfettiCanvas active={showConfetti} />
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ position: 'sticky', top: 64, zIndex: 40, background: 'rgba(255,248,240,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.65rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Baloo 2'" }}>← Back</button>
         <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>📝 SimuLearning Quiz</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           {isOffline && <span style={{ padding: '0.25rem 0.65rem', background: 'rgba(255,107,53,0.12)', color: 'var(--primary)', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700 }}>📡 Offline</span>}
           {!result && <span style={{ fontSize: '0.82rem', color: 'var(--text3)', fontWeight: 600 }}>{Object.keys(answers).length}/{questions.length} answered</span>}
         </div>
-      </nav>
+      </div>
 
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: 'clamp(1.5rem,4vw,3rem) 1.5rem' }}>
 

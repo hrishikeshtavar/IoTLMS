@@ -142,6 +142,9 @@ export default function CoursePage() {
   useEffect(() => {
     const saved = localStorage.getItem('simulearning_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
+    const handler = (e: CustomEvent) => setLocale(e.detail as Locale);
+    window.addEventListener('simu:locale-changed', handler as EventListener);
+    return () => window.removeEventListener('simu:locale-changed', handler as EventListener);
   }, []);
 
   // Load lessons
@@ -242,21 +245,11 @@ export default function CoursePage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Baloo 2', sans-serif" }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.65rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+      <div style={{ position: 'sticky', top: 64, zIndex: 40, background: 'rgba(255,248,240,0.97)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.5rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <Link href="/courses" style={{ color: 'var(--text3)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
           ← Courses
         </Link>
-        <Link href="/" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Locale switcher */}
-          <div style={{ display: 'flex', gap: '0.3rem' }}>
-            {(['en','hi','mr'] as Locale[]).map(l => (
-              <button key={l} onClick={() => { setLocale(l); localStorage.setItem('simulearning_locale', l); }}
-                style={{ padding: '0.2rem 0.55rem', borderRadius: '999px', border: '1.5px solid', borderColor: locale === l ? 'var(--primary)' : 'var(--border)', background: locale === l ? 'var(--primary)' : 'transparent', color: locale === l ? '#fff' : 'var(--text3)', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2' }}>
-                {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
-              </button>
-            ))}
-          </div>
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: progress === 100 ? 'var(--accent)' : 'var(--text3)' }}>
             {progress === 100 ? '🏆 Complete!' : `${progress}% done`}
           </span>
@@ -266,7 +259,7 @@ export default function CoursePage() {
             {noteText.trim() && <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--primary)', flexShrink: 0 }} />}
           </button>
         </div>
-      </nav>
+      </div>
 
       {/* PROGRESS BAR */}
       <div style={{ height: '4px', background: 'var(--border)', position: 'sticky', top: '53px', zIndex: 40 }}>
