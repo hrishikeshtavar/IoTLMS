@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Logo from './Logo'
 
 const DEFAULT_LOCALE = 'en'
 
 export default function NavBar() {
+  const pathname = usePathname()
   const [locale, setLocale] = useState<string>(DEFAULT_LOCALE)
 
   useEffect(() => {
@@ -23,6 +25,8 @@ export default function NavBar() {
     // dispatch an event so pages can react if they listen
     window.dispatchEvent(new CustomEvent('simu:locale-changed', { detail: l }))
   }
+
+  if (pathname && ['/dashboard', '/admin-login'].includes(pathname)) return null
 
   return (
     <nav className="sl-nav">

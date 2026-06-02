@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Logo from '@/components/ui/Logo';
 import { apiFetch, getUser, isLoggedIn, logout } from '../lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -245,79 +246,104 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* NAVBAR */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,248,240,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Link href="/" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>⚡ SimuLearning</Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {(['en','hi','mr'] as Locale[]).map(l => (
-            <button key={l} onClick={() => switchLocale(l)}
-              style={{ padding: '0.3rem 0.7rem', borderRadius: '999px', border: '1.5px solid', borderColor: locale === l ? 'var(--primary)' : 'var(--border)', background: locale === l ? 'var(--primary)' : 'transparent', color: locale === l ? '#fff' : 'var(--text2)', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2', transition: 'all 0.2s' }}>
-              {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
-            </button>
-          ))}
-          {/* Search */}
-          <div style={{ position: 'relative' }}>
-            <input
-              value={searchQuery}
-              onChange={e => handleSearch(e.target.value)}
-              placeholder="🔍 Search courses..."
-              style={{ padding: '0.4rem 1rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'var(--card)', fontSize: '0.82rem', fontFamily: "'Baloo 2'", color: 'var(--text)', width: 200, outline: 'none' }}
-            />
-            {searchResults && searchQuery && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, width: 320, background: 'var(--card)', border: '1.5px solid var(--border)', borderRadius: '1rem', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 100, overflow: 'hidden' }}>
-                {searching && <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>Searching…</div>}
-                {!searching && searchResults.courses?.length === 0 && searchResults.lessons?.length === 0 && (
-                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>No results found</div>
-                )}
-                {searchResults.courses?.slice(0, 3).map((c: any) => (
-                  <Link key={c.id} href={`/courses/${c.id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    onClick={() => router.push(`/courses/${enrollment.course_id}`)}>
-                    <span style={{ fontSize: '1.2rem' }}>📚</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}
-                        dangerouslySetInnerHTML={{ __html: c._formatted?.title_en || c.title_en }} />
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>{c.category}</div>
-                    </div>
-                  </Link>
-                ))}
-                {searchResults.lessons?.slice(0, 2).map((l: any) => (
-                  <Link key={l.id} href={`/courses/${l.course_id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    onClick={() => router.push(`/courses/${enrollment.course_id}`)}>
-                    <span style={{ fontSize: '1.2rem' }}>📖</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Lesson</div>
-                    </div>
-                  </Link>
-                ))}
-                {searchResults.total > 5 && (
-                  <Link href={`/courses?q=${encodeURIComponent(searchQuery)}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    style={{ display: 'block', padding: '0.6rem 1rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
-                    See all {searchResults.total} results →
-                  </Link>
-                )}
+      <nav className="sl-nav">
+        <div className="sl-nav-inner" style={{ gap: 20, alignItems: 'center' }}>
+          <Link href="/" className="sl-logo">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Logo width={72} />
+              <div style={{ width: 1, height: 42, background: 'rgba(0,0,0,0.06)', margin: '0 8px' }} />
+              <div>
+                <div className="sl-logo-name">SimuLearning</div>
+                <div className="sl-logo-sub">by SimuSoft Technologies</div>
               </div>
-            )}
-          </div>
-          <Link href="/courses" className="btn-primary" style={{ padding: '0.5rem 1.1rem', fontSize: '0.82rem' }}>
-            {t.browse}
+            </div>
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
-              {getUser()?.name?.[0]?.toUpperCase() ?? 'U'}
-            </span>
-            <span style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700 }}>
-              {getUser()?.name?.split(' ')[0]}
-            </span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {(['en','hi','mr'] as Locale[]).map(l => (
+              <button
+                key={l}
+                onClick={() => switchLocale(l)}
+                className="sl-nav-link"
+                style={{
+                  padding: '0.45rem 0.8rem',
+                  borderRadius: '999px',
+                  borderColor: locale === l ? 'var(--primary)' : 'var(--border)',
+                  background: locale === l ? 'var(--primary)' : 'transparent',
+                  color: locale === l ? '#fff' : 'var(--text2)',
+                  fontWeight: 700,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  fontFamily: l !== 'en' ? 'Noto Sans Devanagari' : 'Baloo 2',
+                }}
+              >
+                {l === 'en' ? 'EN' : l === 'hi' ? 'हिं' : 'मरा'}
+              </button>
+            ))}
+
+            <div style={{ position: 'relative' }}>
+              <input
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+                placeholder="🔍 Search courses..."
+                style={{ padding: '0.5rem 1rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'var(--surface)', fontSize: '0.82rem', fontFamily: 'inherit', color: 'var(--text)', width: 220, outline: 'none' }}
+              />
+              {searchResults && searchQuery && (
+                <div style={{ position: 'absolute', top: '110%', left: 0, width: 320, background: 'var(--card)', border: '1.5px solid var(--border)', borderRadius: '1rem', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 100, overflow: 'hidden' }}>
+                  {searching && <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>Searching…</div>}
+                  {!searching && searchResults.courses?.length === 0 && searchResults.lessons?.length === 0 && (
+                    <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text3)', fontSize: '0.82rem' }}>No results found</div>
+                  )}
+                  {searchResults.courses?.slice(0, 3).map((c: any) => (
+                    <Link key={c.id} href={`/courses/${c.id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span style={{ fontSize: '1.2rem' }}>📚</span>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}
+                          dangerouslySetInnerHTML={{ __html: c._formatted?.title_en || c.title_en }} />
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>{c.category}</div>
+                      </div>
+                    </Link>
+                  ))}
+                  {searchResults.lessons?.slice(0, 2).map((l: any) => (
+                    <Link key={l.id} href={`/courses/${l.course_id}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <span style={{ fontSize: '1.2rem' }}>📖</span>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text3)' }}>Lesson</div>
+                      </div>
+                    </Link>
+                  ))}
+                  {searchResults.total > 5 && (
+                    <Link href={`/courses?q=${encodeURIComponent(searchQuery)}`} onClick={() => { setSearchQuery(''); setSearchResults(null); }}
+                      style={{ display: 'block', padding: '0.6rem 1rem', textAlign: 'center', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', textDecoration: 'none' }}>
+                      See all {searchResults.total} results →
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <button onClick={() => logout()} style={{ padding: '0.35rem 0.8rem', borderRadius: '999px', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--text2)', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
-            Sign Out
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <Link href="/courses" className="sl-nav-link">{t.browse}</Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)' }}>
+              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+                {getUser()?.name?.[0]?.toUpperCase() ?? 'U'}
+              </span>
+              <span style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700 }}>
+                {getUser()?.name?.split(' ')[0]}
+              </span>
+            </div>
+            <button onClick={() => logout()} className="sl-nav-cta" style={{ border: 'none' }}>
+              Sign Out
+            </button>
+          </div>
         </div>
       </nav>
 

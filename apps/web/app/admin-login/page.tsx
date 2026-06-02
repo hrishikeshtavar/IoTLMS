@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { login, getUser } from '../lib/auth';
+import Logo from '@/components/ui/Logo';
 
 const SimuSoftLogo = ({ height = 32 }: { height?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" height={height}
@@ -77,18 +78,22 @@ export default function AdminLoginPage() {
       `}</style>
 
       {/* NAV */}
-      <nav style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', padding: '0 2.5rem', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 12px rgba(26,115,232,0.06)' }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <SimuSoftLogo height={30} />
-          <div style={{ width: 1, height: 24, background: '#D0E4F0', margin: '0 2px' }} />
-          <div>
-            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: '1rem', color: 'var(--primary)', lineHeight: 1 }}>SimuLearning</div>
-            <div style={{ fontSize: '0.58rem', color: 'var(--text3)', letterSpacing: '0.07em', fontWeight: 700 }}>by SimuSoft Technologies</div>
+      <nav className="sl-nav" style={{ boxShadow: '0 1px 12px rgba(26,115,232,0.06)' }}>
+        <div className="sl-nav-inner">
+          <Link href="/" className="sl-logo">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Logo width={72} />
+              <div style={{ width: 1, height: 42, background: 'rgba(0,0,0,0.06)', margin: '0 8px' }} />
+              <div>
+                <div className="sl-logo-name">SimuLearning</div>
+                <div className="sl-logo-sub">by SimuSoft Technologies</div>
+              </div>
+            </div>
+          </Link>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Link href="/login" className="sl-nav-link">Student Login</Link>
+            <Link href="/" className="sl-nav-cta">Back to Home</Link>
           </div>
-        </Link>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Link href="/login" style={{ padding: '7px 16px', borderRadius: 9, color: 'var(--text2)', fontWeight: 700, fontSize: '0.83rem', textDecoration: 'none' }}>Student Login</Link>
-          <Link href="/" style={{ padding: '7px 14px', borderRadius: 8, color: 'var(--text2)', fontWeight: 700, fontSize: '0.83rem', textDecoration: 'none' }}>← Back to Home</Link>
         </div>
       </nav>
 
