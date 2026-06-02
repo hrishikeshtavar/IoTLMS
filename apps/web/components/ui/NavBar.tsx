@@ -47,11 +47,31 @@ export default function NavBar() {
           </div>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link href="/courses" className="sl-nav-link">Courses</Link>
-          <button className="sl-nav-link" onClick={() => switchLocale(locale === 'en' ? 'hi' : locale === 'hi' ? 'mr' : 'en')}>
-            {locale === 'en' ? 'हिं' : locale === 'hi' ? 'मरा' : 'EN'}
-          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {(['en', 'mr', 'hi'] as string[]).map(l => (
+              <button
+                key={l}
+                onClick={() => switchLocale(l)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  border: '1.5px solid',
+                  borderColor: locale === l ? 'var(--primary)' : 'var(--border)',
+                  background: locale === l ? 'var(--primary)' : 'transparent',
+                  color: locale === l ? '#fff' : 'var(--text2)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: l !== 'en' ? 'Noto Sans Devanagari, DM Sans' : 'DM Sans',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {l === 'en' ? 'English' : l === 'mr' ? 'मराठी' : 'हिंदी'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

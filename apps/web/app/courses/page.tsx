@@ -122,6 +122,12 @@ export default function CoursesPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const handler = (e: CustomEvent) => setLocale(e.detail as Locale);
+    window.addEventListener('simu:locale-changed', handler as EventListener);
+    return () => window.removeEventListener('simu:locale-changed', handler as EventListener);
+  }, []);
+
   const switchLocale = (l: Locale) => { setLocale(l); localStorage.setItem('simulearning_locale', l); };
 
   const categories = ['', ...Array.from(new Set(courses.map(c => c.category || 'General').filter(Boolean)))];

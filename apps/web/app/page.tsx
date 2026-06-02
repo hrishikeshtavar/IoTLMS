@@ -184,6 +184,9 @@ export default function HomePage() {
   useEffect(() => {
     const saved = localStorage.getItem('simulearning_locale') as Locale;
     if (saved && ['en','hi','mr'].includes(saved)) setLocale(saved);
+    const handler = (e: CustomEvent) => setLocale(e.detail as Locale);
+    window.addEventListener('simu:locale-changed', handler as EventListener);
+    return () => window.removeEventListener('simu:locale-changed', handler as EventListener);
   }, []);
 
   useEffect(() => {
