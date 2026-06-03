@@ -236,6 +236,7 @@ export default function SuperAdminCoursesPage() {
     setCourses(reordered);
     await apiFetch('/api/courses/reorder', {
       method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orders: reordered.map((c, i) => ({ id: c.id, order_index: i })) }),
     });
   }
