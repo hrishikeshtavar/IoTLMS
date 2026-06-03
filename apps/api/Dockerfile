@@ -7,7 +7,7 @@ COPY packages/ ./packages/
 RUN npm install --legacy-peer-deps
 RUN npm install prisma@^5.22.0 @prisma/client@^5.22.0 --legacy-peer-deps
 COPY apps/api ./apps/api
-RUN cd apps/api && npx prisma generate --schema=prisma/schema.prisma
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 RUN cd apps/api && npm run build
 
 FROM node:20-alpine AS runner
