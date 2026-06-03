@@ -94,13 +94,15 @@ function Toolbar({editor}:{editor:any}){
 }
 
 // ── Block card wrapper ─────────────────────────────────────
-function BlockCard({block,isEditing,onEdit,onDelete,children}:{block:Block;isEditing:boolean;onEdit:()=>void;onDelete:()=>void;children:React.ReactNode}){
+function BlockCard({block,isEditing,onEdit,onDelete,onMoveUp,onMoveDown,children}:{block:Block;isEditing:boolean;onEdit:()=>void;onDelete:()=>void;onMoveUp?:()=>void;onMoveDown?:()=>void;children:React.ReactNode}){
   const meta={text:{emoji:'📖',color:'#00C896',label:'Text'},video:{emoji:'🎬',color:'#1A73E8',label:'Video'},quiz:{emoji:'📝',color:'#FF6B35',label:'Quiz'},lab:{emoji:'🔬',color:'#A855F7',label:'Lab'},image:{emoji:'🖼️',color:'#EC4899',label:'Image'}}[block.type]||{emoji:'📄',color:'#718096',label:block.type};
   return(
     <div style={{background:'#fff',borderRadius:12,border:`1.5px solid ${isEditing?meta.color:'#e2e8f0'}`,overflow:'hidden',marginBottom:'1rem',boxShadow:isEditing?`0 0 0 3px ${meta.color}22`:'0 1px 4px rgba(0,0,0,0.04)'}}>
       <div style={{padding:'0.65rem 1rem',borderBottom:'1px solid #f1f5f9',display:'flex',alignItems:'center',justifyContent:'space-between',background:isEditing?meta.color+'0a':'#fafafa'}}>
         <span style={{display:'inline-flex',alignItems:'center',gap:'0.3rem',fontSize:'0.72rem',fontWeight:700,color:meta.color}}>{meta.emoji} {meta.label}</span>
         <div style={{display:'flex',gap:'0.4rem'}}>
+          <button onClick={onMoveUp} disabled={!onMoveUp} title="Move up" style={{padding:'3px 8px',borderRadius:5,border:'1.5px solid #e2e8f0',background:'#fff',color:onMoveUp?'#374151':'#d1d5db',fontSize:'0.8rem',fontWeight:700,cursor:onMoveUp?'pointer':'default',lineHeight:1}}>↑</button>
+          <button onClick={onMoveDown} disabled={!onMoveDown} title="Move down" style={{padding:'3px 8px',borderRadius:5,border:'1.5px solid #e2e8f0',background:'#fff',color:onMoveDown?'#374151':'#d1d5db',fontSize:'0.8rem',fontWeight:700,cursor:onMoveDown?'pointer':'default',lineHeight:1}}>↓</button>
           <button onClick={onEdit} style={{padding:'3px 10px',borderRadius:5,border:'1.5px solid',borderColor:isEditing?meta.color:'#e2e8f0',background:isEditing?meta.color+'18':'#fff',color:isEditing?meta.color:'#6b7280',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>{isEditing?'✓ Done':'Edit'}</button>
           <button onClick={onDelete} style={{padding:'3px 8px',borderRadius:5,border:'1.5px solid #fecaca',background:'#FFF5F5',color:'#DC2626',fontSize:'0.72rem',fontWeight:700,cursor:'pointer'}}>✕</button>
         </div>
@@ -285,6 +287,19 @@ export default function CourseEditorPage(){
     if(!confirm('Remove this block?'))return;
     setBlocks(p=>p.filter(b=>b.id!==id));
     if(editingBlockId===id)setEditingBlockId(null);
+    scheduleAutoSave();
+  }
+
+  function moveBlock(id:string,dir:-1|1){
+    setBlocks(p=>{
+      const idx=p.findIndex(b=>b.id===id);
+      if(idx<0)return p;
+      const ni=idx+dir;
+      if(ni<0||ni>=p.length)return p;
+      const r=[...p];
+      [r[idx],r[ni]]=[r[ni],r[idx]];
+      return r;
+    });
     scheduleAutoSave();
   }
 
@@ -483,8 +498,8 @@ export default function CourseEditorPage(){
                 </div>
 
                 {/* Blocks */}
-                {blocks.map(block=>(
-                  <BlockCard key={block.id} block={block} isEditing={editingBlockId===block.id} onEdit={()=>openBlock(block.id)} onDelete={()=>deleteBlock(block.id)}>
+                {blocks.map((block,bi)=>(
+                  <BlockCard key={block.id} block={block} isEditing={editingBlockId===block.id} onEdit={()=>openBlock(block.id)} onDelete={()=>deleteBlock(block.id)} onMoveUp={bi>0?()=>moveBlock(block.id,-1):undefined} onMoveDown={bi<blocks.length-1?()=>moveBlock(block.id,1):undefined}>
                     {/* ── TEXT BLOCK ── */}
                     {block.type==='text'&&editingBlockId===block.id&&(
                       <div>
