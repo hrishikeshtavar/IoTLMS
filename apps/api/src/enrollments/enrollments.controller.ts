@@ -9,8 +9,9 @@ export class EnrollmentsController {
 
   @Post()
   enroll(@Body() dto: CreateEnrollmentDto, @Req() req: Request) {
+    const userId   = (req as any).user?.id ?? '';
     const tenantId = (req as any).user?.tenantId ?? (req as any)['tenantId'] ?? '';
-    return this.enrollmentsService.enroll({ ...dto, tenant_id: tenantId });
+    return this.enrollmentsService.enroll({ ...dto, user_id: userId, tenant_id: tenantId });
   }
 
   @Get('user/:userId')
