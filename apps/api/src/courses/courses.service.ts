@@ -19,7 +19,7 @@ export class CoursesService {
     } : { AND: [gradeFilter, { status: 'published' as const }] };
     return this.prisma.course.findMany({
       where: grade ? where : (tenantId ? { OR: [{ tenant_id: tenantId }, { status: 'published' as const, NOT: { tenant_id: tenantId } }] } : { status: 'published' as const }),
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ order_index: 'asc' }, { created_at: 'asc' }],
       include: {
         _count: { select: { enrollments: true, lessons: true } },
       },
@@ -54,5 +54,14 @@ export class CoursesService {
       where: { id, tenant_id: tenantId },
       data: { status: status as any },
     });
+  }
+
+  async reorderCourses(orders: { id: string; order_index: number }[]) {
+    await Promise.all(
+      orders.map(({ id, order_index }) =>
+        this.prisma.course.update({ where: { id }, data: { order_index } }),
+      ),
+    );
+    return { success: true };
   }
 }

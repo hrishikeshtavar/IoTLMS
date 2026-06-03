@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch, logout } from '../../lib/auth';
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Tenant = { id: string; slug: string; name: string };
 type Course = {
@@ -22,6 +25,39 @@ const labelStyle: React.CSSProperties = { display:'block', fontSize:'0.72rem', f
 const inputStyle: React.CSSProperties = { display:'block', width:'100%', padding:'0.65rem 0.875rem', borderRadius:8, border:'1.5px solid #d1d5db', fontSize:'0.9rem', fontFamily:'inherit', boxSizing:'border-box', outline:'none' };
 
 function slugify(t: string) { return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+
+function SortableCourseRow({ course, deleting, onEdit, onDelete, onToggleStatus, isDragDisabled }: {
+  course: Course; deleting: string|null; onEdit:()=>void; onDelete:()=>void; onToggleStatus:()=>void; isDragDisabled: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: course.id, disabled: isDragDisabled });
+  const cc = CAT_COLORS[course.category||'General']||'#718096';
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, display:'grid', gridTemplateColumns:'32px 2.5fr 1fr 1fr 1fr 140px', padding:'1rem 1.5rem', borderBottom:'1px solid #f3f4f6', alignItems:'center', background: isDragging ? '#f0f9ff' : 'transparent' }}
+      onMouseEnter={e=>{ if(!isDragging)(e.currentTarget as HTMLDivElement).style.background='#fafafa'; }}
+      onMouseLeave={e=>{ if(!isDragging)(e.currentTarget as HTMLDivElement).style.background='transparent'; }}>
+      <div {...(isDragDisabled ? {} : { ...attributes, ...listeners })}
+        style={{ cursor: isDragDisabled ? 'default' : 'grab', color: isDragDisabled ? '#e5e7eb' : '#9ca3af', fontSize:'1rem', display:'flex', alignItems:'center', justifyContent:'center', userSelect:'none' }}
+        title={isDragDisabled ? 'Clear filters to reorder' : 'Drag to reorder'}>⠿</div>
+      <div>
+        <div style={{ fontWeight:700, fontSize:'0.9rem', color:'#111827', marginBottom:2 }}>{course.title_en}</div>
+        <div style={{ fontSize:'0.72rem', color:'#9ca3af' }}>{course._count?.lessons||0} lessons · {course._count?.enrollments||0} enrolled</div>
+      </div>
+      <div><span style={{ fontSize:'0.72rem', padding:'3px 8px', borderRadius:999, fontWeight:700, background:cc+'22', color:cc }}>{course.category||'General'}</span></div>
+      <div style={{ fontSize:'0.82rem', color:'#6b7280', textTransform:'capitalize' }}>{course.level||'beginner'}</div>
+      <div>
+        <button onClick={onToggleStatus} style={{ fontSize:'0.72rem', padding:'3px 10px', borderRadius:999, fontWeight:700, cursor:'pointer', border:'none', background:course.status==='published'?'#DCFCE7':'#F3F4F6', color:course.status==='published'?'#15803D':'#6b7280' }}>
+          {course.status==='published'?'🟢 Live':'📝 Draft'}
+        </button>
+      </div>
+      <div style={{ display:'flex', gap:'0.4rem', justifyContent:'flex-end' }}>
+        <button onClick={onEdit} style={{ padding:'4px 12px', borderRadius:6, border:'1.5px solid #e5e7eb', background:'#fff', color:'#1A73E8', fontSize:'0.75rem', fontWeight:700, cursor:'pointer' }}>Edit</button>
+        <button onClick={onDelete} disabled={deleting===course.id} style={{ padding:'4px 10px', borderRadius:6, border:'1.5px solid #fecaca', background:'#FFF5F5', color:'#DC2626', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', opacity:deleting===course.id?0.5:1 }}>
+          {deleting===course.id?'…':'Del'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function CourseForm({ course, tenants, onSave, onClose }: { course: Partial<Course>|null; tenants: Tenant[]; onSave:(c:Course)=>void; onClose:()=>void }) {
   const isEdit = !!course?.id;
@@ -184,6 +220,26 @@ export default function SuperAdminCoursesPage() {
   const [editing, setEditing] = useState<Course|null>(null);
   const [deleting, setDeleting] = useState<string|null>(null);
 
+  const isFiltered = !!(search || statusFilter !== 'all' || tenantFilter);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIdx = courses.findIndex(c => c.id === active.id);
+    const newIdx = courses.findIndex(c => c.id === over.id);
+    const reordered = arrayMove(courses, oldIdx, newIdx);
+    setCourses(reordered);
+    await apiFetch('/api/courses/reorder', {
+      method: 'PATCH',
+      body: JSON.stringify({ orders: reordered.map((c, i) => ({ id: c.id, order_index: i })) }),
+    });
+  }
+
   useEffect(() => {
     apiFetch('/api/tenants').then(r=>r.json()).then(d=>setTenants(Array.isArray(d)?d:[])).catch(()=>{});
     apiFetch('/api/courses').then(r=>r.json()).then(d=>{ setCourses(Array.isArray(d)?d:[]); setLoading(false); }).catch(()=>setLoading(false));
@@ -264,8 +320,13 @@ export default function SuperAdminCoursesPage() {
           </div>
         </div>
         <div style={{ background:'#fff', borderRadius:16, border:'1px solid #e5e7eb', overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'2.5fr 1fr 1fr 1fr 140px', padding:'0.75rem 1.5rem', background:'#f9fafb', borderBottom:'1px solid #e5e7eb', fontSize:'0.72rem', fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.05em' }}>
-            <div>Course</div><div>Category</div><div>Level</div><div>Status</div><div></div>
+          {isFiltered && (
+            <div style={{ padding:'0.5rem 1.5rem', background:'#fffbeb', borderBottom:'1px solid #fde68a', fontSize:'0.75rem', color:'#92400e', fontWeight:600, display:'flex', alignItems:'center', gap:'0.4rem' }}>
+              ⚠️ Clear filters to enable drag & drop reordering
+            </div>
+          )}
+          <div style={{ display:'grid', gridTemplateColumns:'32px 2.5fr 1fr 1fr 1fr 140px', padding:'0.75rem 1.5rem', background:'#f9fafb', borderBottom:'1px solid #e5e7eb', fontSize:'0.72rem', fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+            <div></div><div>Course</div><div>Category</div><div>Level</div><div>Status</div><div></div>
           </div>
           {loading ? (
             <div style={{ textAlign:'center', padding:'4rem', color:'#9ca3af' }}>Loading courses…</div>
@@ -274,33 +335,23 @@ export default function SuperAdminCoursesPage() {
               <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>📭</div>
               No courses found. <button onClick={()=>window.location.href='/super-admin/courses/new'} style={{ color:'#1A73E8', fontWeight:700, background:'none', border:'none', cursor:'pointer' }}>Create one →</button>
             </div>
-          ) : filtered.map(course=>{
-            const cc = CAT_COLORS[course.category||'General']||'#718096';
-            return (
-              <div key={course.id}
-                style={{ display:'grid', gridTemplateColumns:'2.5fr 1fr 1fr 1fr 140px', padding:'1rem 1.5rem', borderBottom:'1px solid #f3f4f6', alignItems:'center' }}
-                onMouseEnter={e=>(e.currentTarget.style.background='#fafafa')}
-                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:'0.9rem', color:'#111827', marginBottom:2 }}>{course.title_en}</div>
-                  <div style={{ fontSize:'0.72rem', color:'#9ca3af' }}>{course._count?.lessons||0} lessons · {course._count?.enrollments||0} enrolled</div>
-                </div>
-                <div><span style={{ fontSize:'0.72rem', padding:'3px 8px', borderRadius:999, fontWeight:700, background:cc+'22', color:cc }}>{course.category||'General'}</span></div>
-                <div style={{ fontSize:'0.82rem', color:'#6b7280', textTransform:'capitalize' }}>{course.level||'beginner'}</div>
-                <div>
-                  <button onClick={()=>toggleStatus(course)} style={{ fontSize:'0.72rem', padding:'3px 10px', borderRadius:999, fontWeight:700, cursor:'pointer', border:'none', background:course.status==='published'?'#DCFCE7':'#F3F4F6', color:course.status==='published'?'#15803D':'#6b7280' }}>
-                    {course.status==='published'?'🟢 Live':'📝 Draft'}
-                  </button>
-                </div>
-                <div style={{ display:'flex', gap:'0.4rem', justifyContent:'flex-end' }}>
-                  <button onClick={()=>window.location.href=`/super-admin/courses/${course.id}`} style={{ padding:'4px 12px', borderRadius:6, border:'1.5px solid #e5e7eb', background:'#fff', color:'#1A73E8', fontSize:'0.75rem', fontWeight:700, cursor:'pointer' }}>Edit</button>
-                  <button onClick={()=>deleteCourse(course.id)} disabled={deleting===course.id} style={{ padding:'4px 10px', borderRadius:6, border:'1.5px solid #fecaca', background:'#FFF5F5', color:'#DC2626', fontSize:'0.75rem', fontWeight:700, cursor:'pointer', opacity:deleting===course.id?0.5:1 }}>
-                    {deleting===course.id?'…':'Del'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filtered.map(c=>c.id)} strategy={verticalListSortingStrategy}>
+                {filtered.map(course => (
+                  <SortableCourseRow
+                    key={course.id}
+                    course={course}
+                    deleting={deleting}
+                    isDragDisabled={isFiltered}
+                    onEdit={() => window.location.href=`/super-admin/courses/${course.id}`}
+                    onDelete={() => deleteCourse(course.id)}
+                    onToggleStatus={() => toggleStatus(course)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       </div>
       {(creating||editing) && <CourseForm course={editing} tenants={tenants} onSave={handleSaved} onClose={()=>{ setCreating(false); setEditing(null); }}/>}

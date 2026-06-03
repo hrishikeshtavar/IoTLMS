@@ -28,6 +28,12 @@ export class CoursesController {
     return this.coursesService.create(body, req.tenantId);
   }
 
+  @Patch('reorder')
+  @Roles('super_admin')
+  reorderCourses(@Body() body: { orders: { id: string; order_index: number }[] }) {
+    return this.coursesService.reorderCourses(body.orders);
+  }
+
   @Patch(':id')
   @Roles('admin', 'super_admin')
   update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
