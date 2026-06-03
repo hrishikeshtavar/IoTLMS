@@ -153,7 +153,7 @@ export default function CertificatePage() {
             {/* Header: Logo + School name */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                <img src="/simusoft-badge.svg" alt="Simusoft" style={{ height: 52, objectFit: 'contain' }} />
+                <div style={{ background: '#1e1e3f', borderRadius: 10, padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/simusoft-badge.svg" alt="Simusoft" style={{ height: 40, objectFit: 'contain' }} /></div>
                 <div>
                   <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>Simusoft Technologies</div>
                   <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>{cert.school}</div>
