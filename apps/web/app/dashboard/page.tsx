@@ -164,7 +164,7 @@ export default function DashboardPage() {
     const user = getUser();
     if (user?.role === "super_admin") { router.push("/super-admin"); return; }
     if (user?.role === "admin") { router.push("/admin"); return; }
-    if (!user) return;
+    if (!user) { router.push('/login'); return; }
     const saved = localStorage.getItem('simulearning_locale') as Locale;
     const fromProfile = (user as any)?.language_pref as Locale;
     const lang = (saved && ['en','hi','mr'].includes(saved)) ? saved
@@ -174,8 +174,12 @@ export default function DashboardPage() {
     localStorage.setItem('simulearning_locale', lang);
 
     apiFetch(`/api/enrollments/user/${user.id}`)
-      .then(r => r.json())
-      .then(data => { setEnrollments(Array.isArray(data) ? data : []); setLoading(false); })
+      .then(async r => {
+        if (!r.ok) { setLoading(false); return; }
+        const data = await r.json();
+        setEnrollments(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
 
     apiFetch('/api/gamification/stats')
@@ -216,9 +220,9 @@ export default function DashboardPage() {
   const isDevanagari = locale !== 'en';
 
   const completedCourses = realStats?.certs ?? enrollments.filter(e => e.completed_at).length;
-  const totalLessons = realStats?.lessons ?? enrollments.length * 3;
-  const passedQuizzes = realStats?.quizzes ?? Math.floor(enrollments.length * 1.5);
-  const labsDone = realStats?.labs ?? enrollments.filter(e => e.progress_pct > 50).length;
+  const totalLessons = realStats?.lessons ?? 0;
+  const passedQuizzes = realStats?.quizzes ?? 0;
+  const labsDone = realStats?.labs ?? 0;
 
   const statsData = [
     { label: t.lessons_done,    value: totalLessons,    emoji: '📖', color: '#1A73E8' },
