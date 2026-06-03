@@ -153,12 +153,9 @@ export default function CertificatePage() {
             {/* Header: Logo + School name */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                {cert.logoUrl
-                  ? <img src={cert.logoUrl} alt="School" style={{ height: 52, objectFit: 'contain' }} />
-                  : <div style={{ width: 52, height: 52, borderRadius: 14, background: `linear-gradient(135deg,${primary},#9333ea)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>⚡</div>
-                }
+                <img src="/simusoft-badge.svg" alt="Simusoft" style={{ height: 52, objectFit: 'contain' }} />
                 <div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>SimuLearning LMS</div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>Simusoft Technologies</div>
                   <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>{cert.school}</div>
                 </div>
               </div>
