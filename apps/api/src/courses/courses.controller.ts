@@ -30,8 +30,8 @@ export class CoursesController {
 
   @Patch('reorder')
   @Roles('super_admin')
-  reorderCourses(@Body() body: { orders: { id: string; order_index: number }[] }) {
-    return this.coursesService.reorderCourses(body.orders);
+  reorderCourses(@Body('orders') orders: { id: string; order_index: number }[]) {
+    return this.coursesService.reorderCourses(orders);
   }
 
   @Patch(':id')

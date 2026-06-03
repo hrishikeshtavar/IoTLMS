@@ -57,9 +57,10 @@ export class CoursesService {
   }
 
   async reorderCourses(orders: { id: string; order_index: number }[]) {
+    if (!orders?.length) return { success: true };
     await Promise.all(
       orders.map(({ id, order_index }) =>
-        this.prisma.course.update({ where: { id }, data: { order_index } }),
+        this.prisma.course.updateMany({ where: { id }, data: { order_index } }),
       ),
     );
     return { success: true };
