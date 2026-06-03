@@ -219,6 +219,7 @@ export default function SuperAdminCoursesPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Course|null>(null);
   const [deleting, setDeleting] = useState<string|null>(null);
+  const [reorderStatus, setReorderStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
 
   const isFiltered = !!(search || statusFilter !== 'all' || tenantFilter);
 
@@ -234,11 +235,27 @@ export default function SuperAdminCoursesPage() {
     const newIdx = courses.findIndex(c => c.id === over.id);
     const reordered = arrayMove(courses, oldIdx, newIdx);
     setCourses(reordered);
-    await apiFetch('/api/courses/reorder', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orders: reordered.map((c, i) => ({ id: c.id, order_index: i })) }),
-    });
+    setReorderStatus('saving');
+    try {
+      const res = await apiFetch('/api/courses/reorder', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orders: reordered.map((c, i) => ({ id: c.id, order_index: i })) }),
+      });
+      if (res.ok) {
+        setReorderStatus('saved');
+        setTimeout(() => setReorderStatus('idle'), 2500);
+      } else {
+        const err = await res.json().catch(() => ({ message: res.status }));
+        console.error('Reorder failed:', res.status, err);
+        setReorderStatus('error');
+        setTimeout(() => setReorderStatus('idle'), 4000);
+      }
+    } catch (err) {
+      console.error('Reorder network error:', err);
+      setReorderStatus('error');
+      setTimeout(() => setReorderStatus('idle'), 4000);
+    }
   }
 
   useEffect(() => {
@@ -284,6 +301,9 @@ export default function SuperAdminCoursesPage() {
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
           <span style={{ fontSize:'0.8rem', color:'#6b7280', fontWeight:600 }}>{courses.length} courses</span>
+          {reorderStatus === 'saving' && <span style={{ fontSize:'0.75rem', color:'#6b7280', fontWeight:600 }}>⏳ Saving order…</span>}
+          {reorderStatus === 'saved'  && <span style={{ fontSize:'0.75rem', color:'#15803D', fontWeight:700 }}>✅ Order saved</span>}
+          {reorderStatus === 'error'  && <span style={{ fontSize:'0.75rem', color:'#DC2626', fontWeight:700 }}>❌ Save failed — check console</span>}
           <button onClick={()=>window.location.href='/super-admin/courses/new'} style={{ padding:'8px 18px', borderRadius:8, background:'linear-gradient(135deg,#1A73E8,#00C896)', color:'#fff', border:'none', fontWeight:700, fontSize:'0.875rem', cursor:'pointer' }}>+ New Course</button>
           <button onClick={logout} style={{ padding:'6px 14px', borderRadius:8, background:'#FEF2F2', color:'#DC2626', border:'none', fontWeight:700, fontSize:'0.8rem', cursor:'pointer' }}>Sign Out</button>
         </div>
