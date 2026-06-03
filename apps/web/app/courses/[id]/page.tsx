@@ -154,23 +154,34 @@ export default function CoursePage() {
       .then(r => r.json())
       .then(async (data: Lesson[]) => {
         setLessons(data);
-        if (data.length > 0) setActiveLesson(data[0] ?? null);
         setLoading(false);
         const map: Record<string, string> = {};
         await Promise.all(data.map(async (l) => {
           try { const r = await apiFetch('/api/assessments/by-lesson/' + l.id); const a = await r.json(); if (a && a.id) map[l.id] = a.id; } catch {}
         }));
         setAssessmentMap(map);
-        // Load completed lessons from server
+        // Load completed lessons, then resume from last position
         const user = getUser();
         if (user?.id) {
           try {
             const compRes = await apiFetch(`/api/lessons/course/${courseId}/completed`);
             if (compRes.ok) {
               const compData = await compRes.json();
-              setCompleted(new Set(compData.completed || []));
+              const completedSet = new Set<string>(compData.completed || []);
+              setCompleted(completedSet);
+              // Resume: last visited lesson → first incomplete → last lesson
+              const savedId = localStorage.getItem(`sl_last_lesson_${courseId}`);
+              const savedLesson = savedId ? data.find((l: Lesson) => l.id === savedId) : null;
+              const firstIncomplete = data.find((l: Lesson) => !completedSet.has(l.id));
+              setActiveLesson(savedLesson ?? firstIncomplete ?? data[data.length - 1] ?? null);
+            } else {
+              setActiveLesson(data[0] ?? null);
             }
-          } catch {}
+          } catch {
+            setActiveLesson(data[0] ?? null);
+          }
+        } else {
+          setActiveLesson(data[0] ?? null);
         }
       })
       .catch(() => setLoading(false));
@@ -231,7 +242,11 @@ export default function CoursePage() {
         // Auto-advance to next lesson
         const currentIndex = lessons.findIndex(l => l.id === lessonId);
         if (currentIndex < lessons.length - 1) {
-          setTimeout(() => setActiveLesson(lessons[currentIndex + 1] ?? null), 600);
+          setTimeout(() => {
+            const next = lessons[currentIndex + 1] ?? null;
+            setActiveLesson(next);
+            if (next && courseId) localStorage.setItem(`sl_last_lesson_${courseId}`, next.id);
+          }, 600);
         }
       }
     } catch {
@@ -329,7 +344,7 @@ export default function CoursePage() {
                 const isDone = completed.has(lesson.id);
                 const isActive = activeLesson?.id === lesson.id;
                 return (
-                  <button key={lesson.id} onClick={() => setActiveLesson(lesson)}
+                  <button key={lesson.id} onClick={() => { setActiveLesson(lesson); localStorage.setItem(`sl_last_lesson_${courseId}`, lesson.id); }}
                     style={{ width: '100%', textAlign: 'left', padding: '0.85rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem', background: isActive ? `${meta.color}11` : 'transparent', borderLeft: isActive ? `3px solid ${meta.color}` : '3px solid transparent', cursor: 'pointer', transition: 'all 0.15s' }}
                     onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg)'; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>

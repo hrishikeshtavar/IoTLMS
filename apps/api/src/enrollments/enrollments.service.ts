@@ -14,11 +14,22 @@ export class EnrollmentsService {
 
     if (existing) return { ...existing, already_enrolled: true };
 
+    // If tenant_id is missing (student not assigned to a school),
+    // fall back to the course's own tenant so the FK constraint is satisfied
+    let tenantId = dto.tenant_id;
+    if (!tenantId) {
+      const course = await this.prisma.course.findUnique({
+        where: { id: dto.course_id },
+        select: { tenant_id: true },
+      });
+      tenantId = course?.tenant_id ?? '';
+    }
+
     return this.prisma.enrollment.create({
       data: {
         user_id: dto.user_id,
         course_id: dto.course_id,
-        tenant_id: dto.tenant_id,
+        tenant_id: tenantId,
       },
       include: { course: true },
     });
