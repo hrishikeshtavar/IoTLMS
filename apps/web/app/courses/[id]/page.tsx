@@ -48,7 +48,7 @@ function renderTipTap(nodes: any[]): React.ReactNode {
   });
 }
 
-function renderContent(content: LessonContent['content_json'] | null, quizHref?: string) {
+function renderContent(content: LessonContent['content_json'] | null, quizHref?: string, locale: Locale = 'en') {
   if (!content) return null;
 
   // blocks_v1 format (super-admin course editor)
@@ -58,7 +58,7 @@ function renderContent(content: LessonContent['content_json'] | null, quizHref?:
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {blocks.map((block: any, i: number) => {
           if (block.type === 'text') {
-            const json = block.content_en;
+            const json = block[`content_${locale}`] || block.content_en;
             if (!json || !json.content) return null;
             return <div key={i}>{renderTipTap(json.content)}</div>;
           }
@@ -409,7 +409,7 @@ export default function CoursePage() {
                           <div>Loading content...</div>
                         </div>
                       ) : lessonContent ? (
-                        <div>{renderContent(lessonContent.content_json, assessmentMap[activeLesson.id] ? `/quiz/${assessmentMap[activeLesson.id]}?courseId=${courseId}` : undefined)}</div>
+                        <div>{renderContent(lessonContent.content_json, assessmentMap[activeLesson.id] ? `/quiz/${assessmentMap[activeLesson.id]}?courseId=${courseId}` : undefined, locale)}</div>
                       ) : (
                         <div style={{ textAlign: 'center', padding: '3rem' }}>
                           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📖</div>
