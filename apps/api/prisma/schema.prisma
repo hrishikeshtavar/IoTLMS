@@ -107,6 +107,7 @@ model Course {
   playlist_url   String?
   status         CourseStatus @default(draft)
   created_by     String?
+  order_index    Int          @default(0)
   created_at     DateTime     @default(now())
 
   tenant       Tenant        @relation(fields: [tenant_id], references: [id])
