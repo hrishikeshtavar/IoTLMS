@@ -582,8 +582,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
-
       {/* EDIT PROFILE PANEL */}
       {showProfilePanel && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setShowProfilePanel(false)}>
@@ -659,5 +657,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+    </div>
   );
 }
