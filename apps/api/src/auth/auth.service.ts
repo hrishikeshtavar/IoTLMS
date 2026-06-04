@@ -141,6 +141,21 @@ export class AuthService {
     return { message: 'Password reset successful' };
   }
 
+  async getMe(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, phone: true, language_pref: true, avatar_url: true, role: true, class_grade: true, division: true },
+    });
+  }
+
+  async updateProfile(userId: string, data: { name?: string; phone?: string; language_pref?: string; avatar_url?: string }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+      select: { id: true, name: true, email: true, phone: true, language_pref: true, avatar_url: true },
+    });
+  }
+
   async verifyEmail(token: string) {
     const user = await this.prisma.user.findFirst({ where: { email_verify_token: token } });
     if (!user) throw new UnauthorizedException('Invalid verification token');

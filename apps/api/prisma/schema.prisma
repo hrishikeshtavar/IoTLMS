@@ -72,6 +72,7 @@ model User {
   reset_token         String?
   reset_token_expires DateTime?
   password_hash       String?
+  avatar_url          String?
   last_login          DateTime?
   last_active         DateTime?
   created_at          DateTime  @default(now())

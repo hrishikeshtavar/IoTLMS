@@ -110,6 +110,50 @@ function ProgressRing({ percent, size = 56, color = 'var(--primary)' }: { percen
   const r = (size - 7) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
+  async function openProfile() {
+    setShowDropdown(false);
+    const u = getUser();
+    const res = await apiFetch('/api/auth/me');
+    const data = await res.json();
+    setProfileForm({ name: data.name ?? u?.name ?? '', phone: data.phone ?? '', avatar_url: data.avatar_url ?? '' });
+    setShowProfilePanel(true);
+  }
+
+  async function saveProfile() {
+    setProfileSaving(true);
+    const res = await apiFetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profileForm),
+    });
+    if (res.ok) {
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    }
+    setProfileSaving(false);
+  }
+
+  async function uploadAvatar(file: File) {
+    setAvatarUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await apiFetch('/api/upload/file', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.url) setProfileForm(p => ({ ...p, avatar_url: data.url }));
+    setAvatarUploading(false);
+  }
+
+  async function openCerts() {
+    setShowDropdown(false);
+    setCertsLoading(true);
+    setShowCertsPanel(true);
+    const u = getUser();
+    const res = await apiFetch(`/api/certificates/student/${u?.id}`);
+    const data = await res.json();
+    setCerts(Array.isArray(data) ? data : []);
+    setCertsLoading(false);
+  }
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
@@ -151,6 +195,15 @@ const ACTIVITY_META: Record<string, { emoji: string; label: string }> = {
 export default function DashboardPage() {
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>('en');
+  const [showDropdown, setShowDropdown]       = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showCertsPanel, setShowCertsPanel]   = useState(false);
+  const [profileForm, setProfileForm]         = useState({ name: '', phone: '', avatar_url: '' });
+  const [profileSaving, setProfileSaving]     = useState(false);
+  const [profileSaved, setProfileSaved]       = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [certs, setCerts]                     = useState<any[]>([]);
+  const [certsLoading, setCertsLoading]       = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any>(null);
   const [searching, setSearching] = useState(false);
@@ -336,17 +389,36 @@ export default function DashboardPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <Link href="/courses" className="sl-nav-link">{t.browse}</Link>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)' }}>
-              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
-                {getUser()?.name?.[0]?.toUpperCase() ?? 'U'}
-              </span>
-              <span style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700 }}>
-                {getUser()?.name?.split(' ')[0]}
-              </span>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowDropdown(p => !p)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', borderRadius: '999px', background: 'rgba(26,115,232,0.1)', border: 'none', cursor: 'pointer' }}>
+                {profileForm.avatar_url
+                  ? <img src={profileForm.avatar_url} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                  : <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800 }}>
+                      {getUser()?.name?.[0]?.toUpperCase() ?? 'U'}
+                    </span>
+                }
+                <span style={{ color: 'var(--primary)', fontSize: '0.82rem', fontWeight: 700 }}>{getUser()?.name?.split(' ')[0]}</span>
+                <span style={{ color: 'var(--primary)', fontSize: '0.65rem' }}>▾</span>
+              </button>
+              {showDropdown && (
+                <div style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', border: '1px solid #e5e7eb', minWidth: 180, zIndex: 200, overflow: 'hidden' }}>
+                  <button onClick={openProfile} style={{ width: '100%', padding: '0.7rem 1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    onMouseEnter={e => (e.currentTarget.style.background='#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background='none')}>
+                    ✏️ Edit Profile
+                  </button>
+                  <div style={{ height: 1, background: '#f3f4f6' }} />
+                  <button onClick={openCerts} style={{ width: '100%', padding: '0.7rem 1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    onMouseEnter={e => (e.currentTarget.style.background='#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background='none')}>
+                    🎓 View Certificates
+                  </button>
+                  <div style={{ height: 1, background: '#f3f4f6' }} />
+                  <button onClick={() => logout()} style={{ width: '100%', padding: '0.7rem 1rem', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                    onMouseEnter={e => (e.currentTarget.style.background='#FEF2F2')} onMouseLeave={e => (e.currentTarget.style.background='none')}>
+                    🚪 Sign Out
+                  </button>
+                </div>
+              )}
             </div>
-            <button onClick={() => logout()} className="sl-nav-cta" style={{ border: 'none' }}>
-              Sign Out
-            </button>
           </div>
         </div>
       </nav>
@@ -514,6 +586,91 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+    </div>
+
+      {/* ── EDIT PROFILE PANEL ── */}
+      {showProfilePanel && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', justifyContent: 'flex-end' }} onClick={() => setShowProfilePanel(false)}>
+          <div style={{ width: '100%', maxWidth: 420, height: '100%', background: '#fff', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>✏️ Edit Profile</span>
+              <button onClick={() => setShowProfilePanel(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+              {/* Avatar */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem', gap: '0.75rem' }}>
+                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '3px solid #e5e7eb' }}>
+                  {profileForm.avatar_url
+                    ? <img src={profileForm.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ fontSize: '2rem', color: '#fff', fontWeight: 800 }}>{profileForm.name?.[0]?.toUpperCase() ?? 'U'}</span>
+                  }
+                </div>
+                <label style={{ padding: '0.4rem 1rem', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', color: '#374151', background: '#f9fafb' }}>
+                  {avatarUploading ? 'Uploading…' : '📷 Upload Photo'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
+                </label>
+              </div>
+              {/* Fields */}
+              {[
+                { label: 'Full Name', key: 'name', type: 'text' },
+                { label: 'Phone', key: 'phone', type: 'tel' },
+              ].map(({ label, key, type }) => (
+                <div key={key} style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>{label}</label>
+                  <input type={type} value={(profileForm as any)[key]} onChange={e => setProfileForm(p => ({ ...p, [key]: e.target.value }))}
+                    style={{ width: '100%', padding: '0.6rem 0.9rem', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#374151', marginBottom: 4 }}>Email</label>
+                <input type="email" value={getUser()?.email ?? ''} disabled style={{ width: '100%', padding: '0.6rem 0.9rem', borderRadius: 8, border: '1.5px solid #e5e7eb', fontSize: '0.9rem', background: '#f9fafb', color: '#9ca3af', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e5e7eb' }}>
+              <button onClick={saveProfile} disabled={profileSaving} style={{ width: '100%', padding: '0.75rem', borderRadius: 10, background: profileSaved ? '#00C896' : 'var(--primary)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
+                {profileSaving ? 'Saving…' : profileSaved ? '✓ Saved!' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CERTIFICATES PANEL ── */}
+      {showCertsPanel && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCertsPanel(false)}>
+          <div style={{ width: '100%', maxWidth: 500, maxHeight: '80vh', background: '#fff', borderRadius: 16, boxShadow: '0 24px 64px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#111827' }}>🎓 My Certificates</span>
+              <button onClick={() => setShowCertsPanel(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#6b7280' }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+              {certsLoading ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>Loading…</div>
+              ) : certs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📜</div>
+                  <div style={{ fontWeight: 600 }}>No certificates yet</div>
+                  <div style={{ fontSize: '0.82rem', marginTop: 4 }}>Complete a course to earn your first certificate</div>
+                </div>
+              ) : certs.map(cert => (
+                <div key={cert.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderRadius: 10, border: '1px solid #e5e7eb', marginBottom: '0.75rem', background: '#fafafa' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>📜 {cert.course?.title_en ?? 'Course'}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: 2 }}>
+                      Issued {new Date(cert.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
+                  </div>
+                  <button onClick={() => window.open(`/certificate/${cert.course?.id}`, '_blank')}
+                    style={{ padding: '0.4rem 0.9rem', borderRadius: 8, background: 'linear-gradient(135deg,#1A73E8,#00C896)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Download ↗
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

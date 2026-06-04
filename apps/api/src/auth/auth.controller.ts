@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Req, HttpCode, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Req, HttpCode, Get, Query, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -47,5 +47,15 @@ export class AuthController {
   @Get('verify-email')
   verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
+  }
+
+  @Get('me')
+  getMe(@Req() req: any) {
+    return this.authService.getMe(req.user.id);
+  }
+
+  @Patch('profile')
+  updateProfile(@Req() req: any, @Body() body: { name?: string; phone?: string; language_pref?: string; avatar_url?: string }) {
+    return this.authService.updateProfile(req.user.id, body);
   }
 }
