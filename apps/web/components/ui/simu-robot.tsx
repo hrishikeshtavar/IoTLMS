@@ -9,103 +9,148 @@ export function SimuRobot({ width = 380 }: { width?: number }) {
   const animRef      = useRef<any>(null)
   const wrapRef      = useRef<SVGGElement | null>(null)
   const S            = useRef({ mx: 0, my: 0, ex: 0, ey: 0 })
-
+  
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+  const container = containerRef.current
+  if (!container) return
 
-    const onMove = (e: MouseEvent) => { S.current.mx = e.clientX; S.current.my = e.clientY }
-    window.addEventListener('mousemove', onMove, { passive: true })
+  let destroyed = false
 
-    import('lottie-web').then((mod) => {
-      const lottie = (mod as any).default ?? mod
-      const anim   = lottie.loadAnimation({
-        container, renderer: 'svg', loop: true, autoplay: true,
-        path: '/simu-robot.json',
-      })
-      animRef.current = anim
+  const onMove = (e: MouseEvent) => {
+    S.current.mx = e.clientX
+    S.current.my = e.clientY
+  }
 
-      anim.addEventListener('DOMLoaded', () => {
-        // Seed cursor to robot centre
-        const r = container.getBoundingClientRect()
-        S.current.mx = r.left + r.width / 2
-        S.current.my = r.top  + r.height / 2
+  window.addEventListener('mousemove', onMove, { passive: true })
 
-        // ── find the eye layer element ───────────────────────────────
-        // Primary: lottie renderer API  (works on lottie-web ≥ 5.7)
-        let eyeEl: SVGGElement | null =
-          anim.renderer?.elements?.[0]?.layerElement ?? null
+  // Clear old svg before loading
+  container.innerHTML = ''
 
-        // Fallback A: elements may live one level deeper in some builds
-        if (!eyeEl)
-          eyeEl = anim.renderer?.elements?.[0]?.baseElement ?? null
+  import('lottie-web').then((mod) => {
+    if (destroyed || !containerRef.current) return
 
-        // Fallback B: query the SVG directly.
-        // Lottie renders layers as siblings inside a root <g>.
-        // elements[0] = eyes layer = LAST <g> child of SVG root
-        // (last because lottie appends in layers-array order and the
-        //  eyes layer, being index 0, is painted on top = last in DOM).
-        if (!eyeEl) {
-          const svg = container.querySelector('svg')
-          const svgRoot = svg?.querySelector(':scope > g') as SVGGElement | null
-          if (svgRoot) {
-            const children = Array.from(svgRoot.children) as SVGGElement[]
-            eyeEl = children[children.length - 1] ?? null   // last = top layer
-          }
-        }
+    const lottie = (mod as any).default ?? mod
 
-        console.log('[SimuRobot] eyeEl found:', !!eyeEl, eyeEl)
-        if (!eyeEl) return
+    animRef.current?.destroy?.()
+    animRef.current = null
+    wrapRef.current = null
 
-        const parent = eyeEl.parentElement
-        if (!parent) return
+    // Clear only before loading new robot
+    container.innerHTML = ''
 
-        // ── wrap with appendChild only — zero insertBefore calls ─────
-        const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-        wrap.id = 'simu-eye-wrap'
-        wrap.appendChild(eyeEl)  // auto-detaches eyeEl from parent
-        parent.appendChild(wrap) // re-attaches wrap at end (eyes stay on top)
-        wrapRef.current = wrap
-        console.log('[SimuRobot] wrap created and mounted')
-      })
+    const anim = lottie.loadAnimation({
+      container,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: '/simu-robot.json',
+      rendererSettings: {
+        preserveAspectRatio: 'xMidYMid meet',
+      },
     })
 
-    // ── rAF loop ───────────────────────────────────────────────────────
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+    animRef.current = anim
 
-    const tick = () => {
-      const s    = S.current
-      const rect = container.getBoundingClientRect()
+    anim.addEventListener('DOMLoaded', () => {
+      if (destroyed) return
 
-      if (rect.width > 0 && wrapRef.current) {
-        const cx = rect.left + rect.width  * 0.5
-        const cy = rect.top  + rect.height * 0.5
-        const nx = Math.max(-1, Math.min(1, (s.mx - cx) / (window.innerWidth  * 0.5)))
-        const ny = Math.max(-1, Math.min(1, (s.my - cy) / (window.innerHeight * 0.5)))
+      const r = container.getBoundingClientRect()
+      S.current.mx = r.left + r.width / 2
+      S.current.my = r.top + r.height / 2
 
-        s.ex = lerp(s.ex, nx * 25, 0.15)
-        s.ey = lerp(s.ey, ny * 16, 0.15)
+      let eyeEl: SVGGElement | null =
+        anim.renderer?.elements?.[0]?.layerElement ?? null
 
-        wrapRef.current.setAttribute(
-          'transform',
-          `translate(${s.ex.toFixed(2)} ${s.ey.toFixed(2)})`,
-        )
+      if (!eyeEl) {
+        eyeEl = anim.renderer?.elements?.[0]?.baseElement ?? null
       }
-      rafRef.current = requestAnimationFrame(tick)
+
+      if (!eyeEl) {
+        const svg = container.querySelector('svg')
+        const svgRoot = svg?.querySelector(':scope > g') as SVGGElement | null
+
+        if (svgRoot) {
+          const children = Array.from(svgRoot.children) as SVGGElement[]
+          eyeEl = children[children.length - 1] ?? null
+        }
+      }
+
+      if (!eyeEl) return
+
+      const parent = eyeEl.parentElement
+      if (!parent) return
+
+      const oldWrap = container.querySelector('#simu-eye-wrap')
+      oldWrap?.remove()
+
+      const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      wrap.id = 'simu-eye-wrap'
+
+      wrap.appendChild(eyeEl)
+      parent.appendChild(wrap)
+
+      wrapRef.current = wrap
+    })
+  })
+
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t
+
+  const tick = () => {
+    if (destroyed) return
+
+    const s = S.current
+    const rect = container.getBoundingClientRect()
+
+    if (rect.width > 0 && wrapRef.current) {
+      const cx = rect.left + rect.width * 0.5
+      const cy = rect.top + rect.height * 0.5
+
+      const nx = Math.max(-1, Math.min(1, (s.mx - cx) / (window.innerWidth * 0.5)))
+      const ny = Math.max(-1, Math.min(1, (s.my - cy) / (window.innerHeight * 0.5)))
+
+      s.ex = lerp(s.ex, nx * 25, 0.15)
+      s.ey = lerp(s.ey, ny * 16, 0.15)
+
+      wrapRef.current.setAttribute(
+        'transform',
+        `translate(${s.ex.toFixed(2)} ${s.ey.toFixed(2)})`
+      )
     }
+
     rafRef.current = requestAnimationFrame(tick)
+  }
 
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      window.removeEventListener('mousemove', onMove)
-      animRef.current?.destroy?.()
-      wrapRef.current = null
+  rafRef.current = requestAnimationFrame(tick)
+
+  return () => {
+    destroyed = true
+
+    cancelAnimationFrame(rafRef.current)
+    window.removeEventListener('mousemove', onMove)
+
+    animRef.current?.destroy?.()
+    animRef.current = null
+    wrapRef.current = null
+
+    // Clear old SVG after leaving page
+    if (container) {
+      container.innerHTML = ''
     }
-  }, [])
+  }
+}, [])
 
-  return (
-    <div ref={containerRef} style={{ width: `${width}px`, height: `${height}px` }} />
-  )
+return (
+  <div
+    ref={containerRef}
+    style={{
+      width: `${width}px`,
+      height: `${height}px`,
+    }}
+  />
+)
+
 }
+
+
 
 export default SimuRobot

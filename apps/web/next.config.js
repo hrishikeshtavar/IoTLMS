@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
-  
+
   reactStrictMode: true,
+  devIndicators: false,
   turbopack: {},
   async headers() {
     return [
