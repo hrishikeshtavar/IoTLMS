@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/ui/Logo';
-import { apiFetch, getUser, isLoggedIn, logout } from '../lib/auth';
+import { apiFetch, getUser, setUser, isLoggedIn, logout } from '../lib/auth';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 type Locale = 'en' | 'hi' | 'mr';
@@ -277,12 +277,30 @@ export default function DashboardPage() {
 
   async function uploadAvatar(file: File) {
     setAvatarUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    const res = await apiFetch('/api/upload/file', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.url) setProfileForm((p: any) => ({ ...p, avatar_url: data.url }));
-    setAvatarUploading(false);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await apiFetch('/api/upload/file', { method: 'POST', body: fd });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.key && data.bucket) {
+        // Use API proxy URL — avoids exposing internal MinIO port to the browser
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const avatarUrl = `${apiUrl}/api/upload/assets/${data.bucket}/${data.key}`;
+        setProfileForm((p: any) => ({ ...p, avatar_url: avatarUrl }));
+        // Bug 3 fix: auto-save to DB so photo persists after page reload
+        await apiFetch('/api/auth/profile', {
+          method: 'PATCH',
+          body: JSON.stringify({ avatar_url: avatarUrl }),
+        });
+        const u = getUser();
+        if (u) setUser({ ...u, avatar_url: avatarUrl });
+      }
+    } catch (err) {
+      console.error('[uploadAvatar]', err);
+    } finally {
+      setAvatarUploading(false);
+    }
   }
 
   async function openCerts() {

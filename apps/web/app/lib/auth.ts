@@ -33,9 +33,12 @@ export function isLoggedIn(): boolean {
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
   };
+  // Do NOT set Content-Type for FormData — browser sets it automatically with the boundary
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] ?? 'application/json';
+  }
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const _user = getUser();
   if (_user?.tenantId) headers['x-tenant-id'] = _user.tenantId;
