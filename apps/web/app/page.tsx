@@ -2075,7 +2075,7 @@ export default function HomePage() {
     <div className="ss-premium-layout">
       <div className="ss-premium-hero-card">
         <img
-          src="images\home\LMS_feature_bg.png"
+          src="images/home/LMS_feature_bg.png"
           alt="Students learning in smart classroom"
         />
 
