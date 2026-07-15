@@ -90,6 +90,7 @@ function CourseForm({ course, tenants, onSave, onClose }: { course: Partial<Cour
       duration_hours: form.duration_hours ? parseInt(form.duration_hours) : undefined,
       price: parseInt(form.price||'0'), target_grade: form.target_grade||undefined,
       stream: form.stream, playlist_url: form.playlist_url||undefined, status: form.status,
+      ...(isEdit ? {} : { tenant_id: form.tenant_id }),
     };
     try {
       const res = isEdit

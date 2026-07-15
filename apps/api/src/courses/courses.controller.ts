@@ -25,7 +25,9 @@ export class CoursesController {
   @Post()
   @Roles('admin', 'super_admin')
   create(@Body() body: any, @Req() req: any) {
-    return this.coursesService.create(body, req.tenantId);
+    const isSuperAdmin = req.user?.role === 'super_admin';
+    const tenantId = (isSuperAdmin && body?.tenant_id) ? body.tenant_id : req.tenantId;
+    return this.coursesService.create(body, tenantId);
   }
 
   @Patch('reorder')
