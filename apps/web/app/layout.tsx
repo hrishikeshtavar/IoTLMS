@@ -11,6 +11,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head />
+      <script dangerouslySetInnerHTML={{__html: `
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister());
+          });
+        }
+      `}} />
       <body>
         <NavBar />
         {children}
