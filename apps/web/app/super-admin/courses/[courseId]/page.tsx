@@ -138,7 +138,9 @@ export default function CourseEditorPage(){
 
   // Multi-block state
   const [blocks,setBlocks]=useState<Block[]>([]);
+  const blocksRef=useRef<Block[]>([]);
   const [editingBlockId,setEditingBlockId]=useState<string|null>(null);
+  useEffect(()=>{ blocksRef.current=blocks; },[blocks]);
   const [textLocale,setTextLocale]=useState<'en'|'hi'|'mr'>('en');
   const [contentRecordId,setContentRecordId]=useState<string|null>(null);
   const [saving,setSaving]=useState(false);
@@ -306,7 +308,7 @@ export default function CourseEditorPage(){
   async function doSave(auto=false){
     if(!activeLesson)return;
     if(auto)setAutoStatus('saving');else setSaving(true);
-    const payload={format:'blocks_v1',blocks};
+    const payload={format:'blocks_v1',blocks:blocksRef.current};
     try{
       await apiFetch('/api/lesson-content',{method:'POST',body:JSON.stringify({lesson_id:activeLesson.id,locale:'en',content_json:payload,status:'published'})});
       if(auto){setAutoStatus('saved');setTimeout(()=>setAutoStatus(''),3000);}

@@ -18,7 +18,9 @@ export class LessonContentService {
         where: { id: assessment.id },
         data: { pass_score: quizBlock.pass_score ?? 60, max_score: maxScore },
       });
-      await this.prisma.question.deleteMany({ where: { assessment_id: assessment.id } });
+      if (questions.length > 0) {
+        await this.prisma.question.deleteMany({ where: { assessment_id: assessment.id } });
+      }
     }
     for (const q of questions) {
       const effectiveOptions = q.qtype === 'truefalse' ? ['True', 'False'] : (q.options || []);
