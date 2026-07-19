@@ -11,7 +11,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Security headers
-  app.use(helmet());
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/upload/assets/')) {
+      return helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })(req, res, next);
+    }
+    return helmet()(req, res, next);
+  });
 
   // Input validation
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false }));
