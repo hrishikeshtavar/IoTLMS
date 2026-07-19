@@ -12,3 +12,17 @@ api.iotlearn.in {
 localhost:80 {
   reverse_proxy localhost:3000
 }
+
+# Production API domain
+api.simulearning.ai {
+    @assets path /api/upload/assets/*
+    handle @assets {
+        reverse_proxy localhost:3001 {
+            header_down Cross-Origin-Resource-Policy cross-origin
+        }
+        header Access-Control-Allow-Origin *
+    }
+    handle {
+        reverse_proxy localhost:3001
+    }
+}
