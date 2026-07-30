@@ -310,10 +310,11 @@ export default function CourseEditorPage(){
     if(auto)setAutoStatus('saving');else setSaving(true);
     const payload={format:'blocks_v1',blocks:blocksRef.current};
     try{
-      await apiFetch('/api/lesson-content',{method:'POST',body:JSON.stringify({lesson_id:activeLesson.id,locale:'en',content_json:payload,status:'published'})});
+      const res=await apiFetch('/api/lesson-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lesson_id:activeLesson.id,locale:'en',content_json:payload,status:'published'})});
+      if(!res.ok){const detail=await res.text().catch(()=>'');throw new Error(`Save failed (${res.status}): ${detail.slice(0,200)}`);}
       if(auto){setAutoStatus('saved');setTimeout(()=>setAutoStatus(''),3000);}
       else{setSaveMsg('Chapter saved!');setTimeout(()=>setSaveMsg(''),2500);}
-    }catch{if(auto)setAutoStatus('unsaved');else setSaveMsg('Error saving.');}
+    }catch(e:any){console.error('[lesson-content save]',e);if(auto)setAutoStatus('unsaved');else setSaveMsg(e?.message||'Error saving.');}
     finally{if(!auto)setSaving(false);}
   }
 
