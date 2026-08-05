@@ -258,14 +258,16 @@ export default function CourseEditorPage(){
     }).catch(()=>setBlocks([emptyText()]));
   }
 
-  function openBlock(bid:string){
+  function openBlock(bid:string,known?:Block){
     setEditingBlockId(prev=>prev===bid?null:bid);
-    const block=blocks.find(b=>b.id===bid);
+    const block=known??blocksRef.current.find(b=>b.id===bid)??blocks.find(b=>b.id===bid);
     if(block?.type==='text'){
       activeTextBlockRef.current=bid;
       const tb=block as TextBlock;
       const content=textLocale==='en'?tb.content_en:textLocale==='hi'?tb.content_hi:tb.content_mr;
       editor?.commands.setContent(content||'');
+    }else{
+      activeTextBlockRef.current=null;
     }
   }
 
@@ -277,7 +279,7 @@ export default function CourseEditorPage(){
     else if(type==='image') b=emptyImage();
     else b=emptyLab();
     setBlocks(p=>[...p,b]);
-    setTimeout(()=>openBlock(b.id),50);
+    setTimeout(()=>openBlock(b.id,b),50);
   }
 
   function updateBlock(id:string,patch:Partial<Block>){
