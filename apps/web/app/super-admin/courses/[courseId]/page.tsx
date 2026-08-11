@@ -148,6 +148,15 @@ export default function CourseEditorPage(){
   const [autoStatus,setAutoStatus]=useState<''|'unsaved'|'saving'|'saved'>('');
   const autoTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const activeTextBlockRef=useRef<string|null>(null);
+  // Which chapter the editor state currently belongs to. activeLesson (state) is not
+  // safe to read from a timer callback: it can already point at the next chapter.
+  const activeLessonIdRef=useRef<string|null>(null);
+  // Set only once a chapter's saved content has actually been fetched.
+  // While null, no save may run for that chapter (this is what prevented Ch2/Ch5 being blanked).
+  const loadedLessonIdRef=useRef<string|null>(null);
+  const dirtyRef=useRef(false);
+  const baseVersionRef=useRef<number|null>(null);
+  const saveChain=useRef<Promise<any>>(Promise.resolve());
 
   // Video upload
   const [uploading,setUploading]=useState<string|null>(null);
@@ -169,10 +178,29 @@ export default function CourseEditorPage(){
   const sensors=useSensors(useSensor(PointerSensor,{activationConstraint:{distance:5}}),useSensor(KeyboardSensor,{coordinateGetter:sortableKeyboardCoordinates}));
 
   function scheduleAutoSave(){
+    const lid=activeLessonIdRef.current;
+    if(!lid||loadedLessonIdRef.current!==lid)return; // chapter still loading: nothing to autosave yet
+    dirtyRef.current=true;
     setAutoStatus('unsaved');
     if(autoTimer.current)clearTimeout(autoTimer.current);
-    autoTimer.current=setTimeout(()=>doSave(true),2000);
+    autoTimer.current=setTimeout(()=>{autoTimer.current=null;doSave(true,lid,blocksRef.current);},2000);
   }
+
+  // Persist whatever is pending for the CURRENT chapter before the editor is repointed.
+  async function flushPendingSave(){
+    if(autoTimer.current){clearTimeout(autoTimer.current);autoTimer.current=null;}
+    const lid=activeLessonIdRef.current;
+    if(!lid||!dirtyRef.current||loadedLessonIdRef.current!==lid)return;
+    try{await doSave(true,lid,blocksRef.current);}catch(e){console.error('[lesson-content flush]',e);}
+  }
+
+  // Never leave a scheduled write behind on unmount / tab close.
+  useEffect(()=>()=>{if(autoTimer.current)clearTimeout(autoTimer.current);},[]);
+  useEffect(()=>{
+    const h=(e:BeforeUnloadEvent)=>{if(dirtyRef.current){e.preventDefault();e.returnValue='';}};
+    window.addEventListener('beforeunload',h);
+    return()=>window.removeEventListener('beforeunload',h);
+  },[]);
 
   useEffect(()=>{
     apiFetch('/api/tenants').then(r=>r.json()).then(d=>{const l=Array.isArray(d)?d:[];setTenants(l);if(isNew&&l.length>0)setForm(f=>({...f,tenant_id:l[0].id}));}).catch(()=>{});
@@ -215,7 +243,11 @@ export default function CourseEditorPage(){
     if(!confirm('Delete this chapter?'))return;
     await apiFetch(`/api/lessons/${id}`,{method:'DELETE'});
     setLessons(p=>p.filter(l=>l.id!==id));
-    if(activeLesson?.id===id){setActiveLesson(null);setBlocks([]);}
+    if(activeLesson?.id===id){
+      if(autoTimer.current){clearTimeout(autoTimer.current);autoTimer.current=null;}
+      activeLessonIdRef.current=null;loadedLessonIdRef.current=null;dirtyRef.current=false;baseVersionRef.current=null;
+      setActiveLesson(null);applyBlocks([]);
+    }
   }
 
   async function handleDragEnd(e:DragEndEvent){
@@ -227,35 +259,48 @@ export default function CourseEditorPage(){
     await Promise.all(r.map(l=>apiFetch(`/api/lessons/${l.id}`,{method:'PATCH',body:JSON.stringify({order_index:l.order_index})})));
   }
 
-  function selectLesson(lesson:Lesson){
+  function applyBlocks(next:Block[]){ blocksRef.current=next; setBlocks(next); }
+
+  async function selectLesson(lesson:Lesson){
+    if(activeLessonIdRef.current===lesson.id)return;
+    await flushPendingSave(); // save the chapter we are leaving BEFORE the editor is repointed
     setActiveLesson(lesson);
-    setBlocks([]);setEditingBlockId(null);setContentRecordId(null);setAutoStatus('');
-    editor?.commands.setContent('');
+    activeLessonIdRef.current=lesson.id;
+    loadedLessonIdRef.current=null; // saves are blocked until this chapter's content is fetched
+    dirtyRef.current=false;
+    baseVersionRef.current=null;
+    applyBlocks([]);setEditingBlockId(null);setContentRecordId(null);setAutoStatus('');
+    editor?.commands.setContent('',{emitUpdate:false}); // v3 emits update by default, which would arm a stray autosave
     activeTextBlockRef.current=null;
-    apiFetch(`/api/lesson-content/lesson/${lesson.id}`).then(r=>r.json()).then((data:any[])=>{
+    let loaded:Block[]=[emptyText()];
+    try{
+      const r=await apiFetch(`/api/lesson-content/lesson/${lesson.id}`);
+      const data:any[]=await r.json();
+      if(activeLessonIdRef.current!==lesson.id)return; // user moved on while loading: drop this response
       if(Array.isArray(data)&&data.length>0){
         const en=data.find(c=>c.locale==='en');
         if(en){
           setContentRecordId(en.id);
+          baseVersionRef.current=typeof en.version==='number'?en.version:null;
           const json=en.content_json;
-          // Parse blocks format or legacy
           if(json?.format==='blocks_v1'){
-            const parsed:Block[]=json.blocks||[];
-            setBlocks(parsed);
+            loaded=Array.isArray(json.blocks)?json.blocks:[];
+            if(loaded.length===0)loaded=[emptyText()];
           } else if(json) {
             // Legacy: wrap in a single text block
-            const tb:TextBlock={id:uid(),type:'text',content_en:json,content_hi:null,content_mr:null};
-            setBlocks([tb]);
-          } else {
-            setBlocks([emptyText()]);
+            loaded=[{id:uid(),type:'text',content_en:json,content_hi:null,content_mr:null} as TextBlock];
           }
-        } else {
-          setBlocks([emptyText()]);
         }
-      } else {
-        setBlocks([emptyText()]);
       }
-    }).catch(()=>setBlocks([emptyText()]));
+    }catch(e){
+      if(activeLessonIdRef.current!==lesson.id)return;
+      console.error('[lesson-content load]',e);
+      setAutoStatus('unsaved');
+      return; // load failed: leave loadedLessonIdRef null so nothing can overwrite the server copy
+    }
+    if(activeLessonIdRef.current!==lesson.id)return;
+    applyBlocks(loaded);
+    loadedLessonIdRef.current=lesson.id;
   }
 
   function openBlock(bid:string,known?:Block){
@@ -265,7 +310,7 @@ export default function CourseEditorPage(){
       activeTextBlockRef.current=bid;
       const tb=block as TextBlock;
       const content=textLocale==='en'?tb.content_en:textLocale==='hi'?tb.content_hi:tb.content_mr;
-      editor?.commands.setContent(content||'');
+      editor?.commands.setContent(content||'',{emitUpdate:false});
     }else{
       activeTextBlockRef.current=null;
     }
@@ -278,7 +323,7 @@ export default function CourseEditorPage(){
     else if(type==='quiz')b=emptyQuiz();
     else if(type==='image') b=emptyImage();
     else b=emptyLab();
-    setBlocks(p=>[...p,b]);
+    setBlocks(p=>{const n=[...p,b];blocksRef.current=n;return n;});
     setTimeout(()=>openBlock(b.id,b),50);
   }
 
@@ -307,17 +352,38 @@ export default function CourseEditorPage(){
     scheduleAutoSave();
   }
 
-  async function doSave(auto=false){
-    if(!activeLesson)return;
-    if(auto)setAutoStatus('saving');else setSaving(true);
-    const payload={format:'blocks_v1',blocks:blocksRef.current};
-    try{
-      const res=await apiFetch('/api/lesson-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lesson_id:activeLesson.id,locale:'en',content_json:payload,status:'published'})});
-      if(!res.ok){const detail=await res.text().catch(()=>'');throw new Error(`Save failed (${res.status}): ${detail.slice(0,200)}`);}
-      if(auto){setAutoStatus('saved');setTimeout(()=>setAutoStatus(''),3000);}
-      else{setSaveMsg('Chapter saved!');setTimeout(()=>setSaveMsg(''),2500);}
-    }catch(e:any){console.error('[lesson-content save]',e);if(auto)setAutoStatus('unsaved');else setSaveMsg(e?.message||'Error saving.');}
-    finally{if(!auto)setSaving(false);}
+  async function doSave(auto=false,lessonIdArg?:string,blocksArg?:Block[]){
+    const lessonId=lessonIdArg??activeLessonIdRef.current;
+    if(!lessonId)return;
+    // Hard guard: never write a chapter whose stored content has not been read yet.
+    if(loadedLessonIdRef.current!==lessonId){console.warn('[lesson-content] save skipped, content not loaded:',lessonId);return;}
+    const snapshot:Block[]=blocksArg??blocksRef.current;
+    const isCurrent=()=>activeLessonIdRef.current===lessonId;
+    const run=async()=>{
+      if(auto)setAutoStatus('saving');else setSaving(true);
+      const payload={format:'blocks_v1',blocks:snapshot};
+      const body:any={lesson_id:lessonId,locale:'en',content_json:payload};
+      if(isCurrent()&&baseVersionRef.current!=null)body.base_version=baseVersionRef.current;
+      if(!auto)body.allow_empty=true; // only an explicit human Save may store an empty chapter
+      try{
+        const res=await apiFetch('/api/lesson-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        if(!res.ok){const detail=await res.text().catch(()=>'');throw new Error(`Save failed (${res.status}): ${detail.slice(0,300)}`);}
+        const saved=await res.json().catch(()=>null);
+        if(isCurrent()){
+          if(saved&&typeof saved.version==='number')baseVersionRef.current=saved.version;
+          dirtyRef.current=false;
+          if(auto){setAutoStatus('saved');setTimeout(()=>setAutoStatus(''),3000);}
+          else{setSaveMsg('Chapter saved!');setTimeout(()=>setSaveMsg(''),2500);}
+        }
+      }catch(e:any){
+        console.error('[lesson-content save]',lessonId,e);
+        if(isCurrent()){if(auto)setAutoStatus('unsaved');else setSaveMsg(e?.message||'Error saving.');}
+      }finally{if(!auto)setSaving(false);}
+    };
+    // Serialize writes so an older request can never land after a newer one.
+    const next=saveChain.current.then(run,run);
+    saveChain.current=next.catch(()=>{});
+    return next;
   }
 
   // Video upload
@@ -334,12 +400,15 @@ export default function CourseEditorPage(){
   function addQuestion(blockId:string){
     const newQ:QuizQ={id:uid(),qtype:'mcq',text:'',options:['','','',''],correct:0,points:10};
     setBlocks(p=>p.map(b=>b.id===blockId&&b.type==='quiz'?{...b,questions:[...(b as QuizBlock).questions,newQ]}:b));
+    scheduleAutoSave();
   }
   function updateQuestion(blockId:string,qid:string,patch:Partial<QuizQ>){
     setBlocks(p=>p.map(b=>b.id===blockId&&b.type==='quiz'?{...b,questions:(b as QuizBlock).questions.map(q=>q.id===qid?{...q,...patch}:q)}:b));
+    scheduleAutoSave();
   }
   function removeQuestion(blockId:string,qid:string){
     setBlocks(p=>p.map(b=>b.id===blockId&&b.type==='quiz'?{...b,questions:(b as QuizBlock).questions.filter(q=>q.id!==qid)}:b));
+    scheduleAutoSave();
   }
 
   // Locale switch for text block
@@ -351,7 +420,7 @@ export default function CourseEditorPage(){
       activeTextBlockRef.current=bid;
       const tb=block as TextBlock;
       const content=textLocale==='en'?tb.content_en:textLocale==='hi'?tb.content_hi:tb.content_mr;
-      editor?.commands.setContent(content||'');
+      editor?.commands.setContent(content||'',{emitUpdate:false});
     }
   },[textLocale]);
 
@@ -498,7 +567,7 @@ export default function CourseEditorPage(){
                   <h1 style={{fontSize:'1.3rem',fontWeight:800,color:'#1e293b',margin:0}}>{activeLesson.title}</h1>
                   <div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
                     {saveMsg&&<span style={{fontSize:'0.73rem',fontWeight:600,color:saveMsg.includes('Error')?'#DC2626':'#15803D'}}>{saveMsg}</span>}
-                    <button onClick={()=>doSave()} disabled={saving} style={{padding:'6px 16px',borderRadius:6,background:'linear-gradient(135deg,#1A73E8,#00C896)',color:'#fff',border:'none',fontWeight:700,fontSize:'0.8rem',cursor:'pointer'}}>{saving?'Saving…':'💾 Save Chapter'}</button>
+                    <button onClick={()=>{if(autoTimer.current){clearTimeout(autoTimer.current);autoTimer.current=null;}doSave();}} disabled={saving} style={{padding:'6px 16px',borderRadius:6,background:'linear-gradient(135deg,#1A73E8,#00C896)',color:'#fff',border:'none',fontWeight:700,fontSize:'0.8rem',cursor:'pointer'}}>{saving?'Saving…':'💾 Save Chapter'}</button>
                   </div>
                 </div>
 
