@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -40,9 +40,20 @@ export class UsersService {
     class_grade?: number;
     division?: string;
   }) {
+    // Runtime allowlist: the inline type above is erased at compile time, and the
+    // controller passes an unvalidated body, so filter explicitly here.
+    // role, tenant_id, password_hash, is_active and email are NOT self-serviceable.
+    const ALLOWED = ['name', 'username', 'phone', 'language_pref', 'class_grade', 'division'] as const;
+    const safe: Record<string, unknown> = {};
+    for (const k of ALLOWED) {
+      if (data && Object.prototype.hasOwnProperty.call(data, k) && (data as any)[k] !== undefined) {
+        safe[k] = (data as any)[k];
+      }
+    }
+    if (Object.keys(safe).length === 0) throw new BadRequestException('No updatable fields provided');
     return this.prisma.user.updateMany({
       where: { id, tenant_id: tenantId },
-      data,
+      data: safe,
     });
   }
 
