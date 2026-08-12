@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { RegisterDto } from './dto/register.dto';
@@ -149,9 +149,20 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, data: { name?: string; phone?: string; language_pref?: string; avatar_url?: string }) {
+    // Runtime allowlist: the inline type is erased at compile time and the controller
+    // passes an unvalidated body, so role/tenant_id/password_hash/email/is_active must
+    // never reach Prisma from a self-service profile update.
+    const ALLOWED = ['name', 'phone', 'language_pref', 'avatar_url'] as const;
+    const safe: Record<string, unknown> = {};
+    for (const k of ALLOWED) {
+      if (data && Object.prototype.hasOwnProperty.call(data, k) && (data as any)[k] !== undefined) {
+        safe[k] = (data as any)[k];
+      }
+    }
+    if (Object.keys(safe).length === 0) throw new BadRequestException('No updatable fields provided');
     return this.prisma.user.update({
       where: { id: userId },
-      data,
+      data: safe,
       select: { id: true, name: true, email: true, phone: true, language_pref: true, avatar_url: true },
     });
   }
