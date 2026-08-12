@@ -24,8 +24,9 @@ export class UsersController {
 
   @Patch(':id/password')
   changePassword(@Param('id') id: string, @Body('password') password: string, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
-    return this.svc.changePassword(id, tenantId, password);
+    const user = (req as any)['user'];
+    const tenantId = (req as any)['tenantId'] ?? user?.tenantId ?? null;
+    return this.svc.changePassword(id, tenantId, password, user?.role);
   }
 
   @Patch(':id/deactivate')
@@ -37,8 +38,9 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(200)
   remove(@Param('id') id: string, @Req() req: Request) {
-    const tenantId = (req as any)['tenantId'] ?? (req as any)['user']?.tenantId ?? null;
-    return this.svc.remove(id, tenantId);
+    const user = (req as any)['user'];
+    const tenantId = (req as any)['tenantId'] ?? user?.tenantId ?? null;
+    return this.svc.remove(id, tenantId, user?.role);
   }
 
   @Get('super-admins')

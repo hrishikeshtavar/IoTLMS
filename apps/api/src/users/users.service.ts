@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -46,13 +46,13 @@ export class UsersService {
     });
   }
 
-  async changePassword(id: string, tenantId: string, password: string) {
+  async changePassword(id: string, tenantId: string, password: string, callerRole?: string) {
     const password_hash = await bcrypt.hash(password, 12);
-    // Use update (not updateMany) so super_admin can reset any user's password cross-tenant
-    return this.prisma.user.update({
-      where: { id },
-      data: { password_hash },
-    });
+    // super_admin may reset cross-tenant; everyone else is confined to their own tenant.
+    const where = callerRole === 'super_admin' ? { id } : { id, tenant_id: tenantId };
+    const res = await this.prisma.user.updateMany({ where, data: { password_hash } });
+    if (res.count === 0) throw new NotFoundException('User not found');
+    return { ok: true };
   }
 
   async deactivate(id: string, tenantId: string) {
@@ -62,8 +62,10 @@ export class UsersService {
     });
   }
 
-  async remove(id: string, tenantId: string) {
-    await this.prisma.user.deleteMany({ where: { id } });
+  async remove(id: string, tenantId: string, callerRole?: string) {
+    const where = callerRole === 'super_admin' ? { id } : { id, tenant_id: tenantId };
+    const res = await this.prisma.user.deleteMany({ where });
+    if (res.count === 0) throw new NotFoundException('User not found');
     return { ok: true };
   }
 
